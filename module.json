@@ -1,0 +1,31 @@
+{
+  "id": "simplecover5e",
+  "title": "SimpleCover5e",
+  "version": "0.0.1",
+  "authors": [
+    {
+      "name": "Peterlankton",
+      "flags": {}
+    }
+  ],
+  "compatibility": {
+    "minimum": "13",
+    "verified": "13"
+  },
+  "esmodules": [
+    "scripts/module.mjs"
+  ],
+  "flags": {
+    "canUpload": true
+  },
+  "relationships": {
+    "systems": [
+      {
+        "id": "dnd5e",
+        "type": "system",
+        "compatibility": {}
+      }
+    ]
+  },
+  "description": ""
+}
