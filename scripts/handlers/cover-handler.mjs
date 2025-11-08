@@ -1,8 +1,9 @@
 import { MODULE_ID } from "../constants.mjs";
 
-export function newIgonoreCoverType() {
+export function ignoreCoverProperties() {
   CONFIG.DND5E.itemProperties.ignoreCover = {
-    label: "Ignores Cover"
+    label: "Ignores Cover",
+    abbreviation: "iC" // Workaround for https://github.com/foundryvtt/dnd5e/issues/6378
   };
   CONFIG.DND5E.validProperties.weapon.add("ignoreCover");
   CONFIG.DND5E.validProperties.spell.add("ignoreCover");
@@ -30,7 +31,7 @@ function getSourceChatMessageFromEvent(ev) {
     if (el) break;
   }
   if (!el) return null;
- 
+
   const mid = el.dataset?.messageId ?? el.getAttribute?.("data-message-id");
   if (!mid) return null;
 
@@ -244,8 +245,8 @@ async function toggleCoverEffectViaGM(actorUuid, effectId, enable) {
  * @param {object} config    // dein preRollAttack / preRollSave config
  */
 function spellIgnoresCover(item, config) {
-  const name = (item?.name ?? "").trim();
-  //if(item.system.properties.has("ignoreCover")) return true;
+  // const name = (item?.name ?? "").trim();
+  if (item.system.properties.has("ignoreCover")) return true;
 
   //if (SPELLS_IGNORE_COVER.has(name)) return true;
 
@@ -397,7 +398,7 @@ function wallsBlock(aCorner, bCorner, sightSource) {
   if (collide(A, B)) return { blocked: true, A, B };
 
 
-  if (collide(aCorner.raw, A)) return { blocked: true, A, B }; 
+  if (collide(aCorner.raw, A)) return { blocked: true, A, B };
   if (collide(bCorner.raw, B)) return { blocked: true, A, B };
 
   return { blocked: false, A, B };
@@ -500,7 +501,7 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options)
         const segs = [];
 
         for (const tCorner of tgtCorners) {
-      
+
           const wb = wallsBlock(aCorner, tCorner, sightSource);
           const wBlocked = wb.blocked;
 
@@ -518,12 +519,12 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options)
           const isBlocked = wBlocked || cBlocked;
           if (isBlocked) blocked += 1;
           segs.push({
-            a: aCorner.inset,        
+            a: aCorner.inset,
             b: tCorner.inset,
             blocked: isBlocked,
-            _tested: { a: wb.A, b: wb.B } 
+            _tested: { a: wb.A, b: wb.B }
           });
-          if (blocked >= 3) break; 
+          if (blocked >= 3) break;
         }
 
         const reachable = 4 - blocked;
