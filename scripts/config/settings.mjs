@@ -1,11 +1,5 @@
-const SETTINGS = [ 
-      {
-    key: "calcCover",
-    name: "Calculate Cover Between Tokens",
-    hint: "Calculate cover between tokens when doing Attack Roles.",
-    reload: true,
-  },
-      {
+const SETTINGS = [
+  {
     key: "debugCover",
     name: "Show debug cover lines",
     hint: "Show debug lines when calculating cover between tokens.",

@@ -1,46 +1,5 @@
 import { MODULE_ID } from "../constants.mjs";
 
-export function ignoreCoverProperties() {
-  CONFIG.DND5E.itemProperties.ignoreCover = {
-    label: "Ignores Cover",
-    abbreviation: "iC" // Workaround for https://github.com/foundryvtt/dnd5e/issues/6378
-  };
-  CONFIG.DND5E.validProperties.weapon.add("ignoreCover");
-  CONFIG.DND5E.validProperties.spell.add("ignoreCover");
-  CONFIG.DND5E.validProperties.feat.add("ignoreCover");
-}
-
-/**
- * Walk up from the event target to the source chat message element and return the ChatMessage.
- * Robust gegen Shadow DOM dank composedPath; sucht nach [data-message-id] / .chat-message.
- * @param {Event} ev
- * @returns {ChatMessage|null}
- */
-function getSourceChatMessageFromEvent(ev) {
-  if (!ev) return null;
-
-  const path = typeof ev.composedPath === "function" ? ev.composedPath() : [];
-  const candidates = [];
-  if (Array.isArray(path)) candidates.push(...path);
-  if (ev.target) candidates.push(ev.target);
-
-  let el = null;
-  for (const n of candidates) {
-    if (!(n instanceof Element)) continue;
-    el = n.closest?.("[data-message-id]") ?? n.closest?.(".chat-message");
-    if (el) break;
-  }
-  if (!el) return null;
-
-  const mid = el.dataset?.messageId ?? el.getAttribute?.("data-message-id");
-  if (!mid) return null;
-
-  const msg = game.messages?.get?.(mid) ?? null;
-  return msg ?? null;
-}
-
-
-
 // =========================
 // Config
 // =========================
@@ -52,8 +11,18 @@ const COVER_STATUS_IDS = {
   //total: "coverTotal"
 };
 
+export function ignoreCoverProperties() {
+  CONFIG.DND5E.itemProperties.ignoreCover = {
+    label: "Ignores Cover",
+    abbreviation: "iC" // Workaround for https://github.com/foundryvtt/dnd5e/issues/6378
+  };
+  CONFIG.DND5E.validProperties.weapon.add("ignoreCover");
+  CONFIG.DND5E.validProperties.spell.add("ignoreCover");
+  CONFIG.DND5E.validProperties.feat.add("ignoreCover");
+}
+
 // =========================
-// Public Hooks (exports)
+// Public Hooks
 // =========================
 
 /** A hook event that fires before a roll is performed.
@@ -65,7 +34,6 @@ const COVER_STATUS_IDS = {
  * @returns
  */
 export function onPreRollAttack(config, dialog, message) {
-  console.log(config)
   const actor = config.subject?.actor ?? config.subject;
   const attackerToken =
     actor?.token?.object ??
@@ -99,7 +67,6 @@ export function onPreRollAttack(config, dialog, message) {
     const onHalf = targetActor.statuses?.has?.(COVER_STATUS_IDS.half);
     const onThree = targetActor.statuses?.has?.(COVER_STATUS_IDS.threeQuarters);
 
-    // k = half
     if ((wantId === COVER_STATUS_IDS.half) && !onHalf) {
       adjustMessageTargetAC(message, targetActorId, +2);
       if (config.target !== undefined) {
@@ -116,7 +83,6 @@ export function onPreRollAttack(config, dialog, message) {
       toggleCoverEffectViaGM(targetActorId, COVER_STATUS_IDS.half, false);
     }
 
-    // k = three-quarters
     if ((wantId === COVER_STATUS_IDS.threeQuarters) && !onThree) {
       adjustMessageTargetAC(message, targetActorId, +5);
       if (config.target !== undefined) {
@@ -171,7 +137,6 @@ export function onPreRollSavingThrow(config, dialog, message) {
   const ability = config.ability;
   const isDex = ability === "dex"
 
-  // k = half
   if ((wantId === COVER_STATUS_IDS.half) && !onHalf) {
     if (isDex) config.rolls[0].parts.push("2");
     toggleCoverEffectViaGM(targetActorId, COVER_STATUS_IDS.half, true);
@@ -183,7 +148,6 @@ export function onPreRollSavingThrow(config, dialog, message) {
     toggleCoverEffectViaGM(targetActorId, COVER_STATUS_IDS.half, false);
   }
 
-  // k = three-quarters
   if ((wantId === COVER_STATUS_IDS.threeQuarters) && !onThree) {
     if (isDex) config.rolls[0].parts.push("5");
     toggleCoverEffectViaGM(targetActorId, COVER_STATUS_IDS.threeQuarters, true);
@@ -198,72 +162,13 @@ export function onPreRollSavingThrow(config, dialog, message) {
 
 }
 
-/**
- * Adjust the shown AC of a specific target in the pending dnd5e chat message.
- * Looks up the target by UUID and adds 'delta' to its AC.
- * Safely no-ops if structure doesn't match.
- * @param {object} message         The hook's 'message' arg
- * @param {string} targetUuid      TokenDocument UUID to match
- * @param {number} delta           +2 / +5 (or negative to subtract)
- */
-function adjustMessageTargetAC(message, targetUuid, delta) {
-  const targets = message?.data?.flags?.dnd5e?.targets;
-  if (!Array.isArray(targets) || !targetUuid || !delta) return;
-  for (const t of targets) {
-    const uuid = t?.uuid ?? t?.tokenUuid ?? null;
-    if (!uuid || uuid !== targetUuid) continue;
-
-    const base = Number(t.ac ?? 0);
-    const next = (Number.isFinite(base) ? base : 0) + delta;
-    t.ac = next;
-    break;
-  }
-}
 
 /**
- * Toggle a cover status effect on an actor, using GM authority if needed.
- * @param {string} actorUuid  Actor or TokenDocument Actor UUID
- * @param {string} effectId   StatusEffect id (e.g., COVER_STATUS_IDS.half)
- * @param {boolean} enable    true to enable, false to disable
- */
-async function toggleCoverEffectViaGM(actorUuid, effectId, enable) {
-  const gm = game.users.activeGM;
-  if (!gm) { console.warn("[cover] no active GM"); return false; }
-  try {
-    const res = await gm.query(`${MODULE_ID}.toggleCover`, { actorUuid, effectId, enable }, { timeout: 8000 });
-    return !!res?.ok;
-  } catch (e) {
-    console.warn("[cover] GM query failed:", e);
-    return false;
-  }
-}
-
-
-/**
- * Return true if cover should be skipped for this roll due to spell-specific rules.
- * @param {Item5e|Activity} item
- * @param {object} config    // dein preRollAttack / preRollSave config
- */
-function spellIgnoresCover(item, config) {
-  // const name = (item?.name ?? "").trim();
-  if (item.system.properties.has("ignoreCover")) return true;
-
-  //if (SPELLS_IGNORE_COVER.has(name)) return true;
-
-  // Optional: Feat-Interaktionen
-  // Spell Sniper -> Ranged Spell Attacks ignore half/three-quarters cover.
-  // if (isRangedSpellAttack(config) && actorHasSpellSniper(item?.actor)) return true;
-
-  return false;
-}
-
-
-/**
- * Recalculate cover when the combat turn or round changes.
+ * Cleanup cover when the combat turn or round changes.
  * @param {Combat} combat
  * @param {object} update
  */
-export async function calcCoverOnUpdateCombat(combat, update) {
+export async function clearCoverOnUpdateCombat(combat, update) {
   try {
     if (!game.users.activeGM?.isSelf) return;
     await clearAllCoverInCombat(combat);
@@ -274,7 +179,7 @@ export async function calcCoverOnUpdateCombat(combat, update) {
 }
 
 /**
- * Recalculate cover after a token has finished moving during an active combat.
+ * Cleanup on Token Movement
  * @param {TokenDocument} token                 The existing TokenDocument which was updated
  * @param {TokenMovementOperation} movement     The movement of the Token
  * @param {DatabaseUpdateOperation} operation   The update operation that contains the movement
@@ -304,6 +209,72 @@ export async function clearCoverOnDeleteCombat(combat) {
   }
 }
 
+// =========================
+// Helper
+// =========================
+
+/**
+ * Return true if cover should be skipped for this roll due to spell-specific rules.
+ * @param {Item5e|Activity} item
+ * @param {object} config   
+ */
+function spellIgnoresCover(item, config) {
+  // const name = (item?.name ?? "").trim();
+  if (item.system.properties.has("ignoreCover")) return true; 
+
+  return false;
+}
+
+/**
+ * Walk up from the event target to the source chat message element and return the ChatMessage.
+ * @param {Event} ev
+ * @returns {ChatMessage|null}
+ */
+function getSourceChatMessageFromEvent(ev) {
+  if (!ev) return null;
+
+  const path = typeof ev.composedPath === "function" ? ev.composedPath() : [];
+  const candidates = [];
+  if (Array.isArray(path)) candidates.push(...path);
+  if (ev.target) candidates.push(ev.target);
+
+  let el = null;
+  for (const n of candidates) {
+    if (!(n instanceof Element)) continue;
+    el = n.closest?.("[data-message-id]") ?? n.closest?.(".chat-message");
+    if (el) break;
+  }
+  if (!el) return null;
+
+  const mid = el.dataset?.messageId ?? el.getAttribute?.("data-message-id");
+  if (!mid) return null;
+
+  const msg = game.messages?.get?.(mid) ?? null;
+  return msg ?? null;
+}
+
+/**
+ * Adjust the shown AC of a specific target in the pending dnd5e chat message.
+ * Looks up the target by UUID and adds 'delta' to its AC.
+ * Safely no-ops if structure doesn't match.
+ * @param {object} message         The hook's 'message' arg
+ * @param {string} targetUuid      TokenDocument UUID to match
+ * @param {number} delta           +2 / +5 (or negative to subtract)
+ */
+function adjustMessageTargetAC(message, targetUuid, delta) {
+  const targets = message?.data?.flags?.dnd5e?.targets;
+  if (!Array.isArray(targets) || !targetUuid || !delta) return;
+  for (const t of targets) {
+    const uuid = t?.uuid ?? t?.tokenUuid ?? null;
+    if (!uuid || uuid !== targetUuid) continue;
+
+    const base = Number(t.ac ?? 0);
+    const next = (Number.isFinite(base) ? base : 0) + delta;
+    t.ac = next;
+    break;
+  }
+}
+
 
 
 // =========================
@@ -322,6 +293,23 @@ async function clearAllCoverInCombat(combat) {
   }
 }
 
+/**
+ * Toggle a cover status effect on an actor, using GM authority if needed.
+ * @param {string} actorUuid  
+ * @param {string} effectId   
+ * @param {boolean} enable    true to enable, false to disable
+ */
+async function toggleCoverEffectViaGM(actorUuid, effectId, enable) {
+  const gm = game.users.activeGM;
+  if (!gm) { console.warn("[cover] no active GM"); return false; }
+  try {
+    const res = await gm.query(`${MODULE_ID}.toggleCover`, { actorUuid, effectId, enable }, { timeout: 8000 });
+    return !!res?.ok;
+  } catch (e) {
+    console.warn("[cover] GM query failed:", e);
+    return false;
+  }
+}
 
 // =========================
 // Geometry & occlusion
@@ -336,32 +324,31 @@ function buildCoverContext(scene) {
     grid,
     half: grid.size / 2,
     pxPerFt,
-    insetPx: 3,                      // 2px Start/End-Offset
-    lateralPx: Math.min(grid.size * 0.22, 3.5), // Parallel-Ray-Offset
-    aabbErodePx: Math.min(grid.size * 0.10, 2.5), // AABBs leicht schrumpfen
+    insetPx: 3,                     
+    lateralPx: Math.min(grid.size * 0.22, 3.5), 
+    aabbErodePx: Math.min(grid.size * 0.10, 2.5), 
     sizeFt: { tiny: 1, sm: 3, small: 3, med: 6, medium: 6, lg: 12, large: 12, huge: 24, grg: 48, gargantuan: 48 }
   };
 }
 
-/** Default creature height in ft by size. */
+
 function getCreatureHeightFt(td, ctx) {
   const key = (td.actor?.system?.traits?.size ?? "med").toLowerCase();
   return ctx.sizeFt[key] ?? 6;
 }
 
-/** Axis-aligned 3D box of a token used as occluder (slightly eroded in X/Y). */
 function buildCreaturePrism(td, ctx) {
   const grid = ctx.grid;
   const half = ctx.half;
   const er = ctx.aabbErodePx;
-  const zMin = (td.elevation ?? 0) * ctx.pxPerFt;          // Bodenhöhe
+  const zMin = (td.elevation ?? 0) * ctx.pxPerFt;         
   const zMax = zMin + getCreatureHeightFt(td, ctx) * ctx.pxPerFt;
 
   const offs = td.getOccupiedGridSpaceOffsets?.() ?? [];
   const centers = offs.length ? offs.map(o => grid.getCenterPoint(o))
     : [grid.getCenterPoint({ x: td.x, y: td.y })];
 
-  // Tiny: halbe Kantenlänge
+
   const isTiny = (td.actor?.system?.traits?.size ?? "med").toLowerCase() === "tiny";
   const r = isTiny ? half * 0.5 : half;
 
@@ -404,9 +391,6 @@ function wallsBlock(aCorner, bCorner, sightSource) {
   return { blocked: false, A, B };
 }
 
-
-
-/** Liang–Barsky in 3D: true if *proper* intersection (tangents don't block). */
 function segIntersectsAABB3D(p, q, b) {
   let t0 = 0, t1 = 1;
   const d = { x: q.x - p.x, y: q.y - p.y, z: q.z - p.z };
