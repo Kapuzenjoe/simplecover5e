@@ -1,1 +1,7 @@
-/.DS_Store
+foundry
+.DS_Store
+.vscode/
+Thumbs.db
+node_modules/
+__MACOSX/
+.env
