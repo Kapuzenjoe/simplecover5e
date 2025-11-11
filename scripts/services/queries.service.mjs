@@ -1,16 +1,15 @@
-import { MODULE_ID } from "../constants.mjs";
-import { clearCoverDebug } from "../handlers/cover-handler.mjs";
+import { MODULE_ID } from "../config/constants.config.mjs";
+import { clearCoverDebug } from "../services/cover.debug.mjs";
 
 /**
- * Initialize module-specific queries.
+ * Initialize module-specific GM queries.
  */
 export function initQueries() {
-
     CONFIG.queries ??= {};
+
     CONFIG.queries[`${MODULE_ID}.toggleCover`] = async (data) => {
         try {
-               if (!game.user.isGM) return { ok: false, reason: "not-gm" };
-
+            if (!game.user.isGM) return { ok: false, reason: "not-gm" };
             const { actorUuid, effectId, enable } = data ?? {};
             if (!actorUuid || !effectId || typeof enable !== "boolean")
                 return { ok: false, reason: "bad-args" };
@@ -19,27 +18,24 @@ export function initQueries() {
             if (!actor) return { ok: false, reason: "no-actor" };
 
             const on = !!actor.statuses?.has?.(effectId);
-            const want = enable;
-            if (want && !on) await actor.toggleStatusEffect(effectId, { overlay: false });
-            if (!want && on) await actor.toggleStatusEffect(effectId, { overlay: false });
+            if (enable && !on) await actor.toggleStatusEffect(effectId, { overlay: false });
+            if (!enable && on) await actor.toggleStatusEffect(effectId, { overlay: false });
 
-            return { ok: true, changed: (want !== on) };
+            return { ok: true, changed: (enable !== on) };
         } catch (e) {
             console.warn("[cover] query toggleCover failed:", e, data);
             return { ok: false, reason: "exception" };
         }
     };
 
-    /** Optional: Debug-Linien beim GM löschen */
     CONFIG.queries[`${MODULE_ID}.clearDebug`] = async () => {
         try {
             if (!game.user.isGM) return { ok: false, reason: "not-gm" };
             await clearCoverDebug();
             return { ok: true };
-        } catch (e) {
+        } catch {
             return { ok: false, reason: "exception" };
         }
     };
-
-};
+}
 

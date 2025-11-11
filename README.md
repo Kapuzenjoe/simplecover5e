@@ -8,13 +8,15 @@ SimpleCover5e automatically determines whether targets have Half Cover or Three-
 
 > Currently supports square grids only!
 
+Supports: FoundryVTT V13 350 and DnD5e v5.1.10
+
 ## How It Works
 
 - Based on the DMG-style four-line approach: choose a corner of the attacker (or origin) and conceptually trace lines to the target’s square corners to determine obstruction.
 - If 1–2 lines are blocked by obstacles (including creatures), the target gains Half Cover; if 3–4 are blocked and the effect still reaches, the target gains Three-Quarters Cover.
 - Blocking tokens are treated as 3D volumes with default heights by size (see table below).
 - The computed cover adds +2 / +5 to the appropriate defense/bonus and is reflected directly in the roll and the target’s status effects.
-- Items with Ignore Cover skip/remedy cover for that roll.
+- Items (Spells, Weapons or Feats) with a new custom "Ignore Cover" property skip/remedy cover for that roll.
 
 | Size       | Height (ft) |
 | ---------- | ----------: |
