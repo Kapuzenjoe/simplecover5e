@@ -1,35 +1,53 @@
 # SimpleCover5e
+
 ## Summary
-Status: Work in Progress.
 
-A small module that calculates cover for the **DnD5e-System** and applies the appropriate effects.
+**SimpleCover5e** automatically evaluates cover for the **DnD5e** system in Foundry VTT during attack rolls and saving throws (multi-target supported). It applies the correct mechanical bonuses (+2 / +5) to the roll, updates chat/card displays, and sets/clears target status effects. The module also adds a custom *Ignore Cover* item property that you can enable on specific items (e.g., *Sacred Flame*) to bypass cover for that roll.
 
-SimpleCover5e automatically determines whether targets have Half Cover or Three-Quarters Cover during attack rolls and saving throws. Multi-target is supported. The module also applies the effect directly to the roll (AC or bonus) and sets/clears target statuses. Items with the Ignore Cover property (e.g., Sacred Flame) are excluded from the calculation and can remove cover status for that roll.
+*Currently supports square grids only.*
 
-> Currently supports square grids only!
-
-Supports: FoundryVTT V13 350 and DnD5e v5.1.10
+---
 
 ## How It Works
 
-- Based on the DMG-style four-line approach: choose a corner of the attacker (or origin) and conceptually trace lines to the target’s square corners to determine obstruction.
-- If 1–2 lines are blocked by obstacles (including creatures), the target gains Half Cover; if 3–4 are blocked and the effect still reaches, the target gains Three-Quarters Cover.
-- Blocking tokens are treated as 3D volumes with default heights by size (see table below).
-- The computed cover adds +2 / +5 to the appropriate defense/bonus and is reflected directly in the roll and the target’s status effects.
-- Items (Spells, Weapons or Feats) with a new custom "Ignore Cover" property skip/remedy cover for that roll.
+- Uses the DMG-style “four lines” approach: pick an optimal attacker corner and conceptually trace to the target square’s four (inset) corners. Walls (sight) and creature volumes may block lines; tangents are allowed.
+- If **1–2** lines are blocked, the target gains **Half Cover** (+2 AC / +2 DEX save). If **3–4** lines are blocked (and the effect still reaches), the target gains **Three-Quarters Cover** (+5 AC / +5 DEX save).
+- Blocking tokens are treated as 3D prisms with default heights by creature size (see table below). Effects are pushed directly into the roll (chat target AC / save bonus) and synchronized with token status effects.
+- The module introduces an *Ignore Cover* item property. Add it to spells, weapons, or feats that should ignore cover (for example, *Sacred Flame*) and the cover calculation will be skipped for that roll.
 
-| Size       | Height (ft) |
-| ---------- | ----------: |
-| tiny       |           1 |
-| sm         |           3 |
-| small      |           3 |
-| med        |           6 |
-| medium     |           6 |
-| lg         |          12 |
-| large      |          12 |
-| huge       |          24 |
-| grg        |          48 |
-| gargantuan |          48 |
+### Default Creature Heights
+
+| Size        | Height (ft) |
+|-------------|-------------:|
+| tiny        |            1 |
+| small       |            3 |
+| medium      |            6 |
+| large       |           12 |
+| huge        |           24 |
+| gargantuan  |           48 |
+
+---
+
+## Settings
+
+- **Cover Removal Scope** — Choose which tokens are affected when cover is cleared: *All Tokens on Scene*, *Combatants Only*, or *Player-Owned Tokens Only*.
+- **Clear Cover on Combat Updates** — When rounds/turns/initiative change, remove cover according to the selected scope.
+- **Clear Cover on Token Movement (Combat Only)** — When a token moves during active combat, remove cover according to the selected scope.
+- **Show Cover Debug Lines** — Renders helper segments used during cover evaluation (GM only).
+
+### Notes & Limitations
+
+- Square grids only (no gridless or hex yet).
+- The *Ignore Cover* item property is added by this module and can be toggled per item.
+- Multi-target rolls are supported.
+
+---
+
+## Planned Features
+
+- Support for **gridless** and **hexagonal** maps  
+- Configurable creature heights  
+- Additional configuration options 
 
 ## Examples (with active debug mode)
 ![Example 1](docs/example_1.png)
