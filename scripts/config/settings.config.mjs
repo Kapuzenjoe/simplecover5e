@@ -20,6 +20,13 @@ const SETTINGS = [
     requiresReload: false,
   },
   {
+    key: SETTING_KEYS.ONLY_IN_COMBAT,
+    name: "Apply Cover Only In Combat",
+    hint: "If enabled, automatic cover calculation only runs while a combat encounter is active.",
+    type: new foundry.data.fields.BooleanField({ initial: false }),
+    requiresReload: false,
+  },
+  {
     key: SETTING_KEYS.RMV_ON_COMBAT,
     name: "Clear Cover on Combat Updates",
     hint: "Automatically remove the Cover condition on combat changes (turn/round/initiative), honoring the selected Cover Removal Scope.",
@@ -30,6 +37,13 @@ const SETTINGS = [
     key: SETTING_KEYS.RMV_ON_MOVE,
     name: "Clear Cover on Token Movement (Combat Only)",
     hint: "Automatically remove the Cover condition when a token moves during active combat, honoring the selected Cover Removal Scope.",
+    type: new foundry.data.fields.BooleanField({ initial: false }),
+    requiresReload: false,
+  },
+  {
+    key: SETTING_KEYS.CREATURES_HALF_ONLY,
+    name: "Limit Cover from Creatures to Half Cover",
+    hint: "When enabled, creatures can grant at most Half Cover. As soon as at least one line is blocked purely by creatures, the target gains Half Cover, but never Three-Quarters Cover from creatures alone. Walls continue to follow the standard DMG rules.",
     type: new foundry.data.fields.BooleanField({ initial: false }),
     requiresReload: false,
   },

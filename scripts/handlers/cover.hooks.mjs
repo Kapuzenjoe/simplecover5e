@@ -40,7 +40,9 @@ export function ignoreCoverProperties() {
  * @returns
  */
 export function onPreRollAttack(config, dialog, message) {
-  if (canvas.scene.grid.isSquare === false) return;
+  const onlyInCombat = !!game.settings.get(MODULE_ID, SETTING_KEYS.ONLY_IN_COMBAT);
+  if (onlyInCombat && !game?.combats?.active) return;
+
   const actor = config.subject?.actor
   if (!actor) return;
   const attackerToken =
@@ -67,7 +69,6 @@ export function onPreRollAttack(config, dialog, message) {
       drawCoverDebug({ segments: res.debugSegments });
     }
 
-    // Determine desired effect
     let wantId =
       res.cover === "threeQuarters" ? COVER_STATUS_IDS.threeQuarters :
         res.cover === "half" ? COVER_STATUS_IDS.half : null;
@@ -114,7 +115,9 @@ export function onPreRollAttack(config, dialog, message) {
  * @returns
  */
 export function onPreRollSavingThrow(config, dialog, message) {
-  if (canvas.scene.grid.isSquare === false) return;
+  const onlyInCombat = !!game.settings.get(MODULE_ID, SETTING_KEYS.ONLY_IN_COMBAT);
+  if (onlyInCombat && !game?.combats?.active) return;
+
   const actor = config.subject
   const targetToken = actor.getActiveTokens?.()[0]
   if (!targetToken) return;
@@ -153,7 +156,6 @@ export function onPreRollSavingThrow(config, dialog, message) {
     if (idx !== -1) parts.splice(idx, 1);
   };
 
-  // HALF COVER (+2 DEX SAVE)
   if ((wantId === COVER_STATUS_IDS.half) && !onHalf) {
     addSaveBonus(2);
     removeSaveBonus();
@@ -163,7 +165,6 @@ export function onPreRollSavingThrow(config, dialog, message) {
     toggleCoverEffectViaGM(actor.uuid, COVER_STATUS_IDS.half, false);
   }
 
-  // THREE-QUARTERS COVER (+5 DEX SAVE)
   if ((wantId === COVER_STATUS_IDS.threeQuarters) && !onThree) {
     addSaveBonus(5);
     removeSaveBonus();

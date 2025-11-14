@@ -1,4 +1,4 @@
-import { MODULE_ID, DEFAULT_SIZE_FT, SETTING_KEYS } from "../config/constants.config.mjs";
+import { MODULE_ID, DEFAULT_SIZE_FT, SETTING_KEYS, GRID_MODES, getGridMode } from "../config/constants.config.mjs";
 // =========================
 // Geometry & occlusion
 // =========================
@@ -9,6 +9,8 @@ import { MODULE_ID, DEFAULT_SIZE_FT, SETTING_KEYS } from "../config/constants.co
  */
 export function buildCoverContext(scene) {
     const grid = scene.grid;
+    const gridMode = getGridMode(grid);
+    const half = grid.size / 2;
     const pxPerFt = grid.size / grid.distance;
 
     const saved = game.settings.get(MODULE_ID, SETTING_KEYS.CREATURE_HEIGHTS) ?? {};
@@ -33,7 +35,8 @@ export function buildCoverContext(scene) {
     return {
         scene,
         grid,
-        half: grid.size / 2,
+        gridMode,
+        half,
         pxPerFt,
         insetPx: 3,
         lateralPx: Math.min(grid.size * 0.22, 3.5),
@@ -59,6 +62,19 @@ export function buildCreaturePrism(td, ctx) {
     const er = ctx.aabbErodePx;
     const zMin = (td.elevation ?? 0) * ctx.pxPerFt;
     const zMax = zMin + getCreatureHeightFt(td, ctx) * ctx.pxPerFt;
+
+    if (ctx.gridMode === GRID_MODES.GRIDLESS) {
+        const w = (td.width ?? 1) * grid.size;
+        const h = (td.height ?? 1) * grid.size;
+        return {
+            minX: td.x + er,
+            minY: td.y + er,
+            maxX: td.x + w - er,
+            maxY: td.y + h - er,
+            minZ: zMin + 0.1,
+            maxZ: zMax - 0.1
+        };
+    }
 
     const offs = td.getOccupiedGridSpaceOffsets?.() ?? [];
     const centers = offs.length ? offs.map(o => grid.getCenterPoint(o))
@@ -136,10 +152,34 @@ function segIntersectsAABB3D(p, q, b) {
  */
 export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options) {
     const debug = !!options?.debug;
-    const grid = ctx.grid;
+    const { grid, gridMode } = ctx;
     const half = ctx.half;
+    const sizeKey = (targetDoc.actor?.system?.traits?.size ?? "med").toLowerCase();
 
     const centersFromDoc = (td) => {
+        if (gridMode === GRID_MODES.GRIDLESS) {
+            const wPx = (td.width ?? 1) * grid.size;
+            const hPx = (td.height ?? 1) * grid.size;
+            const cols = Math.max(1, Math.round(wPx / grid.size));
+            const rows = Math.max(1, Math.round(hPx / grid.size));
+            const cellW = wPx / cols;
+            const cellH = hPx / rows;
+
+            const centers = [];
+            for (let ix = 0; ix < cols; ix++) {
+                for (let iy = 0; iy < rows; iy++) {
+                    centers.push({
+                        x: td.x + (ix + 0.5) * cellW,
+                        y: td.y + (iy + 0.5) * cellH
+                    });
+                }
+            }
+            return centers;
+        }
+        if (sizeKey === "tiny") {
+            const obj = td.object;
+            if (obj?.center) return [obj.center];
+        }
         const offs = td.getOccupiedGridSpaceOffsets?.() ?? [];
         return offs.length ? offs.map(o => grid.getCenterPoint(o))
             : [grid.getCenterPoint({ x: td.x, y: td.y })];
@@ -169,12 +209,11 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options)
     const boxes = [];
     creaturePrisms.forEach((box, id) => { if (id !== attackerId && id !== targetId) boxes.push(box); });
 
-    const sizeKey = (targetDoc.actor?.system?.traits?.size ?? "med").toLowerCase();
     const targetRadius = sizeKey === "tiny" ? half * 0.5 : half;
-
     const attackerSquares = centersFromDoc(attackerDoc);
     const targetSquares = centersFromDoc(targetDoc);
     const sightSource = attackerDoc?.object?.vision?.source ?? null;
+    const creaturesHalfOnly = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.CREATURES_HALF_ONLY);
 
     let best = { reachable: -1, coverLevel: 2, segs: [] };
 
@@ -183,7 +222,8 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options)
         for (const aCenter of attackerSquares) {
             const atkCorners = makeCornerPair(aCenter, half, Math.min(grid.size * 0.20, 2.5));
             for (const aCorner of atkCorners) {
-                let blocked = 0;
+                let blockedWalls = 0;
+                let blockedCreatures = 0;
                 const segs = [];
 
                 for (const tCorner of tgtCorners) {
@@ -200,22 +240,42 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options)
                     }
 
                     const isBlocked = wBlocked || cBlocked;
-                    if (isBlocked) blocked += 1;
+                    if (isBlocked) {
+                        if (wBlocked) blockedWalls += 1;
+                        else blockedCreatures += 1;
+                    }
+
                     segs.push({
                         a: aCorner.inset,
                         b: tCorner.inset,
                         blocked: isBlocked,
+                        wBlocked,
+                        cBlocked,
                         _tested: { a: wb.A, b: wb.B }
                     });
-                    if (blocked >= 3) break;
+
+                    if (!creaturesHalfOnly && (blockedWalls + blockedCreatures) >= 3) break;
                 }
 
-                const reachable = 4 - blocked;
-                const coverLevel = blocked >= 3 ? 2 : blocked >= 1 ? 1 : 0;
+                const totalBlocked = blockedWalls + blockedCreatures;
+                const reachable = 4 - totalBlocked;
+
+                let coverLevel;
+                if (creaturesHalfOnly) {
+                    if (blockedWalls >= 3) coverLevel = 2;
+                    else if (blockedWalls >= 1) coverLevel = 1;
+                    else if (blockedCreatures >= 1) coverLevel = 1;
+                    else coverLevel = 0;
+                } else {
+                    coverLevel = totalBlocked >= 3 ? 2 : totalBlocked >= 1 ? 1 : 0;
+                }
 
                 if (reachable > best.reachable || (reachable === best.reachable && coverLevel < best.coverLevel)) {
                     best = { reachable, coverLevel, segs };
-                    if (reachable === 4 && coverLevel === 0) break;
+                    if (reachable === 4 && coverLevel === 0) {
+                        const cover = "none";
+                        return debug ? { cover, debugSegments: best.segs } : { cover };
+                    }
                 }
             }
         }

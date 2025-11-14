@@ -8,7 +8,7 @@
 
 ## How It Works
 
-- Uses the DMG-style “four lines” approach: pick an optimal attacker corner and conceptually trace to the target square’s four (inset) corners. Walls (sight) and creature volumes may block lines; tangents are allowed.
+- Uses the DMG-style “four lines” approach: pick an optimal attacker corner and conceptually trace to the target square’s four (inset) corners. Walls (sight) and creature volumes may block lines.
 - If **1–2** lines are blocked, the target gains **Half Cover** (+2 AC / +2 DEX save). If **3–4** lines are blocked (and the effect still reaches), the target gains **Three-Quarters Cover** (+5 AC / +5 DEX save).
 - Blocking tokens are treated as 3D prisms with configurable heights by creature size (see table below). Effects are pushed directly into the roll (chat target AC / save bonus) and synchronized with token status effects.
 - The module introduces an *Ignore Cover* item property. Add it to spells, weapons, or feats that should ignore cover (for example, *Sacred Flame*) and the cover calculation will be skipped for that roll.
@@ -43,8 +43,6 @@ These are the default 3D heights (in feet) used for cover evaluation. They can b
 
 ## Planned Features
 
-- Support for **gridless** and **hexagonal** maps  
-- Additional configuration options
 - Wall Height integration
 - Midi QoL integration
 
