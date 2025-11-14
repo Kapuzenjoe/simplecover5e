@@ -41,14 +41,13 @@ export function ignoreCoverProperties() {
  */
 export function onPreRollAttack(config, dialog, message) {
   if (canvas.scene.grid.isSquare === false) return;
-  const actor = config.subject?.actor ?? config.subject;
+  const actor = config.subject?.actor
+  if (!actor) return;
   const attackerToken =
     actor?.token?.object ??
     actor?.getActiveTokens?.()[0] ??
     canvas.tokens?.controlled?.[0] ?? null;
   if (!attackerToken) return;
-
-  const item = config.subject?.item ?? null;
 
   const targets = Array.from(game.user?.targets ?? [])
     .filter(t => t?.document && !t.document.actor?.defeated);
@@ -73,7 +72,9 @@ export function onPreRollAttack(config, dialog, message) {
       res.cover === "threeQuarters" ? COVER_STATUS_IDS.threeQuarters :
         res.cover === "half" ? COVER_STATUS_IDS.half : null;
 
-    if (spellIgnoresCover(item, config)) wantId = null;
+    const item = config.subject?.item ?? null;
+    const actionType = config.subject?.actionType ?? null;
+    if (spellIgnoresCover(item, actor, actionType)) wantId = null;
 
     const targetActor = t.document.actor;
     const targetActorId = targetActor.uuid;
@@ -122,7 +123,7 @@ export function onPreRollSavingThrow(config, dialog, message) {
   const item = srcMsg?.getAssociatedItem?.();
   const sourceActor = srcMsg?.speakerActor
   const sourceToken = sourceActor?.getActiveTokens?.()[0]
-  if (!sourceToken) return; 
+  if (!sourceToken) return;
 
   const ctx = buildCoverContext(canvas.scene);
   ctx.creaturePrisms = new Map(canvas.tokens.placeables.map(t => [t.id, buildCreaturePrism(t.document, ctx)]));
@@ -136,7 +137,7 @@ export function onPreRollSavingThrow(config, dialog, message) {
   let wantId =
     res.cover === "threeQuarters" ? COVER_STATUS_IDS.threeQuarters :
       res.cover === "half" ? COVER_STATUS_IDS.half : null;
-  if (spellIgnoresCover(item, config)) wantId = null;
+  if (spellIgnoresCover(item, actor)) wantId = null;
 
   const onHalf = actor.statuses?.has?.(COVER_STATUS_IDS.half);
   const onThree = actor.statuses?.has?.(COVER_STATUS_IDS.threeQuarters);
@@ -253,9 +254,26 @@ export async function clearCoverOnDeleteCombat(combat) {
  * @param {Item5e} item
  * @param {object} config
  */
-function spellIgnoresCover(item, config) {
+function spellIgnoresCover(item, actor, actionType = null) {
   const props = item?.system?.properties;
+  const items = actor?.items;
   if (props?.has?.("ignoreCover")) return true;
+  if (actionType === "rwak") {
+    if (
+      items.getName("Sharpshooter") ||
+      items.some(i => i.system?.identifier === "sharpshooter")
+    ) {
+      return true;
+    }
+  }
+  if (actionType === "rsak") {
+    if (
+      items.getName("Spell Sniper") ||
+      items.some(i => i.system?.identifier === "spell-sniper")
+    ) {
+      return true;
+    }
+  }
   return false;
 }
 

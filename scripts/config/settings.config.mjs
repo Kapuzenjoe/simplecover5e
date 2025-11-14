@@ -1,8 +1,9 @@
-import { MODULE_ID } from "./constants.config.mjs";
+import { MODULE_ID, DEFAULT_SIZE_FT, SETTING_KEYS } from "./constants.config.mjs";
+import { SimpleCoverCreatureHeightsConfig } from "./menu.config.mjs";
 
 const SETTINGS = [
   {
-    key: "coverRemovalScope",
+    key: SETTING_KEYS.COVER_SCOPE,
     name: "Cover Removal Scope",
     hint: "Choose which tokens are affected when cover is cleared: everyone on the scene, only combatants, or player-owned tokens.",
     type: new foundry.data.fields.StringField({
@@ -12,44 +13,63 @@ const SETTINGS = [
         players: "Player-Owned Tokens Only",
       },
       initial: "combatants",
-      required: true, 
+      required: true,
       blank: false,
       trim: true,
     }),
     requiresReload: false,
   },
   {
-    key: "rmvCovCombat",
+    key: SETTING_KEYS.RMV_ON_COMBAT,
     name: "Clear Cover on Combat Updates",
     hint: "Automatically remove the Cover condition on combat changes (turn/round/initiative), honoring the selected Cover Removal Scope.",
     type: new foundry.data.fields.BooleanField({ initial: true }),
     requiresReload: false,
   },
   {
-    key: "rmvCovMovement",
+    key: SETTING_KEYS.RMV_ON_MOVE,
     name: "Clear Cover on Token Movement (Combat Only)",
     hint: "Automatically remove the Cover condition when a token moves during active combat, honoring the selected Cover Removal Scope.",
-    type: new foundry.data.fields.BooleanField({ initial: true }),
+    type: new foundry.data.fields.BooleanField({ initial: false }),
     requiresReload: false,
   },
   {
-    key: "debugCover",
+    key: SETTING_KEYS.DEBUG,
     name: "Show Cover Debug Lines",
     hint: "Draw helper lines while computing cover between tokens (for debugging/troubleshooting).",
     type: new foundry.data.fields.BooleanField({ initial: false }),
     requiresReload: false,
   },
+  {
+    key: SETTING_KEYS.CREATURE_HEIGHTS,
+    name: "Default Creature Heights",
+    hint: "Default creature heights (in feet) per size category used for 3D cover evaluation.",
+    type: new foundry.data.fields.ObjectField({
+      initial: DEFAULT_SIZE_FT,
+    }),
+    requiresReload: false,
+    config: false,
+  },
 ];
 
 export function registerSettings() {
-  for (const { key, name, hint, type, requiresReload } of SETTINGS) {
+  for (const { key, name, hint, type, requiresReload, config = true } of SETTINGS) {
     game.settings.register(MODULE_ID, key, {
       name,
       hint,
       scope: "world",
-      config: true,
+      config,
       type,
       requiresReload,
     });
   }
+
+  game.settings.registerMenu(MODULE_ID, "creatureHeightsMenu", {
+    name: "Creature Heights",
+    label: "Configure Creature Heights",
+    hint: "Adjust default heights (in ft) for each creature size used when computing cover.",
+    icon: "fas fa-ruler-vertical",
+    type: SimpleCoverCreatureHeightsConfig,
+    restricted: true,
+  });
 }

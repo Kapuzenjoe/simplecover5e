@@ -1,0 +1,11 @@
+<fieldset>
+    <legend>Creature Heights</legend>
+    {{#each sizes as |s|}}
+    <div class="form-group">
+        <label>{{s.label}} (ft)</label>
+        <input type="number" name="{{s.key}}" value="{{s.value}}" min="0" step="0.5" placeholder="{{s.default}}" />
+    </div>
+    {{/each}}
+    <p class="hint"> Set the default height (in feet) for each creature size. These values are used when treating
+        tokens as 3D prisms for cover.</p>
+</fieldset>

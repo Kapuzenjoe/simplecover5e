@@ -1,3 +1,4 @@
+import { MODULE_ID, DEFAULT_SIZE_FT, SETTING_KEYS } from "../config/constants.config.mjs";
 // =========================
 // Geometry & occlusion
 // =========================
@@ -9,6 +10,26 @@
 export function buildCoverContext(scene) {
     const grid = scene.grid;
     const pxPerFt = grid.size / grid.distance;
+
+    const saved = game.settings.get(MODULE_ID, SETTING_KEYS.CREATURE_HEIGHTS) ?? {};
+    const base = foundry.utils.mergeObject(
+        DEFAULT_SIZE_FT,
+        saved,
+        { inplace: false }
+    );
+    const sizeFt = {
+        tiny: base.tiny,
+        small: base.small,
+        sm: base.small,
+        medium: base.medium,
+        med: base.medium,
+        large: base.large,
+        lg: base.large,
+        huge: base.huge,
+        gargantuan: base.gargantuan,
+        grg: base.gargantuan
+    };
+
     return {
         scene,
         grid,
@@ -17,7 +38,7 @@ export function buildCoverContext(scene) {
         insetPx: 3,
         lateralPx: Math.min(grid.size * 0.22, 3.5),
         aabbErodePx: Math.min(grid.size * 0.10, 2.5),
-        sizeFt: { tiny: 1, sm: 3, small: 3, med: 6, medium: 6, lg: 12, large: 12, huge: 24, grg: 48, gargantuan: 48 }
+        sizeFt
     };
 }
 
