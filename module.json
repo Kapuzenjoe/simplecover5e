@@ -1,7 +1,7 @@
 {
   "id": "simplecover5e",
   "title": "SimpleCover5e",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "authors": [
     {
       "name": "Peterlankton",
@@ -29,6 +29,6 @@
   },
   "url": "https://github.com/Kapuzenjoe/simplecover5e",
   "manifest": "https://github.com/Kapuzenjoe/simplecover5e/releases/latest/download/module.json",
-  "download": "https://github.com/Kapuzenjoe/simplecover5e/releases/download/0.2.0/module.zip",
+  "download": "https://github.com/Kapuzenjoe/simplecover5e/releases/download/0.3.0/module.zip",
   "description": ""
 }
