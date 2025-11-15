@@ -1,6 +1,6 @@
-# SimpleCover5e
+# Simple Cover 5e
 
-**SimpleCover5e** automatically evaluates cover for the **DnD5e** system in Foundry VTT during attack rolls and saving throws (multi-target supported). It applies the correct mechanical bonuses (+2 / +5) to the roll, updates chat/card displays, and sets/clears target status effects. The module also adds a custom *Ignore Cover* item property that you can enable on specific items (e.g., *Sacred Flame*) to bypass cover for that roll.
+**Simple Cover 5e** automatically evaluates cover for the **DnD5e** system in Foundry VTT during attack rolls and saving throws (multi-target supported). It applies the correct mechanical bonuses (+2 / +5) to the roll, updates chat/card displays, and sets/clears target status effects. The module also adds a custom *Ignore Cover* item property that you can enable on specific items (e.g., *Sacred Flame*) to bypass cover for that roll.
 
 ## How It Works
 
@@ -47,10 +47,10 @@ These are the default 3D heights (in feet) used for cover evaluation. They can b
 
 ## Planned Features
 
-- Alternate cover calculation for attacker on walls with holes (e.g., arrow slits or windows)
 - Midi QoL integration
 - RSR integration
 - Wall Height integration (Foundry V13 only; likely obsolete with V14+ scene levels)
+- Show Cover on Mouse-Hover
 
 ## Examples (with active debug mode)
 ![Example 1](docs/example_1.png)

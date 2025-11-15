@@ -1,5 +1,6 @@
 import { MODULE_ID, DEFAULT_SIZE_FT, SETTING_KEYS } from "./constants.config.mjs";
 import { SimpleCoverCreatureHeightsConfig } from "./menu.config.mjs";
+import { clearCoverDebug } from "../services/cover.debug.mjs";
 
 const SETTINGS = [
   {
@@ -53,6 +54,11 @@ const SETTINGS = [
     hint: "Draw helper lines while computing cover between tokens (for debugging/troubleshooting).",
     type: new foundry.data.fields.BooleanField({ initial: false }),
     requiresReload: false,
+    onChange: (value) => {
+      if (value === false) {
+        clearCoverDebug();
+      }
+    },
   },
   {
     key: SETTING_KEYS.CREATURE_HEIGHTS,
@@ -67,7 +73,7 @@ const SETTINGS = [
 ];
 
 export function registerSettings() {
-  for (const { key, name, hint, type, requiresReload, config = true } of SETTINGS) {
+  for (const { key, name, hint, type, requiresReload, config = true, onChange } of SETTINGS) {
     game.settings.register(MODULE_ID, key, {
       name,
       hint,
@@ -75,6 +81,7 @@ export function registerSettings() {
       config,
       type,
       requiresReload,
+      onChange,
     });
   }
 

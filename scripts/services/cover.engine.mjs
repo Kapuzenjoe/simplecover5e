@@ -39,7 +39,6 @@ export function buildCoverContext(scene) {
         half,
         pxPerFt,
         insetPx: Math.min(grid.size * 0.20, 2.5),
-        lateralPx: Math.min(grid.size * 0.22, 3.5),
         aabbErodePx: Math.min(grid.size * 0.10, 2.5),
         sizeFt
     };
@@ -67,7 +66,7 @@ export function buildCreaturePrism(td, ctx) {
     const zMin = (td.elevation ?? 0) * ctx.pxPerFt;
     const zMax = zMin + getCreatureHeightFt(td, ctx) * ctx.pxPerFt;
 
-    if (ctx.gridMode === GRID_MODES.GRIDLESS) {
+    if (ctx.gridMode === GRID_MODES.GRIDLESS || ctx.gridMode === GRID_MODES.SQUARE) {
         const w = (td.width ?? 1) * grid.size;
         const h = (td.height ?? 1) * grid.size;
         return {
@@ -161,7 +160,7 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options)
     const insetPx = ctx.insetPx
 
     const getTokenSampleCenters = (td) => {
-        if (gridMode === GRID_MODES.GRIDLESS) {
+        if (gridMode === GRID_MODES.GRIDLESS || gridMode === GRID_MODES.SQUARE) {
             const wPx = (td.width ?? 1) * grid.size;
             const hPx = (td.height ?? 1) * grid.size;
             const cols = Math.max(1, Math.round(wPx / grid.size));
@@ -181,11 +180,6 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options)
             return centers;
         }
 
-        const localSizeKey = getSizeKey(td);
-        if (localSizeKey === "tiny") {
-            const obj = td.object;
-            if (obj?.center) return [obj.center];
-        }
         const offs = td.getOccupiedGridSpaceOffsets?.() ?? [];
         return offs.length
             ? offs.map(o => grid.getCenterPoint(o))
@@ -208,7 +202,7 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options)
         });
     };
 
-    const buildHexCorners = (center, radius, insetPx) => {
+    const buildHexCorners = (center, insetPx) => {
         if (!grid || typeof grid.getOffset !== "function" || typeof grid.getVertices !== "function") {
             return null;
         }
@@ -216,7 +210,7 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options)
         if (!coords) return null;
         const verts = grid.getVertices(coords);
         if (!Array.isArray(verts) || verts.length === 0) return null;
-
+  
         const hexCenter = verts.reduce((acc, v) => {
             acc.x += v.x;
             acc.y += v.y;
@@ -225,27 +219,15 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options)
         hexCenter.x /= verts.length;
         hexCenter.y /= verts.length;
 
-        let baseRadius = 0;
-        for (const v of verts) {
-            baseRadius += Math.hypot(v.x - hexCenter.x, v.y - hexCenter.y);
-        }
-        baseRadius = (baseRadius / (verts.length || 1)) || 1;
-        const scale = radius / baseRadius;
-
         return verts.map(v => {
-            const dx = v.x - hexCenter.x;
-            const dy = v.y - hexCenter.y;
-            const raw = {
-                x: center.x + dx * scale,
-                y: center.y + dy * scale
-            };
-
-            const vx = raw.x - center.x;
-            const vy = raw.y - center.y;
+            const vx = v.x - hexCenter.x;
+            const vy = v.y - hexCenter.y;
             const L = Math.hypot(vx, vy) || 1;
+
+            const raw = { x: v.x, y: v.y };
             const inset = {
-                x: raw.x - (vx / L) * insetPx,
-                y: raw.y - (vy / L) * insetPx
+                x: v.x - (vx / L) * insetPx,
+                y: v.y - (vy / L) * insetPx
             };
             return { raw, inset };
         });
@@ -274,7 +256,7 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options)
     for (const tCenter of targetSamples) {
         let tgtCorners;
         if (gridMode === GRID_MODES.HEX) {
-            tgtCorners = buildHexCorners(tCenter, targetRadius, insetPx);
+            tgtCorners = buildHexCorners(tCenter, insetPx);
         } else {
             tgtCorners = buildBoxCorners(tCenter, targetRadius, insetPx);
         }
@@ -284,7 +266,7 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options)
         for (const aCenter of attackerSamples) {
             let atkCorners;
             if (gridMode === GRID_MODES.HEX) {
-                atkCorners = buildHexCorners(aCenter, attackerRadius, insetPx);
+                atkCorners = buildHexCorners(aCenter, insetPx);
             } else {
                 atkCorners = buildBoxCorners(aCenter, attackerRadius, insetPx);
             }

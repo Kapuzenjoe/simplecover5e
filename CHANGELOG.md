@@ -1,5 +1,12 @@
 # Changelog
 
+## Version 0.3.1
+
+- Fixed module title.
+- Added automatic cleanup when disabling **Show Cover Debug Lines**, removing existing debug drawings when DEBUG is turned off (#3).
+- Fixed cover evaluation on hex maps (note: Tiny creatures currently still use the full hex as their footprint).
+- Improved cover evaluation on square maps so calculations correctly respect token positions even when tokens are shifted within a grid cell (e.g. near windows or arrow slits).
+
 ## Version 0.3.0
 
 - Added optional setting **Limit Cover from Creatures to 1/2 Cover**: creatures can no longer grant 3/4 cover by themselves (#2).
