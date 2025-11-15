@@ -1,4 +1,5 @@
-import { MODULE_ID, SETTING_KEYS} from "../config/constants.config.mjs";
+import { MODULE_ID, SETTING_KEYS, GRID_MODES, getGridMode } from "../config/constants.config.mjs";
+
 // =========================
 // debug
 // =========================
@@ -10,8 +11,13 @@ import { MODULE_ID, SETTING_KEYS} from "../config/constants.config.mjs";
 export async function drawCoverDebug({ segments }) {
   if (!game.user.isGM) return
   if (!segments || segments.length === 0) return;
+  const grid = canvas.scene?.grid ?? null;
+  const gridMode = getGridMode(grid);
+
+  const maxSegments = gridMode === GRID_MODES.HEX ? 6 : 4;
+  const count = Math.min(maxSegments, segments.length);
+
   const docs = [];
-  const count = Math.min(4, segments.length);
 
   for (let i = 0; i < count; i += 1) {
     const s = segments[i];

@@ -38,7 +38,7 @@ export function buildCoverContext(scene) {
         gridMode,
         half,
         pxPerFt,
-        insetPx: 3,
+        insetPx: Math.min(grid.size * 0.20, 2.5),
         lateralPx: Math.min(grid.size * 0.22, 3.5),
         aabbErodePx: Math.min(grid.size * 0.10, 2.5),
         sizeFt
@@ -46,8 +46,12 @@ export function buildCoverContext(scene) {
 }
 
 
+function getSizeKey(td) {
+    return (td.actor?.system?.traits?.size ?? "med").toLowerCase();
+}
+
 function getCreatureHeightFt(td, ctx) {
-    const key = (td.actor?.system?.traits?.size ?? "med").toLowerCase();
+    const key = getSizeKey(td);
     return ctx.sizeFt[key] ?? 6;
 }
 
@@ -80,7 +84,7 @@ export function buildCreaturePrism(td, ctx) {
     const centers = offs.length ? offs.map(o => grid.getCenterPoint(o))
         : [grid.getCenterPoint({ x: td.x, y: td.y })];
 
-    const isTiny = (td.actor?.system?.traits?.size ?? "med").toLowerCase() === "tiny";
+    const isTiny = getSizeKey(td) === "tiny";
     const r = isTiny ? half * 0.5 : half;
 
     const xs = centers.map(c => [c.x - r, c.x + r]).flat();
@@ -142,7 +146,7 @@ function segIntersectsAABB3D(p, q, b) {
 
 /**
  * Evaluate DMG cover for attacker -> target.
- * Four lines from one best attacker corner to the four (inset) corners of one best target grid.
+ * Draws lines from one best attacker corner to all corners of one best target cell (4 on square/gridless, 6 on hex).
  * Walls (sight) and other creatures (AABBs) block; tangents allowed.
  * @param {TokenDocument} attackerDoc
  * @param {TokenDocument} targetDoc
@@ -154,9 +158,9 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options)
     const debug = !!options?.debug;
     const { grid, gridMode } = ctx;
     const half = ctx.half;
-    const sizeKey = (targetDoc.actor?.system?.traits?.size ?? "med").toLowerCase();
+    const insetPx = ctx.insetPx
 
-    const centersFromDoc = (td) => {
+    const getTokenSampleCenters = (td) => {
         if (gridMode === GRID_MODES.GRIDLESS) {
             const wPx = (td.width ?? 1) * grid.size;
             const hPx = (td.height ?? 1) * grid.size;
@@ -176,17 +180,20 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options)
             }
             return centers;
         }
-        if (sizeKey === "tiny") {
+
+        const localSizeKey = getSizeKey(td);
+        if (localSizeKey === "tiny") {
             const obj = td.object;
             if (obj?.center) return [obj.center];
         }
         const offs = td.getOccupiedGridSpaceOffsets?.() ?? [];
-        return offs.length ? offs.map(o => grid.getCenterPoint(o))
+        return offs.length
+            ? offs.map(o => grid.getCenterPoint(o))
             : [grid.getCenterPoint({ x: td.x, y: td.y })];
     };
 
 
-    const makeCornerPair = (center, radius, insetPx) => {
+    const buildBoxCorners = (center, radius, insetPx) => {
         const raws = [
             { x: center.x - radius, y: center.y - radius },
             { x: center.x + radius, y: center.y - radius },
@@ -201,7 +208,48 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options)
         });
     };
 
-    const baseZ = (td) => (td.elevation ?? 0) * ctx.pxPerFt + 0.1;
+    const buildHexCorners = (center, radius, insetPx) => {
+        if (!grid || typeof grid.getOffset !== "function" || typeof grid.getVertices !== "function") {
+            return null;
+        }
+        const coords = grid.getOffset(center);
+        if (!coords) return null;
+        const verts = grid.getVertices(coords);
+        if (!Array.isArray(verts) || verts.length === 0) return null;
+
+        const hexCenter = verts.reduce((acc, v) => {
+            acc.x += v.x;
+            acc.y += v.y;
+            return acc;
+        }, { x: 0, y: 0 });
+        hexCenter.x /= verts.length;
+        hexCenter.y /= verts.length;
+
+        let baseRadius = 0;
+        for (const v of verts) {
+            baseRadius += Math.hypot(v.x - hexCenter.x, v.y - hexCenter.y);
+        }
+        baseRadius = (baseRadius / (verts.length || 1)) || 1;
+        const scale = radius / baseRadius;
+
+        return verts.map(v => {
+            const dx = v.x - hexCenter.x;
+            const dy = v.y - hexCenter.y;
+            const raw = {
+                x: center.x + dx * scale,
+                y: center.y + dy * scale
+            };
+
+            const vx = raw.x - center.x;
+            const vy = raw.y - center.y;
+            const L = Math.hypot(vx, vy) || 1;
+            const inset = {
+                x: raw.x - (vx / L) * insetPx,
+                y: raw.y - (vy / L) * insetPx
+            };
+            return { raw, inset };
+        });
+    };
 
     const creaturePrisms = ctx.creaturePrisms;
     const attackerId = attackerDoc?.object?.id;
@@ -209,18 +257,39 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options)
     const boxes = [];
     creaturePrisms.forEach((box, id) => { if (id !== attackerId && id !== targetId) boxes.push(box); });
 
-    const targetRadius = sizeKey === "tiny" ? half * 0.5 : half;
-    const attackerSquares = centersFromDoc(attackerDoc);
-    const targetSquares = centersFromDoc(targetDoc);
+    const attackerZ = (attackerDoc.elevation ?? 0) * ctx.pxPerFt + 0.1;
+    const targetZ = (targetDoc.elevation ?? 0) * ctx.pxPerFt + 0.1;
+    const attackerSizeKey = getSizeKey(attackerDoc);
+    const targetSizeKey = getSizeKey(targetDoc);
+    const attackerSamples = getTokenSampleCenters(attackerDoc);
+    const targetSamples = getTokenSampleCenters(targetDoc);
+    const attackerRadius = attackerSizeKey === "tiny" ? half * 0.5 : half;
+    const targetRadius = targetSizeKey === "tiny" ? half * 0.5 : half;
+
     const sightSource = attackerDoc?.object?.vision?.source ?? null;
     const creaturesHalfOnly = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.CREATURES_HALF_ONLY);
 
     let best = { reachable: -1, coverLevel: 2, segs: [] };
 
-    for (const tCenter of targetSquares) {
-        const tgtCorners = makeCornerPair(tCenter, targetRadius, Math.min(grid.size * 0.20, 2.5));
-        for (const aCenter of attackerSquares) {
-            const atkCorners = makeCornerPair(aCenter, half, Math.min(grid.size * 0.20, 2.5));
+    for (const tCenter of targetSamples) {
+        let tgtCorners;
+        if (gridMode === GRID_MODES.HEX) {
+            tgtCorners = buildHexCorners(tCenter, targetRadius, insetPx);
+        } else {
+            tgtCorners = buildBoxCorners(tCenter, targetRadius, insetPx);
+        }
+        if (!tgtCorners || !tgtCorners.length) continue;
+        const totalLinesForThisTarget = tgtCorners.length;
+
+        for (const aCenter of attackerSamples) {
+            let atkCorners;
+            if (gridMode === GRID_MODES.HEX) {
+                atkCorners = buildHexCorners(aCenter, attackerRadius, insetPx);
+            } else {
+                atkCorners = buildBoxCorners(aCenter, attackerRadius, insetPx);
+            }
+            if (!atkCorners || !atkCorners.length) continue;
+
             for (const aCorner of atkCorners) {
                 let blockedWalls = 0;
                 let blockedCreatures = 0;
@@ -230,8 +299,8 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options)
                     const wb = wallsBlock(aCorner, tCorner, sightSource);
                     const wBlocked = wb.blocked;
 
-                    const a3 = { x: aCorner.inset.x, y: aCorner.inset.y, z: baseZ(attackerDoc) };
-                    const b3 = { x: tCorner.inset.x, y: tCorner.inset.y, z: baseZ(targetDoc) };
+                    const a3 = { x: aCorner.inset.x, y: aCorner.inset.y, z: attackerZ };
+                    const b3 = { x: tCorner.inset.x, y: tCorner.inset.y, z: targetZ };
                     let cBlocked = false;
                     if (!wBlocked) {
                         for (let i = 0; i < boxes.length; i++) {
@@ -254,25 +323,32 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options)
                         _tested: { a: wb.A, b: wb.B }
                     });
 
-                    if (!creaturesHalfOnly && (blockedWalls + blockedCreatures) >= 3) break;
+                    const breakAt = (gridMode === GRID_MODES.HEX) ? 4 : 3;
+                    if (!creaturesHalfOnly && (blockedWalls + blockedCreatures) >= breakAt) break;
                 }
 
                 const totalBlocked = blockedWalls + blockedCreatures;
-                const reachable = 4 - totalBlocked;
+                const totalLines = totalLinesForThisTarget;
+                const reachable = totalLines - totalBlocked;
 
                 let coverLevel;
                 if (creaturesHalfOnly) {
-                    if (blockedWalls >= 3) coverLevel = 2;
+                    const wallsThreshold = (gridMode === GRID_MODES.HEX) ? 4 : 3;
+                    if (blockedWalls >= wallsThreshold) coverLevel = 2;
                     else if (blockedWalls >= 1) coverLevel = 1;
                     else if (blockedCreatures >= 1) coverLevel = 1;
                     else coverLevel = 0;
                 } else {
-                    coverLevel = totalBlocked >= 3 ? 2 : totalBlocked >= 1 ? 1 : 0;
+                    if (gridMode === GRID_MODES.HEX) {
+                        coverLevel = totalBlocked >= 4 ? 2 : totalBlocked >= 1 ? 1 : 0;
+                    } else {
+                        coverLevel = totalBlocked >= 3 ? 2 : totalBlocked >= 1 ? 1 : 0;
+                    }
                 }
 
                 if (reachable > best.reachable || (reachable === best.reachable && coverLevel < best.coverLevel)) {
                     best = { reachable, coverLevel, segs };
-                    if (reachable === 4 && coverLevel === 0) {
+                    if (reachable === totalLines && coverLevel === 0) {
                         const cover = "none";
                         return debug ? { cover, debugSegments: best.segs } : { cover };
                     }

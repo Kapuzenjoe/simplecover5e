@@ -2,11 +2,12 @@
 
 ## Version 0.3.0
 
-- Added optional setting **Limit Cover from Creatures to Half Cover**: creatures can no longer grant ¾ cover (#2).
-- Improved performance by skipping further checks when one attacker corner has fully clear line of effect.
-- Added **gridless cover** support using virtual cells for large/huge tokens, approximating square-grid cover rules where no RAW gridless guidance exists (feedback and alternative approaches welcome).
-- Improved Tiny creature cover on square/hex grids by using the token’s actual position within the cell.
+- Added optional setting **Limit Cover from Creatures to 1/2 Cover**: creatures can no longer grant 3/4 cover by themselves (#2).
+- Improved performance by short-circuiting when an attacker corner has fully clear line of effect to all target corners.
+- Added **gridless cover** support using virtual cells for large/huge tokens, approximating square-grid cover where no RAW gridless guidance exists (feedback and alternative approaches welcome).
+- Refined Tiny creature cover on square, gridless, and hex grids by using the token’s actual position and footprint instead of the grid cell center.
 - Added optional setting **Apply Cover Only In Combat** to run automatic cover calculation only while a combat encounter is active.
+- Added **hex grid cover** support using 6-ray evaluation and scaled hex footprints per creature size.
 
 ## Version 0.2.0
 
