@@ -11,19 +11,34 @@ export function initQueries() {
         try {
             if (!game.user.isGM) return { ok: false, reason: "not-gm" };
             const { actorUuid, effectId, enable } = data ?? {};
-            if (!actorUuid || !effectId || typeof enable !== "boolean")
+            if (!actorUuid || !effectId || typeof enable !== "boolean") {
                 return { ok: false, reason: "bad-args" };
+            }
 
             const actor = await fromUuid(actorUuid);
-            if (!actor) return { ok: false, reason: "no-actor" };
+            if (!actor) {
+                console.warn(`[${MODULE_ID}] toggleCover: actor not found for uuid`, actorUuid);
+                return { ok: false, reason: "no-actor" };
+            }
+            const hasStatus = !!actor.statuses?.has?.(effectId);
 
-            const on = !!actor.statuses?.has?.(effectId);
-            if (enable && !on) await actor.toggleStatusEffect(effectId, { overlay: false });
-            if (!enable && on) await actor.toggleStatusEffect(effectId, { overlay: false });
+            if (enable && hasStatus) {
+                return { ok: true, changed: false };
+            }
+            if (!enable && !hasStatus) {
+                return { ok: true, changed: false };
+            }
 
-            return { ok: true, changed: (enable !== on) };
-        } catch (e) {
-            console.warn("[cover] query toggleCover failed:", e, data);
+            if (typeof actor.toggleStatusEffect === "function") {
+                await actor.toggleStatusEffect(effectId, { overlay: false });
+            } else {
+                console.warn(`[${MODULE_ID}] toggleCover: actor has no toggleStatusEffect`, actor);
+                return { ok: false, reason: "no-toggle" };
+            }
+
+            return { ok: true, changed: true };
+        } catch (err) {
+            console.warn(`[${MODULE_ID}] query toggleCover failed:`, err, data);
             return { ok: false, reason: "exception" };
         }
     };

@@ -9,8 +9,10 @@ import { MODULE_ID, SETTING_KEYS, GRID_MODES, getGridMode } from "../config/cons
  * @param {{segments:Array}} 
  */
 export async function drawCoverDebug({ segments }) {
-  if (!game.user.isGM) return
+  if (!game.users.activeGM?.isSelf) return;
+  if (!canvas || !canvas.scene) return;
   if (!segments || segments.length === 0) return;
+
   const grid = canvas.scene?.grid ?? null;
   const gridMode = getGridMode(grid);
 
@@ -32,19 +34,39 @@ export async function drawCoverDebug({ segments }) {
       flags: { [MODULE_ID]: { [SETTING_KEYS.DEBUG]: true } }
     });
   }
-  await canvas.scene.createEmbeddedDocuments("Drawing", docs);
+  try {
+    await canvas.scene.createEmbeddedDocuments("Drawing", docs);
+  } catch (err) {
+    console.warn("[cover] failed to draw cover debug segments", err);
+  }
 }
 
 /**
  * Remove previously drawn cover debug drawings.
  */
 export async function clearCoverDebug() {
-  if (!game.user.isGM) return
+  if (!game.user.isGM) return;
+  const scene = canvas.scene;
+  if (!scene) return;
+
+  const drawings = scene.drawings;
+  if (!drawings) return;
+
   const toDelete = [];
-  const drawings = canvas.scene.drawings;
   for (let i = 0; i < drawings.size; i += 1) {
     const d = drawings.contents[i];
+    if (!d) continue;
     if (d.getFlag(MODULE_ID, SETTING_KEYS.DEBUG)) toDelete.push(d.id);
   }
-  if (toDelete.length > 0) await canvas.scene.deleteEmbeddedDocuments("Drawing", toDelete);
+
+  if (!toDelete.length) return;
+
+  try {
+    const existingIds = toDelete.filter(id => drawings.get(id));
+    if (existingIds.length) {
+      await scene.deleteEmbeddedDocuments("Drawing", existingIds);
+    }
+  } catch (err) {
+    console.warn(`[${MODULE_ID}] failed to clear cover debug drawings`, err);
+  }
 }

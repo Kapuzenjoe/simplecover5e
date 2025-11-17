@@ -45,12 +45,31 @@ These are the default 3D heights (in feet) used for cover evaluation. They can b
 - The *Ignore Cover* item property is added by this module and can be toggled per item.
 - Multi-target rolls are supported.
 
+## Compatibility
+
+### Midi-QOL
+
+- Works out of the box.
+- Simple Cover 5e only mutates dnd5e roll / message data and does not patch Midi-QOL directly.
+
+### Ready Set Roll 5e
+
+Simple Cover 5e is **partially compatible** with **Ready Set Roll 5e**:
+
+- When the **chat log is not open**, Ready Set Roll may internally trigger certain rolls twice or in an unexpected order. This can lead to:
+  - Cover status effects being toggled multiple times on temporary `ActorDelta` documents, e.g.  
+    `_id [dnd5ecoverHalf00] already exists within the parent collection: ActorDelta[…] effects`
+  - Harmless console errors from debug drawings (if enabled), e.g.  
+    `Drawing "<id>" does not exist!`
+- These messages only appear in the GM’s browser console and do **not** crash the game.
+- Cover calculation for saving throws (save DC adjustment) is correct.
+- Attack rolls:
+  - Mechanics (hit / miss) work for **single-target** attacks.
+  - The AC values shown under **Targets** on the Ready Set Roll card can sometimes be incorrect, because Simple Cover 5e mutates the dnd5e `messageFlags` during the attack roll, while Ready Set Roll appears to use its own data built earlier in the activity workflow.
+
 ## Planned Features
 
-- Midi QoL integration
-- RSR integration
 - Wall Height integration (Foundry V13 only; likely obsolete with V14+ scene levels)
-- Show Cover on Mouse-Hover
 
 ## Examples (with active debug mode)
 ![Example 1](docs/example_1.png)

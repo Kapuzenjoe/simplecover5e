@@ -45,7 +45,6 @@ function resolveTokensForScope(combat, scope) {
  * @param {Combat} combat
  */
 export async function clearAllCoverInCombat(combat) {
-  if (!combat) return;
 
   const scope = game.settings.get(MODULE_ID, SETTING_KEYS.COVER_SCOPE); // "all" | "combatants" | "players"
   const targets = resolveTokensForScope(combat, scope);

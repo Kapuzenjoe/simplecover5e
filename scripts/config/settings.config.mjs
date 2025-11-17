@@ -1,6 +1,7 @@
 import { MODULE_ID, DEFAULT_SIZE_FT, SETTING_KEYS } from "./constants.config.mjs";
 import { SimpleCoverCreatureHeightsConfig } from "./menu.config.mjs";
 import { clearCoverDebug } from "../services/cover.debug.mjs";
+import { clearAllCoverInCombat } from "../services/cover.service.mjs";
 
 const SETTINGS = [
   {
@@ -49,6 +50,13 @@ const SETTINGS = [
     requiresReload: false,
   },
   {
+    key: SETTING_KEYS.HOVER,
+    name: "[Experimental] Hover Cover Display",
+    hint: "Shows distance and cover icons when hovering a token. Behavior and visuals may change in future versions.",
+    type: new foundry.data.fields.BooleanField({ initial: false }),
+    requiresReload: false,
+  },
+  {
     key: SETTING_KEYS.DEBUG,
     name: "Show Cover Debug Lines",
     hint: "Draw helper lines while computing cover between tokens (for debugging/troubleshooting).",
@@ -93,4 +101,16 @@ export function registerSettings() {
     type: SimpleCoverCreatureHeightsConfig,
     restricted: true,
   });
+}
+
+export function getSceneControlButtons(controls) {
+
+  if (!game.user.isGM) return;
+  controls.tokens.tools[MODULE_ID] = {
+    name: MODULE_ID,
+    title: "Remove Cover Effects",
+    icon: "fa-solid fa-shield-exclamation",
+    onChange: (event, active) => clearAllCoverInCombat(),
+    button: true
+  };
 }

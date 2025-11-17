@@ -14,6 +14,7 @@ export const SETTING_KEYS = {
   CREATURES_HALF_ONLY: "creaturesHalfCoverOnly",
   DEBUG: "debugCover",
   CREATURE_HEIGHTS: "creatureHeights",
+  HOVER: "hover",
 };
 
 export const DEFAULT_SIZE_FT = {
