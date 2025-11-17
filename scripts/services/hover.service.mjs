@@ -1,4 +1,4 @@
-import { MODULE_ID, SETTING_KEYS } from "../config/constants.config.mjs";
+import { MODULE_ID, SETTING_KEYS, HOVER } from "../config/constants.config.mjs";
 import {
   buildCoverContext,
   buildCreaturePrism,
@@ -11,22 +11,29 @@ const COVER_ICON_PATHS = {
   threeQuarters: "systems/dnd5e/icons/svg/statuses/cover-three-quarters.svg",
 };
 
-function removeHoverDecorations(token) {
+function removeHoverDistanceLabel(token) {
   if (!token) return;
+  const label = token[HOVER.DISTANCE_LABEL_PROP];
+  if (!label) return;
 
-  const label = token._hoverDistanceLabel;
-  if (label) {
-    token.removeChild?.(label);
-    label.destroy?.({ children: true });
-    delete token._hoverDistanceLabel;
-  }
+  token.removeChild?.(label);
+  label.destroy?.({ children: true });
+  delete token[HOVER.DISTANCE_LABEL_PROP];
+}
 
-  const icon = token._hoverCoverIcon;
-  if (icon) {
-    token.removeChild?.(icon);
-    icon.destroy?.({ children: true });
-    delete token._hoverCoverIcon;
-  }
+function removeHoverCoverIcon(token) {
+  if (!token) return;
+  const icon = token[HOVER.COVER_ICON_PROP];
+  if (!icon) return;
+
+  token.removeChild?.(icon);
+  icon.destroy?.({ children: true });
+  delete token[HOVER.COVER_ICON_PROP];
+}
+
+function removeHoverDecorations(token) {
+  removeHoverDistanceLabel(token);
+  removeHoverCoverIcon(token);
 }
 
 /**
@@ -66,7 +73,6 @@ function shouldPlaceBelowNameplate(mode, { isOwner, isControlled }) {
 /**
  * Show distance to hovered token (client-side only).
  * Uses system diagonal rules and shows cover status as icon for half / three-quarters cover.
- *
  * @param {Token5e} token        Hovered token.
  * @param {boolean} hoverState   True if hover started, false if hover ended.
  */
@@ -100,7 +106,6 @@ export async function onHoverToken(token, hoverState) {
     removeHoverDecorations(hoveredToken);
     return;
   }
-
 
   let coverKey = "";
   const scene = hoveredToken.scene;
@@ -136,7 +141,7 @@ export async function onHoverToken(token, hoverState) {
 
   const unit = hoveredToken?.scene?.grid?.units ?? "";
   const rounded = Math.round(Number(distance) || 0);
-  const prefix = "⦿";
+  const prefix = "📏";
 
   const labelText = unit
     ? `${prefix} ${rounded} ${unit}`
@@ -144,13 +149,12 @@ export async function onHoverToken(token, hoverState) {
 
   const PreciseTextCtor = foundry?.canvas?.containers?.PreciseText;
   if (!PreciseTextCtor) {
-    console.warn("simplecover5e | PreciseText not available.");
+    console.warn(`${MODULE_ID} | PreciseText not available.`);
     removeHoverDecorations(hoveredToken);
     return;
   }
 
-
-  let label = hoveredToken._hoverDistanceLabel;
+  let label = hoveredToken[HOVER.DISTANCE_LABEL_PROP];
   const textStyle = nameplate.style?.clone?.()
     ? nameplate.style.clone()
     : nameplate.style;
@@ -158,9 +162,9 @@ export async function onHoverToken(token, hoverState) {
   if (!label || label.destroyed) {
     label = new PreciseTextCtor(labelText, textStyle);
     label.anchor?.set?.(0.5, 0);
-    label.name = "hover-distance-label";
+    label.name = HOVER.DISTANCE_LABEL_NAME;
     hoveredToken.addChild(label);
-    hoveredToken._hoverDistanceLabel = label;
+    hoveredToken[HOVER.DISTANCE_LABEL_PROP] = label;
   } else {
     label.setText?.(labelText);
     if (label.style && textStyle && typeof label.style.copyFrom === "function") {
@@ -198,38 +202,27 @@ export async function onHoverToken(token, hoverState) {
 
   hoveredToken.sortChildren?.();
 
-
   if (!coverKey) {
-    const oldIcon = hoveredToken._hoverCoverIcon;
-    if (oldIcon) {
-      hoveredToken.removeChild?.(oldIcon);
-      oldIcon.destroy?.({ children: true });
-      delete hoveredToken._hoverCoverIcon;
-    }
+    removeHoverCoverIcon(hoveredToken);
     return;
   }
 
   const iconPath = COVER_ICON_PATHS[coverKey];
   if (!iconPath) {
-    const oldIcon = hoveredToken._hoverCoverIcon;
-    if (oldIcon) {
-      hoveredToken.removeChild?.(oldIcon);
-      oldIcon.destroy?.({ children: true });
-      delete hoveredToken._hoverCoverIcon;
-    }
+    removeHoverCoverIcon(hoveredToken);
     return;
   }
 
-  const texture = await loadTexture(iconPath);
+  const texture = await foundry.canvas.loadTexture(iconPath);
   if (!texture) return;
 
-  let icon = hoveredToken._hoverCoverIcon;
+  let icon = hoveredToken[HOVER.COVER_ICON_PROP];
   if (!icon || icon.destroyed) {
     icon = new PIXI.Sprite(texture);
-    icon.name = "hover-cover-icon";
+    icon.name = HOVER.COVER_ICON_NAME;
     icon.anchor.set(0.5, 0.5);
     hoveredToken.addChild(icon);
-    hoveredToken._hoverCoverIcon = icon;
+    hoveredToken[HOVER.COVER_ICON_PROP] = icon;
   } else {
     icon.texture = texture;
   }
@@ -243,7 +236,7 @@ export async function onHoverToken(token, hoverState) {
   icon.scale.set(scale, scale);
 
   const iconOffset = 4;
-  const iconWidth = icon.width; 
+  const iconWidth = icon.width;
 
   icon.x = label.x + textWidth / 2 + iconWidth / 2 + iconOffset;
   icon.y = label.y + textHeight / 2;

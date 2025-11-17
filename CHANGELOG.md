@@ -3,9 +3,9 @@
 ## Version 0.4.0
 
 - Small internal fixes and more robust `try/catch` handling.
-- Show cover information on token hover, including distance between attacker and target.
-- Add a button to clear cover statuses from tokens - honoring the selected Cover Removal Scope.
-- (WIP) Add an API / library mode so other modules can consume Simple Cover 5e’s cover results directly.
+- Show cover information on token hover, including distance between attacker and target (#5).
+- Add a button to clear cover statuses from tokens - honoring the selected Cover Removal Scope (#4).
+- Add an API / library mode so other modules can consume Simple Cover 5e’s cover results directly (#6).
 
 ## Version 0.3.1
 

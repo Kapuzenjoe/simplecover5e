@@ -1,5 +1,5 @@
 import { MODULE_ID, COVER_STATUS_IDS, SETTING_KEYS } from "../config/constants.config.mjs";
-import { clearAllCoverInCombat } from "../services/cover.service.mjs";
+import { clearCoverStatusEffect } from "../services/cover.service.mjs";
 import {
   buildCoverContext,
   buildCreaturePrism,
@@ -40,6 +40,7 @@ export function ignoreCoverProperties() {
  * @returns
  */
 export function onPreRollAttack(config, dialog, message) {
+  if (game.settings.get(MODULE_ID, SETTING_KEYS.LIBRARY_MODE)) return;
   const onlyInCombat = !!game.settings.get(MODULE_ID, SETTING_KEYS.ONLY_IN_COMBAT);
   if (onlyInCombat && !game?.combats?.active) return;
 
@@ -115,6 +116,7 @@ export function onPreRollAttack(config, dialog, message) {
  * @returns
  */
 export function onPreRollSavingThrow(config, dialog, message) {
+  if (game.settings.get(MODULE_ID, SETTING_KEYS.LIBRARY_MODE)) return;
   const onlyInCombat = !!game.settings.get(MODULE_ID, SETTING_KEYS.ONLY_IN_COMBAT);
   if (onlyInCombat && !game?.combats?.active) return;
 
@@ -188,7 +190,7 @@ export async function clearCoverOnUpdateCombat(combat, update) {
     if (!game.users.activeGM?.isSelf) return;
     if (!game.settings.get(MODULE_ID, SETTING_KEYS.RMV_ON_COMBAT)) return;
 
-    await clearAllCoverInCombat(combat);
+    await clearCoverStatusEffect(combat);
 
     if (game.settings.get(MODULE_ID, SETTING_KEYS.DEBUG)) {
       await clearCoverDebug();
@@ -208,14 +210,14 @@ export async function clearCoverOnUpdateCombat(combat, update) {
  * @param {User} user                           The User that requested the update operation
  */
 export async function clearCoverOnMovement(token, movement, operation, user) {
-  try {
+  try {    
     if (!game.users.activeGM?.isSelf) return;
     if (!game.settings.get(MODULE_ID, SETTING_KEYS.RMV_ON_MOVE)) return;
 
     const active = game.combats?.active;
     if (!active) return;
 
-    await clearAllCoverInCombat(active);
+    await clearCoverStatusEffect(active);
 
     if (game.settings.get(MODULE_ID, SETTING_KEYS.DEBUG)) {
       await clearCoverDebug();
@@ -236,7 +238,7 @@ export async function clearCoverOnDeleteCombat(combat) {
     if (!game.users.activeGM?.isSelf) return;
     if (!game.settings.get(MODULE_ID, SETTING_KEYS.RMV_ON_COMBAT)) return;
 
-    await clearAllCoverInCombat(combat);
+    await clearCoverStatusEffect(combat);
 
     if (game.settings.get(MODULE_ID, SETTING_KEYS.DEBUG)) {
       await clearCoverDebug();

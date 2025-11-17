@@ -1,7 +1,7 @@
 import { MODULE_ID, DEFAULT_SIZE_FT, SETTING_KEYS } from "./constants.config.mjs";
 import { SimpleCoverCreatureHeightsConfig } from "./menu.config.mjs";
 import { clearCoverDebug } from "../services/cover.debug.mjs";
-import { clearAllCoverInCombat } from "../services/cover.service.mjs";
+import { clearCoverStatusEffect } from "../services/cover.service.mjs";
 
 const SETTINGS = [
   {
@@ -110,7 +110,7 @@ export function getSceneControlButtons(controls) {
     name: MODULE_ID,
     title: "Remove Cover Effects",
     icon: "fa-solid fa-shield-exclamation",
-    onChange: (event, active) => clearAllCoverInCombat(),
+    onChange: (event, active) => clearCoverStatusEffect(),
     button: true
   };
 }

@@ -15,6 +15,7 @@
 - Tiny creatures use the token’s actual position and footprint within their cell/hex instead of the grid cell center, improving accuracy when multiple Tiny tokens share the same space.
 - The module introduces an *Ignore Cover* item property. Add it to spells, weapons, or feats that should ignore cover (for example, *Sacred Flame*) and the cover calculation will be skipped for that roll.
 - The feats **Sharpshooter** and **Spell Sniper** are automatically respected when present on the attacker, either by their English name or by a matching `system.identifier` (e.g. `"sharpshooter"` / `"spell-sniper"`).
+- (Optional) A token hover helper can display a distance label and cover icon under the hovered token’s nameplate when exactly one controlled token is selected.
 
 ### Default Creature Heights
 
@@ -36,6 +37,7 @@ These are the default 3D heights (in feet) used for cover evaluation. They can b
 - **Clear Cover on Token Movement (Combat Only)** — When a token moves during active combat, remove cover according to the selected scope.
 - **Limit Cover from Creatures to Half Cover** — When enabled, creature occlusion alone can grant at most Half Cover; creatures never upgrade a target to Three-Quarters Cover by themselves. Walls and other occluders still follow the normal DMG thresholds.
 - **Apply Cover Only In Combat** — Only run automatic cover evaluation while a combat encounter is active on the scene (no cover checks outside of combat).
+- **Show Cover on Token Hover** — When enabled, hovering another token while exactly one owned token is controlled will show a small distance label and cover icon under that token’s nameplate. This runs per-client and does not change any mechanics.
 - **Show Cover Debug Lines** — Renders helper segments used during cover evaluation (GM only).
 - **Creature Heights** — Configure the default 3D heights (in feet) for each size category used when treating tokens as prisms for cover.
 
@@ -66,6 +68,52 @@ Simple Cover 5e is **partially compatible** with **Ready Set Roll 5e**:
 - Attack rolls:
   - Mechanics (hit / miss) work for **single-target** attacks.
   - The AC values shown under **Targets** on the Ready Set Roll card can sometimes be incorrect, because Simple Cover 5e mutates the dnd5e `messageFlags` during the attack roll, while Ready Set Roll appears to use its own data built earlier in the activity workflow.
+
+## Integration & API (Library Mode)
+
+Simple Cover 5e exposes a small API that other modules can use to query cover without relying on Active Effects or automatic roll mutation. The API is available via the module entry:
+
+```js
+const sc = game.modules.get("simplecover5e")?.api;
+```
+
+### API Surface
+
+```js
+api.getCover({ attacker, target, scene?, debug? })
+```
+
+Compute cover between a single attacker and target. Returns an object like:
+
+```js
+const { cover } = sc.getCover({ attacker, target });
+// cover is "none", "half", or "threeQuarters"
+```
+
+```js
+api.getCoverForTargets({ attacker, targets?, scene?, debug? })
+```
+
+Convenience helper to compute cover for an attacker against multiple targets (or the current user’s selected targets if `targets` is omitted). Returns an array of `{ target, result }` pairs.
+
+```js
+api.getLibraryMode() / api.setLibraryMode(enabled)
+```
+
+Query or toggle a “library mode” flag. When library mode is enabled, Simple Cover 5e will still provide cover calculations via the API, but will not automatically apply Active Effects or mutate roll configuration on its own. The setting is stored as a world setting and is intentionally not shown in the UI; it is meant to be controlled by integrating modules (or GMs via console).
+
+### Ready Hook
+
+Consumers can also subscribe to a dedicated hook to safely attach to the API regardless of module load order:
+
+```js
+Hooks.on("simplecover5eReady", (api) => {
+  // e.g. enable library mode and use the API
+  api.setLibraryMode(true);
+});
+```
+
+This pattern allows other modules (such as automation/conditions modules) to reuse Simple Cover 5e’s cover engine while retaining full control over how bonuses are applied, how workflows are modified, and how any UI indicators are displayed.
 
 ## Planned Features
 

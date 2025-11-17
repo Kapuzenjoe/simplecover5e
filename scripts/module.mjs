@@ -3,6 +3,7 @@ import * as coverHandler from "./handlers/cover.hooks.mjs";
 import * as queries from "./services/queries.service.mjs";
 import * as debug from "./services/cover.debug.mjs";
 import * as hover from "./services/hover.service.mjs";
+import * as api from "./utils/api.mjs";  
 
 
 // === Init Phase ===
@@ -10,6 +11,7 @@ Hooks.once("init", () => {
   settings.registerSettings();
   queries.initQueries();
   coverHandler.ignoreCoverProperties();
+  api.initApi();
 });
 Hooks.once("canvasReady", () => {
   debug.clearCoverDebug();

@@ -15,6 +15,7 @@ export const SETTING_KEYS = {
   DEBUG: "debugCover",
   CREATURE_HEIGHTS: "creatureHeights",
   HOVER: "hover",
+  LIBRARY_MODE: "libraryMode",
 };
 
 export const DEFAULT_SIZE_FT = {
@@ -45,4 +46,10 @@ export function getGridMode(grid) {
     default:
       return GRID_MODES.SQUARE;
   }
+}
+export const HOVER = {
+  DISTANCE_LABEL_PROP: `_${MODULE_ID}HoverDistanceLabel`,
+  DISTANCE_LABEL_NAME: `${MODULE_ID}-hover-distance-label`,
+  COVER_ICON_PROP: `_${MODULE_ID}HoverCoverIcon`,
+  COVER_ICON_NAME: `${MODULE_ID}-hover-cover-icon`,
 }
