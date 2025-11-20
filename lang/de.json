@@ -1,0 +1,90 @@
+{
+    "SIMPLE_COVER_5E": {
+        "Settings": {
+            "CoverScope": {
+                "Name": "Geltungsbereich für das Entfernen von Cover",
+                "Hint": "Wähle, welche Token betroffen sind, wenn Cover entfernt wird: alle Token in der Szene, nur Kämpfer im Kampf oder nur spielereigene Token.",
+                "Options": {
+                    "All": "Alle Token in der Szene",
+                    "Combatants": "Nur Kämpfer",
+                    "Player": "Nur spielereigene Token"
+                }
+            },
+            "OnlyInCombat": {
+                "Name": "Cover nur im Kampf anwenden",
+                "Hint": "Wenn aktiviert, wird die automatische Cover-Berechnung nur durchgeführt, solange eine Kampfbegegnung aktiv ist."
+            },
+            "RemoveOnCombat": {
+                "Name": "Cover bei Kampfaktualisierungen entfernen",
+                "Hint": "Entfernt die Cover-Bedingung automatisch bei Änderungen im Kampf (Zug/Runde/Initiative) unter Berücksichtigung des ausgewählten Geltungsbereichs für das Entfernen von Cover."
+            },
+            "RemoveOnMove": {
+                "Name": "Cover bei Token-Bewegung entfernen",
+                "Hint": "Entfernt die Cover-Bedingung automatisch, wenn sich ein Token während eines aktiven Kampfes bewegt, unter Berücksichtigung des ausgewählten Geltungsbereichs für das Entfernen von Cover."
+            },
+            "CreaturesHalfOnly": {
+                "Name": "Cover durch Kreaturen auf 1/2 Cover begrenzen",
+                "Hint": "Wenn aktiviert, können Kreaturen maximal Half Cover gewähren. Sobald mindestens eine Linie ausschließlich durch Kreaturen blockiert wird, erhält das Ziel Half Cover, aber niemals Three-Quarters Cover allein durch Kreaturen. Wände folgen weiterhin den normalen DMG-Regeln."
+            },
+            "Hover": {
+                "Name": "[Experimentell] Hover-Cover-Anzeige",
+                "Hint": "Steuert, ob und wie Cover-Informationen und Entfernungen beim Hovern eines Tokens angezeigt werden. Verhalten und Darstellung können sich in zukünftigen Versionen ändern.",
+                "Options": {
+                    "Off": "Deaktiviert",
+                    "CoverOnly": "Nur Cover-Icons",
+                    "CoverAndDistance": "Cover-Icons und Entfernung"
+                }
+            },
+            "HoverLabelPosition": {
+                "Name": "Position des Hover-Labels",
+                "Hint": "Wähle, wo das Hover-Label relativ zum Ziel-Token verankert wird.",
+                "Options": {
+                    "Above": "Über dem Token",
+                    "On": "Zentriert auf dem Token",
+                    "Below": "Unter dem Token"
+                }
+            },
+            "HoverLabelYOffset": {
+                "Name": "Vertikaler Versatz des Hover-Labels",
+                "Hint": "Zusätzlicher vertikaler Versatz (in Pixeln), der auf die Position des Hover-Labels angewendet wird. Positive Werte bewegen das Label nach unten, negative nach oben."
+            },
+            "HoverLabelXOffset": {
+                "Name": "Horizontaler Versatz des Hover-Labels",
+                "Hint": "Zusätzlicher horizontaler Versatz (in Pixeln), der auf die Position des Hover-Labels angewendet wird. Positive Werte bewegen das Label nach rechts, negative nach links."
+            },
+            "GridlessDistanceMode": {
+                "Name": "Entfernungsmodus ohne Raster",
+                "Hint": "Wähle, wie Entfernungen in rasterlosen Szenen gemessen werden: von Zentrum zu Zentrum oder von Kante zu Kante.",
+                "Options": {
+                    "CenterCenter": "Zentrum zu Zentrum",
+                    "EdgeEdge": "Kante zu Kante",
+                    "EdgeToCenter": "Quellenkante zu Zielzentrum"
+                }
+            },
+            "Debug": {
+                "Name": "Cover-Debug-Linien anzeigen",
+                "Hint": "Zeichnet Hilfslinien während der Cover-Berechnung zwischen Tokens (zum Debugging/Fehlerbeheben)."
+            },
+            "CreatureHeights": {
+                "Name": "Standardgrößen von Kreaturen",
+                "Hint": "Standardhöhen von Kreaturen (in Fuß) pro Größenkategorie, die für die 3D-Cover-Bewertung verwendet werden."
+            },
+            "HeightsMenu": {
+                "Name": "Kreaturenhöhen",
+                "Label": "Kreaturenhöhen konfigurieren",
+                "Hint": "Passe die Standardhöhen (in Fuß) für jede Kreaturengröße an, die bei der Berechnung von Cover verwendet werden.",
+                "Legend": "Kreaturenhöhen",
+                "BodyHint": "Lege die Standardhöhe (in Fuß) für jede Kreaturengröße fest. Diese Werte werden verwendet, wenn Token für Cover als 3D-Prismen behandelt werden.",
+                "Buttons": {
+                    "Save": "Speichern",
+                    "Reset": "Zurücksetzen"
+                }
+            }
+        },
+        "Controls": {
+            "ClearCover": {
+                "Title": "Cover-Effekte entfernen"
+            }
+        }
+    }
+}

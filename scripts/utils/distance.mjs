@@ -1,10 +1,13 @@
-import {GRID_MODES, getGridMode } from "../config/constants.config.mjs";
+import { MODULE_ID, SETTING_KEYS, GRID_MODES, getGridMode } from "../config/constants.config.mjs";
+
 /**
  * Measure the minimal 3D distance between two tokens in grid units.
  * Uses the system's grid measurement, including its diagonal rule (e.g. 1/1/1 or 1/2/1).
- * 
- * Inspired by distance calculations from:
- * https://github.com/roth-michael/Aura-Effects (by roth-michael)
+ *
+ * Gridless modes:
+ *  - edgeEdge      -> edge to edge (source + target radius)
+ *  - centerCenter  -> center to center (no adjustment)
+ *  - edgeCenter    -> source edge to target center (legacy / previous behaviour)
  *
  * @param {TokenDocument} sourceToken   The source token.
  * @param {TokenDocument} targetToken   The target token.
@@ -57,13 +60,28 @@ export function measureTokenDistance(sourceToken, targetToken) {
     if (minDistance === 0) break;
   }
 
-  let externalAdjust = 0;
+  let result = minDistance;
+
   if (isGridless) {
-    const unitsPerPixel = grid.distance / grid.size;
-    const externalRadiusPx = sourceToken.object.externalRadius ?? 0;
-    externalAdjust = unitsPerPixel * externalRadiusPx;
+    const mode = game.settings.get(MODULE_ID, SETTING_KEYS.GRIDLESS_DISTANCE_MODE) ?? "edgeCenter";
+
+    if (mode === "edgeEdge" || mode === "edgeToCenter") {
+      const unitsPerPixel = grid.distance / grid.size;
+      const sourceRadiusPx = sourceToken.object?.externalRadius ?? 0;
+      const targetRadiusPx = targetToken.object?.externalRadius ?? 0;
+
+      if (mode === "edgeEdge") {
+        const externalAdjust = unitsPerPixel * (sourceRadiusPx + targetRadiusPx);
+        result = minDistance - externalAdjust;
+      } else if (mode === "edgeToCenter") {
+        const externalAdjust = unitsPerPixel * sourceRadiusPx;
+        result = minDistance - externalAdjust;
+      }
+    }
+    else if (mode === "centerCenter") {
+      result = minDistance;
+    }
   }
 
-  const result = minDistance - externalAdjust;
   return result < 0 ? 0 : result;
 }

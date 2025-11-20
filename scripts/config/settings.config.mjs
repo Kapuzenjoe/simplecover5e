@@ -6,15 +6,81 @@ import { clearCoverStatusEffect } from "../services/cover.service.mjs";
 const SETTINGS = [
   {
     key: SETTING_KEYS.COVER_SCOPE,
-    name: "Cover Removal Scope",
-    hint: "Choose which tokens are affected when cover is cleared: everyone on the scene, only combatants, or player-owned tokens.",
+    name: "SIMPLE_COVER_5E.Settings.CoverScope.Name",
+    hint: "SIMPLE_COVER_5E.Settings.CoverScope.Hint",
     type: new foundry.data.fields.StringField({
       choices: {
-        all: "All Tokens on Scene",
-        combatants: "Combatants Only",
-        players: "Player-Owned Tokens Only",
+        all: "SIMPLE_COVER_5E.Settings.CoverScope.Options.All",
+        combatants: "SIMPLE_COVER_5E.Settings.CoverScope.Options.Combatants",
+        players: "SIMPLE_COVER_5E.Settings.CoverScope.Options.Player"
       },
       initial: "combatants",
+      required: true,
+      blank: false,
+      trim: true
+    }),
+    requiresReload: false
+  },
+  {
+    key: SETTING_KEYS.ONLY_IN_COMBAT,
+    name: "SIMPLE_COVER_5E.Settings.OnlyInCombat.Name",
+    hint: "SIMPLE_COVER_5E.Settings.OnlyInCombat.Hint",
+    type: new foundry.data.fields.BooleanField({ initial: false }),
+    requiresReload: false
+  },
+  {
+    key: SETTING_KEYS.RMV_ON_COMBAT,
+    name: "SIMPLE_COVER_5E.Settings.RemoveOnCombat.Name",
+    hint: "SIMPLE_COVER_5E.Settings.RemoveOnCombat.Hint",
+    type: new foundry.data.fields.BooleanField({ initial: true }),
+    requiresReload: false
+  },
+  {
+    key: SETTING_KEYS.RMV_ON_MOVE,
+    name: "SIMPLE_COVER_5E.Settings.RemoveOnMove.Name",
+    hint: "SIMPLE_COVER_5E.Settings.RemoveOnMove.Hint",
+    type: new foundry.data.fields.BooleanField({ initial: false }),
+    requiresReload: false
+  },
+  {
+    key: SETTING_KEYS.CREATURES_HALF_ONLY,
+    name: "SIMPLE_COVER_5E.Settings.CreaturesHalfOnly.Name",
+    hint: "SIMPLE_COVER_5E.Settings.CreaturesHalfOnly.Hint",
+    type: new foundry.data.fields.BooleanField({ initial: false }),
+    requiresReload: false
+  },
+  {
+    key: SETTING_KEYS.HOVER,
+    name: "SIMPLE_COVER_5E.Settings.Hover.Name",
+    hint: "SIMPLE_COVER_5E.Settings.Hover.Hint",
+    config: true,
+    type: new foundry.data.fields.StringField({
+      choices: {
+        off: "SIMPLE_COVER_5E.Settings.Hover.Options.Off",
+        coverOnly: "SIMPLE_COVER_5E.Settings.Hover.Options.CoverOnly",
+        coverAndDistance: "SIMPLE_COVER_5E.Settings.Hover.Options.CoverAndDistance"
+      },
+      initial: "coverAndDistance",
+      required: true,
+      blank: false,
+      trim: true
+    }),
+    requiresReload: false
+  },
+
+  {
+    key: SETTING_KEYS.HOVER_LABEL_POSITION,
+    name: "SIMPLE_COVER_5E.Settings.HoverLabelPosition.Name",
+    hint: "SIMPLE_COVER_5E.Settings.HoverLabelPosition.Hint",
+    scope: "client",
+    config: true,
+    type: new foundry.data.fields.StringField({
+      choices: {
+        below: "SIMPLE_COVER_5E.Settings.HoverLabelPosition.Options.Below",
+        above: "SIMPLE_COVER_5E.Settings.HoverLabelPosition.Options.Above",
+        on: "SIMPLE_COVER_5E.Settings.HoverLabelPosition.Options.On",
+      },
+      initial: "below",
       required: true,
       blank: false,
       trim: true,
@@ -22,93 +88,103 @@ const SETTINGS = [
     requiresReload: false,
   },
   {
-    key: SETTING_KEYS.ONLY_IN_COMBAT,
-    name: "Apply Cover Only In Combat",
-    hint: "If enabled, automatic cover calculation only runs while a combat encounter is active.",
-    type: new foundry.data.fields.BooleanField({ initial: false }),
-    requiresReload: false,
+    key: SETTING_KEYS.HOVER_LABEL_Y_OFFSET,
+    name: "SIMPLE_COVER_5E.Settings.HoverLabelYOffset.Name",
+    hint: "SIMPLE_COVER_5E.Settings.HoverLabelYOffset.Hint",
+    scope: "client",
+    config: true,
+    type: new foundry.data.fields.NumberField({
+      initial: 0,
+      required: false,
+      nullable: false
+    }),
+    default: 0,
+    requiresReload: false
   },
   {
-    key: SETTING_KEYS.RMV_ON_COMBAT,
-    name: "Clear Cover on Combat Updates",
-    hint: "Automatically remove the Cover condition on combat changes (turn/round/initiative), honoring the selected Cover Removal Scope.",
-    type: new foundry.data.fields.BooleanField({ initial: true }),
-    requiresReload: false,
+    key: SETTING_KEYS.HOVER_LABEL_X_OFFSET,
+    name: "SIMPLE_COVER_5E.Settings.HoverLabelXOffset.Name",
+    hint: "SIMPLE_COVER_5E.Settings.HoverLabelXOffset.Hint",
+    scope: "client",
+    config: true,
+    type: new foundry.data.fields.NumberField({
+      initial: 0,
+      required: false,
+      nullable: false
+    }),
+    default: 0,
+    requiresReload: false
   },
   {
-    key: SETTING_KEYS.RMV_ON_MOVE,
-    name: "Clear Cover on Token Movement",
-    hint: "Automatically remove the Cover condition when a token moves during active combat, honoring the selected Cover Removal Scope.",
-    type: new foundry.data.fields.BooleanField({ initial: false }),
-    requiresReload: false,
-  },
-  {
-    key: SETTING_KEYS.CREATURES_HALF_ONLY,
-    name: "Limit Cover from Creatures to 1/2 Cover",
-    hint: "When enabled, creatures can grant at most Half Cover. As soon as at least one line is blocked purely by creatures, the target gains Half Cover, but never Three-Quarters Cover from creatures alone. Walls continue to follow the standard DMG rules.",
-    type: new foundry.data.fields.BooleanField({ initial: false }),
-    requiresReload: false,
-  },
-  {
-    key: SETTING_KEYS.HOVER,
-    name: "[Experimental] Hover Cover Display",
-    hint: "Shows distance and cover icons when hovering a token. Behavior and visuals may change in future versions.",
-    type: new foundry.data.fields.BooleanField({ initial: false }),
-    requiresReload: false,
+    key: SETTING_KEYS.GRIDLESS_DISTANCE_MODE,
+    name: "SIMPLE_COVER_5E.Settings.GridlessDistanceMode.Name",
+    hint: "SIMPLE_COVER_5E.Settings.GridlessDistanceMode.Hint",
+    config: true,
+    type: new foundry.data.fields.StringField({
+      choices: {
+        centerCenter: "SIMPLE_COVER_5E.Settings.GridlessDistanceMode.Options.CenterCenter",
+        edgeEdge: "SIMPLE_COVER_5E.Settings.GridlessDistanceMode.Options.EdgeEdge",
+        edgeToCenter: "SIMPLE_COVER_5E.Settings.GridlessDistanceMode.Options.EdgeToCenter"
+      },
+      initial: "edgeEdge",
+      required: true,
+      blank: false,
+      trim: true
+    }),
+    requiresReload: false
   },
   {
     key: SETTING_KEYS.DEBUG,
-    name: "Show Cover Debug Lines",
-    hint: "Draw helper lines while computing cover between tokens (for debugging/troubleshooting).",
+    name: "SIMPLE_COVER_5E.Settings.Debug.Name",
+    hint: "SIMPLE_COVER_5E.Settings.Debug.Hint",
     type: new foundry.data.fields.BooleanField({ initial: false }),
     requiresReload: false,
     onChange: (value) => {
       if (value === false) {
         clearCoverDebug();
       }
-    },
+    }
   },
   {
     key: SETTING_KEYS.CREATURE_HEIGHTS,
-    name: "Default Creature Heights",
-    hint: "Default creature heights (in feet) per size category used for 3D cover evaluation.",
+    name: "SIMPLE_COVER_5E.Settings.CreatureHeights.Name",
+    hint: "SIMPLE_COVER_5E.Settings.CreatureHeights.Hint",
     type: new foundry.data.fields.ObjectField({
-      initial: DEFAULT_SIZE_FT,
+      initial: DEFAULT_SIZE_FT
     }),
     requiresReload: false,
-    config: false,
-  },
+    config: false
+  }
 ];
 
 export function registerSettings() {
-  for (const { key, name, hint, type, requiresReload, config = true, onChange } of SETTINGS) {
+  for (const { key, name, hint, scope = "world", type, requiresReload, config = true, onChange } of SETTINGS) {
     game.settings.register(MODULE_ID, key, {
       name,
       hint,
-      scope: "world",
+      scope,
       config,
       type,
       requiresReload,
-      onChange,
+      onChange
     });
   }
 
   game.settings.registerMenu(MODULE_ID, "creatureHeightsMenu", {
-    name: "Creature Heights",
-    label: "Configure Creature Heights",
-    hint: "Adjust default heights (in ft) for each creature size used when computing cover.",
+    name: "SIMPLE_COVER_5E.Settings.HeightsMenu.Name",
+    label: "SIMPLE_COVER_5E.Settings.HeightsMenu.Label",
+    hint: "SIMPLE_COVER_5E.Settings.HeightsMenu.Hint",
     icon: "fas fa-ruler-vertical",
     type: SimpleCoverCreatureHeightsConfig,
-    restricted: true,
+    restricted: true
   });
 }
 
 export function getSceneControlButtons(controls) {
-
   if (!game.user.isGM) return;
   controls.tokens.tools[MODULE_ID] = {
     name: MODULE_ID,
-    title: "Remove Cover Effects",
+    title: "SIMPLE_COVER_5E.Controls.ClearCover.Title",
     icon: "fa-solid fa-shield-exclamation",
     onChange: (event, active) => clearCoverStatusEffect(),
     button: true

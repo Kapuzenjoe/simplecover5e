@@ -14,24 +14,11 @@ export function buildCoverContext(scene) {
     const pxPerFt = grid.size / grid.distance;
 
     const saved = game.settings.get(MODULE_ID, SETTING_KEYS.CREATURE_HEIGHTS) ?? {};
-    const base = foundry.utils.mergeObject(
+    const sizeFt = foundry.utils.mergeObject(
         DEFAULT_SIZE_FT,
         saved,
         { inplace: false }
     );
-    const sizeFt = {
-        tiny: base.tiny,
-        small: base.small,
-        sm: base.small,
-        medium: base.medium,
-        med: base.medium,
-        large: base.large,
-        lg: base.large,
-        huge: base.huge,
-        gargantuan: base.gargantuan,
-        grg: base.gargantuan
-    };
-
     return {
         scene,
         grid,
@@ -146,7 +133,7 @@ function segIntersectsAABB3D(p, q, b) {
 /**
  * Evaluate DMG cover for attacker -> target.
  * Draws lines from one best attacker corner to all corners of one best target cell (4 on square/gridless, 6 on hex).
- * Walls (sight) and other creatures (AABBs) block; tangents allowed.
+ * Walls (sight) and other creatures (AABBs) block.
  * @param {TokenDocument} attackerDoc
  * @param {TokenDocument} targetDoc
  * @param {*} ctx
@@ -210,7 +197,7 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options)
         if (!coords) return null;
         const verts = grid.getVertices(coords);
         if (!Array.isArray(verts) || verts.length === 0) return null;
-  
+
         const hexCenter = verts.reduce((acc, v) => {
             acc.x += v.x;
             acc.y += v.y;

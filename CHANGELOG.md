@@ -1,5 +1,14 @@
 # Changelog
 
+## Version 0.5.0
+
+- Added localisation support.
+- Switched hover label from PIXI to HTML for better customization.
+- Added new configuration options for the hover label (position and offsets) (#7).
+- Added optional distance display modes (off / cover only / cover + distance) (#7).
+- Added configurable gridless distance modes (center–center, edge–center, and edge–edge) for hover range measurement (#7).
+- Removed obsolete code.
+
 ## Version 0.4.0
 
 - Small internal fixes and more robust `try/catch` handling.

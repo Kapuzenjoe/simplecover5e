@@ -1,8 +1,6 @@
-import { MODULE_ID, DEFAULT_SIZE_FT, SETTING_KEYS } from "./constants.config.mjs";
+import { MODULE_ID, DEFAULT_SIZE_FT, SETTING_KEYS, BASE_KEYS } from "./constants.config.mjs";
 
 const { HandlebarsApplicationMixin, ApplicationV2 } = foundry.applications.api;
-
-const BASE_KEYS = Object.keys(DEFAULT_SIZE_FT);
 
 export class SimpleCoverCreatureHeightsConfig extends HandlebarsApplicationMixin(ApplicationV2) {
     /** @inheritdoc */
@@ -45,28 +43,39 @@ export class SimpleCoverCreatureHeightsConfig extends HandlebarsApplicationMixin
             { inplace: false }
         );
 
-        const sizes = BASE_KEYS.map((key) => ({
-            key,
-            value: base[key],
-            label: key.charAt(0).toUpperCase() + key.slice(1),
-            default: DEFAULT_SIZE_FT[key],
-        }));
+        const actorSizes = CONFIG.DND5E?.actorSizes ?? {};
+
+        const sizes = BASE_KEYS.map((key) => {
+            const sizeData = actorSizes[key];
+
+            const label =
+                sizeData?.label ||
+                key.charAt(0).toUpperCase() + key.slice(1);
+
+            return {
+                key,
+                value: base[key],
+                label,
+                default: DEFAULT_SIZE_FT[key]
+            };
+        })
 
         const buttons = [
             {
                 type: "submit",
                 icon: "fa-solid fa-check",
-                label: "Save",
+                label: game.i18n.localize("SIMPLE_COVER_5E.Settings.HeightsMenu.Buttons.Save")
             },
             {
                 type: "button",
                 icon: "fa-solid fa-recycle",
-                label: "Reset",
-                action: "reset",
-            },
+                label: game.i18n.localize("SIMPLE_COVER_5E.Settings.HeightsMenu.Buttons.Reset"),
+                action: "reset"
+            }
         ];
 
-        return { sizes, buttons };
+        const gridUnits = canvas.scene?.grid?.units ?? "ft";
+        return { sizes, buttons, gridUnits };
     }
 
     /**

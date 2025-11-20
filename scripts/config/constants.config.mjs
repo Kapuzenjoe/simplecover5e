@@ -16,16 +16,21 @@ export const SETTING_KEYS = {
   CREATURE_HEIGHTS: "creatureHeights",
   HOVER: "hover",
   LIBRARY_MODE: "libraryMode",
+  HOVER_LABEL_POSITION: "hoverLabelPosition",
+  HOVER_LABEL_Y_OFFSET: "hoverLabelYOffset",
+  HOVER_LABEL_X_OFFSET: "hoverLabelXOffset",
+  GRIDLESS_DISTANCE_MODE: "gridlessDistanceMode",
 };
 
 export const DEFAULT_SIZE_FT = {
   tiny: 1,
-  small: 3,
-  medium: 6,
-  large: 12,
+  sm: 3,
+  med: 6,
+  lg: 12,
   huge: 24,
-  gargantuan: 48
+  grg: 48
 };
+export const BASE_KEYS = Object.keys(DEFAULT_SIZE_FT);
 
 export const GRID_MODES = {
   SQUARE: "square",

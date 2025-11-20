@@ -1,0 +1,25 @@
+#measurement .waypoint-label.hover-distance-label {
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  z-index: 100;
+  border: 1px solid #ffcc00;       
+  box-shadow: 0 0 4px #ffcc00;     
+}
+#measurement .hover-distance-label .distance-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+#measurement .hover-distance-label .cover-row {
+  display: flex;
+  justify-content: center;
+}
+
+#measurement .hover-distance-label .cover-icon {
+  width: 25px;
+  height: 25px;
+  background-size: contain;
+  background-repeat: no-repeat;
+}

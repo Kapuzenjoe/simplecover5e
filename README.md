@@ -15,7 +15,7 @@
 - Tiny creatures use the token’s actual position and footprint within their cell/hex instead of the grid cell center, improving accuracy when multiple Tiny tokens share the same space.
 - The module introduces an *Ignore Cover* item property. Add it to spells, weapons, or feats that should ignore cover (for example, *Sacred Flame*) and the cover calculation will be skipped for that roll.
 - The feats **Sharpshooter** and **Spell Sniper** are automatically respected when present on the attacker, either by their English name or by a matching `system.identifier` (e.g. `"sharpshooter"` / `"spell-sniper"`).
-- (Optional) A token hover helper can display a distance label and cover icon under the hovered token’s nameplate when exactly one controlled token is selected.
+- (Optional) A token hover helper can display cover icons and/or a distance label near the hovered token, styled similarly to the core distance ruler and configurable in position and offset.
 
 ### Default Creature Heights
 
@@ -37,15 +37,21 @@ These are the default 3D heights (in feet) used for cover evaluation. They can b
 - **Clear Cover on Token Movement (Combat Only)** — When a token moves during active combat, remove cover according to the selected scope.
 - **Limit Cover from Creatures to Half Cover** — When enabled, creature occlusion alone can grant at most Half Cover; creatures never upgrade a target to Three-Quarters Cover by themselves. Walls and other occluders still follow the normal DMG thresholds.
 - **Apply Cover Only In Combat** — Only run automatic cover evaluation while a combat encounter is active on the scene (no cover checks outside of combat).
-- **Show Cover on Token Hover** — When enabled, hovering another token while exactly one owned token is controlled will show a small distance label and cover icon under that token’s nameplate. This runs per-client and does not change any mechanics.
+
+- **Hover Display (Cover & Distance)** — Controls the hover helper:
+  - *Disabled* — no hover display.
+  - *Cover icons only* — show only the cover icon for the hovered target (if any).
+  - *Cover icons and distance* — show both cover icon and distance.
+- **Hover Label Position** — Choose where the hover label is anchored relative to the target token (*Above*, *On*, or *Below* the token).
+- **Hover Label X/Y Offset** — Additional horizontal and vertical offsets (in pixels) applied to the hover label position, allowing fine-tuning to avoid overlap with other UI elements.
+- **Gridless Distance Mode** — Controls how distance is measured on gridless scenes for the hover display: *Center to center*, *Source edge to target center*, or *Edge to edge*.
+
 - **Show Cover Debug Lines** — Renders helper segments used during cover evaluation (GM only).
 - **Creature Heights** — Configure the default 3D heights (in feet) for each size category used when treating tokens as prisms for cover.
 
 ### Notes & Limitations
 
 - Gridless and hex behaviour for large creatures and Tiny positioning are reasonable approximations where RAW is unclear; feedback and alternative suggestions are welcome.
-- The *Ignore Cover* item property is added by this module and can be toggled per item.
-- Multi-target rolls are supported.
 
 ## Compatibility
 
