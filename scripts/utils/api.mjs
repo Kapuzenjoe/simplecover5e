@@ -4,6 +4,7 @@ import {
     buildCreaturePrism,
     evaluateCoverFromOccluders,
 } from "../services/cover.engine.mjs";
+import { isBlockingCreatureToken } from "../utils/rpc.mjs";
 
 function registerLibraryModeSetting() {
     if (game.settings.settings.has(`${MODULE_ID}.${SETTING_KEYS.LIBRARY_MODE}`)) return;
