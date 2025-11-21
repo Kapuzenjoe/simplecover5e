@@ -4,6 +4,7 @@
 
 - Fixed cover evaluation to ignore hidden, ethereal, and dead creatures as blockers.
 - Fixed cover handling to respect manually applied Total Cover (e.g. swallowed creatures): tokens with a Total Cover status are no longer recalculated or modified by the module.
+- Changed hover-related settings scope from "client" to "user" so they now apply per Foundry user instead of per browser client.
 
 ## Version 0.5.0
 

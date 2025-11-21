@@ -72,7 +72,7 @@ const SETTINGS = [
     key: SETTING_KEYS.HOVER_LABEL_POSITION,
     name: "SIMPLE_COVER_5E.Settings.HoverLabelPosition.Name",
     hint: "SIMPLE_COVER_5E.Settings.HoverLabelPosition.Hint",
-    scope: "client",
+    scope: "user",
     config: true,
     type: new foundry.data.fields.StringField({
       choices: {
@@ -91,7 +91,7 @@ const SETTINGS = [
     key: SETTING_KEYS.HOVER_LABEL_Y_OFFSET,
     name: "SIMPLE_COVER_5E.Settings.HoverLabelYOffset.Name",
     hint: "SIMPLE_COVER_5E.Settings.HoverLabelYOffset.Hint",
-    scope: "client",
+    scope: "user",
     config: true,
     type: new foundry.data.fields.NumberField({
       initial: 0,
@@ -105,7 +105,7 @@ const SETTINGS = [
     key: SETTING_KEYS.HOVER_LABEL_X_OFFSET,
     name: "SIMPLE_COVER_5E.Settings.HoverLabelXOffset.Name",
     hint: "SIMPLE_COVER_5E.Settings.HoverLabelXOffset.Hint",
-    scope: "client",
+    scope: "user",
     config: true,
     type: new foundry.data.fields.NumberField({
       initial: 0,
