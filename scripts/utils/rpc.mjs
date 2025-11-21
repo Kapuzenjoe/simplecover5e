@@ -18,3 +18,29 @@ export async function toggleCoverEffectViaGM(actorUuid, effectId, enable) {
     return false;
   }
 }
+
+/**
+ * Decide if a token should be considered as a blocking creature for cover.
+ *
+ * - Ignores hidden tokens
+ * - Ignores tokens that are not visible on the canvas
+ * - Ignores tokens with the "ethereal" or "dead" status effect
+ *
+ * @param {Token} token
+ * @returns {boolean}
+ */
+export function isBlockingCreatureToken(token) {
+  if (!token) return false;
+
+  const doc = token.document;
+  if (!doc || doc.hidden) return false;
+  if (!token.visible) return false;
+
+  const actor = token.actor;
+  const statuses = actor?.statuses;
+  if (!statuses) return true;
+  if (statuses.has("ethereal")) return false;
+  if (statuses.has("dead")) return false;
+
+  return true;
+}

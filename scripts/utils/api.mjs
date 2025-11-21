@@ -10,7 +10,7 @@ function registerLibraryModeSetting() {
 
     game.settings.register(MODULE_ID, SETTING_KEYS.LIBRARY_MODE, {
         scope: "world",
-        config: false,          
+        config: false,
         type: Boolean,
         default: false,
     });
@@ -24,9 +24,10 @@ function buildContextWithPrisms(scene) {
     const s = scene ?? canvas?.scene;
     if (!s) return null;
 
-    const ctx = buildCoverContext(s);
+    const ctx = buildCoverContext(canvas.scene);
+    const blockingTokens = canvas.tokens.placeables.filter(t => isBlockingCreatureToken(t));
     ctx.creaturePrisms = new Map(
-        canvas.tokens.placeables.map(t => [t.id, buildCreaturePrism(t.document, ctx)])
+        blockingTokens.map(t => [t.id, buildCreaturePrism(t.document, ctx)])
     );
     return ctx;
 }

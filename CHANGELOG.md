@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 0.5.1
+
+- Fixed cover evaluation to ignore hidden, ethereal, and dead creatures as blockers.
+- Fixed cover handling to respect manually applied Total Cover (e.g. swallowed creatures): tokens with a Total Cover status are no longer recalculated or modified by the module.
+
 ## Version 0.5.0
 
 - Added localisation support.

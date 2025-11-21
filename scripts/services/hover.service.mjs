@@ -5,6 +5,7 @@ import {
   evaluateCoverFromOccluders,
 } from "../services/cover.engine.mjs";
 import { measureTokenDistance } from "../utils/distance.mjs";
+import { isBlockingCreatureToken } from "../utils/rpc.mjs";
 
 const COVER_ICON_PATHS = {
   half: "systems/dnd5e/icons/svg/statuses/cover-half.svg",
@@ -65,9 +66,10 @@ export async function onHoverToken(token, hoverState) {
   if (hoverMode === "coverOnly" || hoverMode === "coverAndDistance") {
     const scene = hoveredToken.scene;
     if (scene) {
-      const ctx = buildCoverContext(scene);
+      const ctx = buildCoverContext(canvas.scene);
+      const blockingTokens = canvas.tokens.placeables.filter(t => isBlockingCreatureToken(t));
       ctx.creaturePrisms = new Map(
-        canvas.tokens.placeables.map(t => [t.id, buildCreaturePrism(t.document, ctx)])
+        blockingTokens.map(t => [t.id, buildCreaturePrism(t.document, ctx)])
       );
 
       const coverEval = evaluateCoverFromOccluders(

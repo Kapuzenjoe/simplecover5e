@@ -11,6 +11,8 @@
   - **Square / Gridless**: if **1–2** lines are blocked, the target gains **Half Cover**; if **3–4** lines are blocked (and the effect still reaches), the target gains **Three-Quarters Cover**.
   - **Hex**: if **1–3** lines are blocked, the target gains **Half Cover**; if **4–6** lines are blocked (and the effect still reaches), the target gains **Three-Quarters Cover**.
 - Blocking tokens are treated as 3D prisms with configurable heights by creature size (see table below). Effects are pushed directly into the roll (chat target AC / save bonus) and synchronized with token status effects.
+- Non-blocking creatures (hidden tokens, ethereal creatures, or dead actors) are ignored when evaluating cover.
+- Tokens that already have **Total Cover** applied (e.g. swallowed creatures) are respected: the module does not recalculate or overwrite their cover state.
 - On **gridless** scenes, larger tokens (Large and bigger) are evaluated using virtual sub-cells to approximate the multi-square behaviour from square grids where no RAW gridless procedure exists.
 - Tiny creatures use the token’s actual position and footprint within their cell/hex instead of the grid cell center, improving accuracy when multiple Tiny tokens share the same space.
 - The module introduces an *Ignore Cover* item property. Add it to spells, weapons, or feats that should ignore cover (for example, *Sacred Flame*) and the cover calculation will be skipped for that roll.
@@ -126,6 +128,7 @@ This pattern allows other modules (such as automation/conditions modules) to reu
 - Wall Height integration (Foundry V13 only; likely obsolete with V14+ scene levels)
 
 ## Examples (with active debug mode)
+
 ![Example 1](docs/example_1.png)
 ![Example 2](docs/example_2.png)
 ![Example 3](docs/example_3.png)

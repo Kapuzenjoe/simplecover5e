@@ -6,7 +6,7 @@ import {
   evaluateCoverFromOccluders,
 } from "../services/cover.engine.mjs";
 import { drawCoverDebug, clearCoverDebug } from "../services/cover.debug.mjs";
-import { toggleCoverEffectViaGM } from "../utils/rpc.mjs";
+import { toggleCoverEffectViaGM, isBlockingCreatureToken } from "../utils/rpc.mjs";
 
 
 // =========================
@@ -57,14 +57,19 @@ export function onPreRollAttack(config, dialog, message) {
   if (!targets.length) return;
 
   const ctx = buildCoverContext(canvas.scene);
+  const blockingTokens = canvas.tokens.placeables.filter(t => isBlockingCreatureToken(t));
   ctx.creaturePrisms = new Map(
-    canvas.tokens.placeables.map(t => [t.id, buildCreaturePrism(t.document, ctx)])
+    blockingTokens.map(t => [t.id, buildCreaturePrism(t.document, ctx)])
   );
 
   const debugOn = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.DEBUG);
   if (debugOn && game.users.activeGM) clearCoverDebug();
 
   for (const t of targets) {
+    const targetActor = t.document.actor;
+    const targetActorId = targetActor.uuid;
+
+    if (targetActor.statuses?.has?.(COVER_STATUS_IDS.total)) continue;
     const res = evaluateCoverFromOccluders(attackerToken.document, t.document, ctx, { debug: debugOn });
     if (debugOn && res.debugSegments?.length && game.users.activeGM) {
       drawCoverDebug({ segments: res.debugSegments });
@@ -77,9 +82,6 @@ export function onPreRollAttack(config, dialog, message) {
     const item = config.subject?.item ?? null;
     const actionType = config.subject?.actionType ?? null;
     if (spellIgnoresCover(item, actor, actionType)) wantId = null;
-
-    const targetActor = t.document.actor;
-    const targetActorId = targetActor.uuid;
 
     const currentBonus = getCurrentACCoverBonus(targetActor);
     const desiredBonus = desiredBonusFromWant(wantId, COVER_STATUS_IDS);
@@ -121,6 +123,8 @@ export function onPreRollSavingThrow(config, dialog, message) {
   if (onlyInCombat && !game?.combats?.active) return;
 
   const actor = config.subject
+  if (actor.statuses?.has?.(COVER_STATUS_IDS.total)) return;
+  
   const targetToken = actor.getActiveTokens?.()[0]
   if (!targetToken) return;
 
@@ -131,7 +135,10 @@ export function onPreRollSavingThrow(config, dialog, message) {
   if (!sourceToken) return;
 
   const ctx = buildCoverContext(canvas.scene);
-  ctx.creaturePrisms = new Map(canvas.tokens.placeables.map(t => [t.id, buildCreaturePrism(t.document, ctx)]));
+  const blockingTokens = canvas.tokens.placeables.filter(t => isBlockingCreatureToken(t));
+  ctx.creaturePrisms = new Map(
+    blockingTokens.map(t => [t.id, buildCreaturePrism(t.document, ctx)])
+  );
 
   const debugOn = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.DEBUG);
   if (debugOn && game.users.activeGM) clearCoverDebug();
@@ -210,7 +217,7 @@ export async function clearCoverOnUpdateCombat(combat, update) {
  * @param {User} user                           The User that requested the update operation
  */
 export async function clearCoverOnMovement(token, movement, operation, user) {
-  try {    
+  try {
     if (!game.users.activeGM?.isSelf) return;
     if (!game.settings.get(MODULE_ID, SETTING_KEYS.RMV_ON_MOVE)) return;
 
