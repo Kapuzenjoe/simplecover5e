@@ -10,7 +10,7 @@
 - Cover thresholds:
   - **Square / Gridless**: if **1–2** lines are blocked, the target gains **Half Cover**; if **3–4** lines are blocked (and the effect still reaches), the target gains **Three-Quarters Cover**.
   - **Hex**: if **1–3** lines are blocked, the target gains **Half Cover**; if **4–6** lines are blocked (and the effect still reaches), the target gains **Three-Quarters Cover**.
-- Blocking tokens are treated as 3D prisms with configurable heights by creature size (see table below). Effects are pushed directly into the roll (chat target AC / save bonus) and synchronized with token status effects.
+- Blocking tokens are treated as 3D prisms with configurable heights by creature size (see table below). When the **Wall Height** module is active, creature heights are taken from that module instead of these defaults. Effects are pushed directly into the roll (chat target AC / save bonus) and synchronized with token status effects.
 - Non-blocking creatures (hidden tokens, ethereal creatures, or dead actors) are ignored when evaluating cover.
 - Tokens that already have **Total Cover** applied (e.g. swallowed creatures) are respected: the module does not recalculate or overwrite their cover state.
 - On **gridless** scenes, larger tokens (Large and bigger) are evaluated using virtual sub-cells to approximate the multi-square behaviour from square grids where no RAW gridless procedure exists.
@@ -21,16 +21,18 @@
 
 ### Default Creature Heights
 
-These are the default 3D heights (in feet) used for cover evaluation. They can be customized in the module settings.
+These are the default 3D heights (in grid units) used for cover evaluation. They can be customized in the module settings.
 
-| Size        | Height (ft) |
-|-------------|-------------:|
-| tiny        |            1 |
-| small       |            3 |
-| medium      |            6 |
-| large       |           12 |
-| huge        |           24 |
-| gargantuan  |           48 |
+> Note: If the **Wall Height** module is active, the values below are ignored and token heights are derived from that module.
+
+| Size        | Height (grid units) |
+|-------------|------------:|
+| tiny        |           1 |
+| small       |           3 |
+| medium      |           6 |
+| large       |          12 |
+| huge        |          24 |
+| gargantuan  |          48 |
 
 ## Settings
 

@@ -67,14 +67,14 @@
       },
       "CreatureHeights": {
         "Name": "Default Creature Heights",
-        "Hint": "Default creature heights (in feet) per size category used for 3D cover evaluation."
+        "Hint": "Default creature heights (in Grid Units) per size category used for 3D cover evaluation. When the \"Wall Height\" module is active, these defaults are ignored and heights are taken from that module instead."
       },
       "HeightsMenu": {
         "Name": "Creature Heights",
         "Label": "Configure Creature Heights",
-        "Hint": "Adjust default heights (in ft) for each creature size used when computing cover.",
+        "Hint": "Adjust default heights (in Grid Units) for each creature size used when computing cover. When the \"Wall Height\" module is active, these defaults are ignored and heights are taken from that module instead.",
         "Legend": "Creature Heights",
-        "BodyHint": "Set the default height (in feet) for each creature size. These values are used when treating tokens as 3D prisms for cover.",
+        "BodyHint": "Set the default height (in Grid Units) for each creature size. These values are used when treating tokens as 3D prisms for cover. When the \"Wall Height\" module is active, these defaults are ignored and heights are taken from that module instead.",
         "Buttons": {
           "Save": "Save",
           "Reset": "Reset"

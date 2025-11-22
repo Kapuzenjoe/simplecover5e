@@ -66,15 +66,15 @@
                 "Hint": "Zeichnet Hilfslinien während der Cover-Berechnung zwischen Tokens (zum Debugging/Fehlerbeheben)."
             },
             "CreatureHeights": {
-                "Name": "Standardgrößen von Kreaturen",
-                "Hint": "Standardhöhen von Kreaturen (in Fuß) pro Größenkategorie, die für die 3D-Cover-Bewertung verwendet werden."
+                "Name": "Standard-Kreaturenhöhen",
+                "Hint": "Standard-Kreaturenhöhen (in Rastereinheiten) je Größenkategorie, die für die 3D-Deckungsberechnung verwendet werden. Wenn das Modul \"Wall Height\" aktiv ist, werden diese Vorgaben ignoriert und stattdessen die Höhen aus diesem Modul übernommen."
             },
             "HeightsMenu": {
                 "Name": "Kreaturenhöhen",
                 "Label": "Kreaturenhöhen konfigurieren",
-                "Hint": "Passe die Standardhöhen (in Fuß) für jede Kreaturengröße an, die bei der Berechnung von Cover verwendet werden.",
+                "Hint": "Passe die Standardhöhen (in Rastereinheiten) für jede Kreaturengröße an, die bei der Deckungsberechnung verwendet werden. Wenn das Modul \"Wall Height\" aktiv ist, werden diese Vorgaben ignoriert und stattdessen die Höhen aus diesem Modul übernommen.",
                 "Legend": "Kreaturenhöhen",
-                "BodyHint": "Lege die Standardhöhe (in Fuß) für jede Kreaturengröße fest. Diese Werte werden verwendet, wenn Token für Cover als 3D-Prismen behandelt werden.",
+                "BodyHint": "Lege die Standardhöhe (in Rastereinheiten) für jede Kreaturengröße fest. Diese Werte werden verwendet, wenn Tokens für Deckung als 3D-Prismen behandelt werden. Wenn das Modul \"Wall Height\" aktiv ist, werden diese Vorgaben ignoriert und stattdessen die Höhen aus diesem Modul übernommen.",
                 "Buttons": {
                     "Save": "Speichern",
                     "Reset": "Zurücksetzen"

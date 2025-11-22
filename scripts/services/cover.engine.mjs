@@ -37,6 +37,20 @@ function getSizeKey(td) {
 }
 
 function getCreatureHeightFt(td, ctx) {
+    if (game.modules?.get?.("wall-height")?.active === true) {
+        const token = td.object;
+        const elevation = Number(td.elevation ?? 0);
+        const losHeight = token ? Number(token.losHeight) : NaN;
+        if (Number.isFinite(losHeight)) {
+            const diff = losHeight - elevation;
+            if (diff > 0) {
+                const height = Math.ceil(diff * 100) / 100;
+                if (Number.isFinite(height)) {
+                    return height;
+                }
+            }
+        }
+    }
     const key = getSizeKey(td);
     return ctx.sizeFt[key] ?? 6;
 }
