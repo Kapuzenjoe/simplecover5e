@@ -2,8 +2,8 @@
 
 ## Version 1.0.0
 
-- 1st Stable Release  
-- code cleanup and more JS DOCS
+- 1st Stable Release.
+- Code cleanup and more JS DOCS.
 - Added compatibility with the **Wall Height** module: token LOS heights and wall height bounds are now used for 3D cover evaluation when the module is active. This integration is considered transitional and may become obsolete once Foundry VTT v14 ships native Scene Levels support.
 
 ## Version 0.5.1
