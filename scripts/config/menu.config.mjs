@@ -2,6 +2,11 @@ import { MODULE_ID, DEFAULT_SIZE_FT, SETTING_KEYS, BASE_KEYS } from "./constants
 
 const { HandlebarsApplicationMixin, ApplicationV2 } = foundry.applications.api;
 
+/**
+ * Configuration application for default creature heights used by Simple Cover 5e.
+ *
+ * @extends {ApplicationV2}
+ */
 export class SimpleCoverCreatureHeightsConfig extends HandlebarsApplicationMixin(ApplicationV2) {
     /** @inheritdoc */
     static DEFAULT_OPTIONS = {
@@ -58,7 +63,7 @@ export class SimpleCoverCreatureHeightsConfig extends HandlebarsApplicationMixin
                 label,
                 default: DEFAULT_SIZE_FT[key]
             };
-        })
+        });
 
         const buttons = [
             {
@@ -74,11 +79,13 @@ export class SimpleCoverCreatureHeightsConfig extends HandlebarsApplicationMixin
             }
         ];
 
-        const gridUnits = canvas.scene?.grid?.units ?? "ft";
+        const gridUnits = canvas?.scene?.grid?.units ?? "ft";
         return { sizes, buttons, gridUnits };
     }
 
     /**
+     * Handle form submission and persist the cleaned creature height values.
+     *
      * @param {SubmitEvent} event
      * @param {HTMLFormElement} form
      * @param {FormDataExtended} formData
@@ -99,10 +106,13 @@ export class SimpleCoverCreatureHeightsConfig extends HandlebarsApplicationMixin
             const n = Number(raw);
             cleaned[key] = Number.isFinite(n) && n >= 0 ? n : fallback;
         }
+
         await game.settings.set(MODULE_ID, SETTING_KEYS.CREATURE_HEIGHTS, cleaned);
     }
 
     /**
+     * Reset all creature heights back to the module defaults.
+     *
      * @this {SimpleCoverCreatureHeightsConfig}
      * @param {PointerEvent} event
      * @param {HTMLButtonElement} target
@@ -110,7 +120,12 @@ export class SimpleCoverCreatureHeightsConfig extends HandlebarsApplicationMixin
     static async #onReset(event, target) {
         event.preventDefault();
 
-        await game.settings.set(MODULE_ID, SETTING_KEYS.CREATURE_HEIGHTS, foundry.utils.duplicate(DEFAULT_SIZE_FT));
+        await game.settings.set(
+            MODULE_ID,
+            SETTING_KEYS.CREATURE_HEIGHTS,
+            foundry.utils.duplicate(DEFAULT_SIZE_FT)
+        );
+
         ui.notifications.info("SimpleCover5e: Creature heights reset to defaults.");
 
         this.render();

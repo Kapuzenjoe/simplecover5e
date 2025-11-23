@@ -124,7 +124,7 @@ export function onPreRollSavingThrow(config, dialog, message) {
 
   const actor = config.subject
   if (actor.statuses?.has?.(COVER_STATUS_IDS.total)) return;
-  
+
   const targetToken = actor.getActiveTokens?.()[0]
   if (!targetToken) return;
 
@@ -330,18 +330,26 @@ function adjustMessageTargetAC(message, targetUuid, delta) {
   }
 }
 
-// Helper: read current AC cover bonus from actor (0/2/5)
+/**
+ * Get the current cover bonus applied to the actor's AC.
+ * @param {Actor5e} actor 
+ * @returns {number}  The current cover bonus (0/2/5).
+ */
 function getCurrentACCoverBonus(actor) {
   const v = actor?.system?.attributes?.ac?.cover;
   const n = Number(v);
-  return Number.isFinite(n) ? n : 0; // null/undefined -> 0
+  return Number.isFinite(n) ? n : 0; 
 }
 
-// Helper: map wantId -> desired bonus (0/2/5)
+/**
+ * Return the desired cover bonus from the desired cover status ID.
+ * @param {*} wantId  
+ * @param {*} IDS 
+ * @returns {number}  The desired cover bonus (0/2/5).
+ */
 function desiredBonusFromWant(wantId, IDS) {
   if (wantId === IDS.threeQuarters) return 5;
   if (wantId === IDS.half) return 2;
   return 0;
 }
-
 

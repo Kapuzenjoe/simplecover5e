@@ -7,11 +7,18 @@ import {
 import { measureTokenDistance } from "../utils/distance.mjs";
 import { isBlockingCreatureToken } from "../utils/rpc.mjs";
 
+/**
+ * Property name for storing hover distance label on Token instance.
+ */
 const COVER_ICON_PATHS = {
   half: "systems/dnd5e/icons/svg/statuses/cover-half.svg",
   threeQuarters: "systems/dnd5e/icons/svg/statuses/cover-three-quarters.svg",
 };
 
+/**
+ * Remove hover decorations from token.
+ * @param {Token5e} token 
+ */
 function removeHoverDecorations(token) {
   if (!token) return;
   const label = token[HOVER.DISTANCE_LABEL_PROP];

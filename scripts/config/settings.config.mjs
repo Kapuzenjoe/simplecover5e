@@ -3,6 +3,9 @@ import { SimpleCoverCreatureHeightsConfig } from "./menu.config.mjs";
 import { clearCoverDebug } from "../services/cover.debug.mjs";
 import { clearCoverStatusEffect } from "../services/cover.service.mjs";
 
+/**
+ * Module settings used by Simple Cover 5e.
+ */
 const SETTINGS = [
   {
     key: SETTING_KEYS.COVER_SCOPE,
@@ -157,6 +160,9 @@ const SETTINGS = [
   }
 ];
 
+/**
+ * Register module settings.
+ */
 export function registerSettings() {
   for (const { key, name, hint, scope = "world", type, requiresReload, config = true, onChange } of SETTINGS) {
     game.settings.register(MODULE_ID, key, {
@@ -180,6 +186,12 @@ export function registerSettings() {
   });
 }
 
+/**
+ * A hook event that fires when the Scene controls are initialized.
+ * @function getSceneControlButtons
+ * @memberof hookEvents
+ * @param {Record<string, SceneControl>} controls  The SceneControl configurations
+ */
 export function getSceneControlButtons(controls) {
   if (!game.user.isGM) return;
   controls.tokens.tools[MODULE_ID] = {

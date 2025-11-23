@@ -1,9 +1,5 @@
 import { MODULE_ID, SETTING_KEYS, GRID_MODES, getGridMode } from "../config/constants.config.mjs";
 
-// =========================
-// debug
-// =========================
-
 /**
  * Draw up to 4 debug segments (blocked vs open).
  * @param {{segments:Array}} 

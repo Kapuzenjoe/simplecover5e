@@ -26,8 +26,8 @@ export async function toggleCoverEffectViaGM(actorUuid, effectId, enable) {
  * - Ignores tokens that are not visible on the canvas
  * - Ignores tokens with the "ethereal" or "dead" status effect
  *
- * @param {Token} token
- * @returns {boolean}
+ * @param {Token5e} token
+ * @returns {boolean} True if blocking.
  */
 export function isBlockingCreatureToken(token) {
   if (!token) return false;

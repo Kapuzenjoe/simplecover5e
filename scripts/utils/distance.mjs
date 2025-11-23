@@ -63,7 +63,7 @@ export function measureTokenDistance(sourceToken, targetToken) {
   let result = minDistance;
 
   if (isGridless) {
-    const mode = game.settings.get(MODULE_ID, SETTING_KEYS.GRIDLESS_DISTANCE_MODE) ?? "edgeCenter";
+    const mode = game.settings.get(MODULE_ID, SETTING_KEYS.GRIDLESS_DISTANCE_MODE) ?? "edgetoCenter";
 
     if (mode === "edgeEdge" || mode === "edgeToCenter") {
       const unitsPerPixel = grid.distance / grid.size;

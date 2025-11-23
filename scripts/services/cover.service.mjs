@@ -1,5 +1,10 @@
 import { MODULE_ID, SETTING_KEYS, COVER_STATUS_IDS } from "../config/constants.config.mjs";
 
+/**
+ * Check if the given token/actor is player-owned.
+ * @param {{Token5e, Actor5e}}  
+ * @returns {boolean}  True if player-owned.
+ */
 function isPlayerOwned({ token, actor }) {
   if (token?.hasPlayerOwner !== undefined) return token.hasPlayerOwner;
   return !!actor?.hasPlayerOwner;

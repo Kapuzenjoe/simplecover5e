@@ -31,11 +31,21 @@ export function buildCoverContext(scene) {
     };
 }
 
-
+/**
+ * Get the size key for a token's actor.
+ * @param {TokenDocument} td 
+ * @returns {string} The size key ("tiny", "sm", "med", "lg", "huge", "grg").
+ */
 function getSizeKey(td) {
     return (td.actor?.system?.traits?.size ?? "med").toLowerCase();
 }
 
+/**
+ * Get the creature height in feet for a token document.
+ * @param {TokenDocument} td
+ * @param {*} ctx
+ * @returns {number}  The creature height in feet.
+ */
 function getCreatureHeightFt(td, ctx) {
     if (game.modules?.get?.("wall-height")?.active === true) {
         const token = td.object;
@@ -106,20 +116,119 @@ export function buildCreaturePrism(td, ctx) {
  * @param {{raw:{x:number,y:number}, inset:{x:number,y:number}}} aCorner 
  * @param {{raw:{x:number,y:number}, inset:{x:number,y:number}}} bCorner 
  * @param {PointSource|null} sightSource
+ * @param {TokenDocument} attackerDoc
+ * @param {TokenDocument} targetDoc
+ * @param {*} ctx
  * @returns {{blocked:boolean, A:{x:number,y:number}, B:{x:number,y:number}}}
  */
-function wallsBlock(aCorner, bCorner, sightSource) {
+function wallsBlock(aCorner, bCorner, sightSource, attackerDoc, targetDoc, ctx) {
     const A = aCorner.inset;
     const B = bCorner.inset;
     const backend = CONFIG.Canvas.polygonBackends.sight;
-    const collide = (P, Q) => backend.testCollision(P, Q, { type: "sight", mode: "any", source: sightSource });
-    if (collide(A, B)) return { blocked: true, A, B };
-    if (collide(aCorner.raw, A)) return { blocked: true, A, B };
-    if (collide(bCorner.raw, B)) return { blocked: true, A, B };
+
+    const collide = (P, Q) =>
+        backend.testCollision(P, Q, { type: "sight", mode: "all", source: sightSource }) || [];
+    let collisions = collide(A, B);
+
+    if (!collisions.length) collisions = collide(aCorner.raw, A);
+    if (!collisions.length) collisions = collide(bCorner.raw, B);
+    if (!collisions.length) {
+        return { blocked: false, A, B };
+    }
+
+    if (game.modules?.get?.("wall-height")?.active === false) {
+        return { blocked: true, A, B };
+    }
+
+    for (const vertex of collisions) {
+        if (!vertex) continue;
+        const edgeSet = vertex.edges ?? vertex.cwEdges ?? vertex.ccwEdges;
+        if (!edgeSet) continue;
+        for (const edge of edgeSet) {
+            const whFlags = edge?.object?.document?.flags?.["wall-height"];
+            if (!whFlags) {
+                return { blocked: true, A, B };
+            }
+        }
+
+        const { lineZ, attZ, tgtZ } = getLineHeightAtVertex(A, B, vertex, attackerDoc, targetDoc, ctx);
+        if (!Number.isFinite(lineZ)) continue;
+
+        for (const edge of edgeSet) {
+            const whFlags = edge?.object?.document?.flags?.["wall-height"];
+            const topRaw = whFlags?.top;
+            const bottomRaw = whFlags?.bottom;
+
+            let wallTop = Number(topRaw);
+            let wallBottom = Number(bottomRaw);
+
+            if (!Number.isFinite(wallTop)) wallTop = Infinity;
+            if (!Number.isFinite(wallBottom)) wallBottom = -Infinity;
+            const debugOn = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.DEBUG);
+            if (debugOn && game.users.activeGM) {
+                console.log(
+                    "[simplecover5e] wall-height line check",
+                    {
+                        attacker: { id: attackerDoc.id, zFt: attZ },
+                        target: { id: targetDoc.id, z: tgtZ },
+                        wall: { id: edge?.object?.document.id, bottom: wallBottom, top: wallTop },
+                        lineZ,
+                        tVertex: {
+                            x: vertex.x,
+                            y: vertex.y
+                        }
+                    }
+                );
+            }
+            if (lineZ >= wallBottom && lineZ <= wallTop) {
+                return { blocked: true, A, B };
+            }
+        }
+    }
     return { blocked: false, A, B };
 }
 
+/**
+ * Get the line height at the given vertex along the segment A->B.
+ * @param {*} A 
+ * @param {*} B 
+ * @param {*} vertex 
+ * @param {*} attackerDoc 
+ * @param {*} targetDoc 
+ * @param {*} ctx 
+ * @returns {lineZ:number, attZ:number, tgtZ:number} 
+ */
+function getLineHeightAtVertex(A, B, vertex, attackerDoc, targetDoc, ctx) {
+    const dx = B.x - A.x;
+    const dy = B.y - A.y;
+    let t;
+    if (Math.abs(dx) >= Math.abs(dy)) {
+        const denom = dx || 1e-9;
+        t = (vertex.x - A.x) / denom;
+    } else {
+        const denom = dy || 1e-9;
+        t = (vertex.y - A.y) / denom;
+    }
+    t = Math.min(Math.max(t, 0), 1);
 
+    const attBottomFt = Number(attackerDoc.elevation ?? 0);
+    const tgtBottomFt = Number(targetDoc.elevation ?? 0);
+    const attHeightFt = getCreatureHeightFt(attackerDoc, ctx);
+    const tgtHeightFt = getCreatureHeightFt(targetDoc, ctx);
+    const attZ = attBottomFt + (Number.isFinite(attHeightFt) ? attHeightFt * 0.7 : 0);
+    const tgtZ = tgtBottomFt + (Number.isFinite(tgtHeightFt) ? tgtHeightFt * 0.5 : 0);
+    const lineZ = attZ + t * (tgtZ - attZ)
+
+    return { lineZ, attZ, tgtZ };
+}
+
+/**
+ * Test if a 3D segment intersects a 3D AABB.
+ * @param {*} p 
+ * @param {*} q 
+ * @param {*} b 
+ * @returns {boolean}  True if intersects.
+ */
 function segIntersectsAABB3D(p, q, b) {
     let t0 = 0, t1 = 1;
     const d = { x: q.x - p.x, y: q.y - p.y, z: q.z - p.z };
@@ -279,7 +388,7 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options)
                 const segs = [];
 
                 for (const tCorner of tgtCorners) {
-                    const wb = wallsBlock(aCorner, tCorner, sightSource);
+                    const wb = wallsBlock(aCorner, tCorner, sightSource, attackerDoc, targetDoc, ctx);
                     const wBlocked = wb.blocked;
 
                     const a3 = { x: aCorner.inset.x, y: aCorner.inset.y, z: attackerZ };

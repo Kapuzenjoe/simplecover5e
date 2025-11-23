@@ -1,11 +1,26 @@
+/**
+ * Simple Cover 5e module id.
+ * @type {string}
+ */
 export const MODULE_ID = "simplecover5e";
 
+/**
+ * Status effect ids used to represent cover levels on tokens.
+ *
+ * @enum {string}
+ */
 export const COVER_STATUS_IDS = {
   half: "coverHalf",
   threeQuarters: "coverThreeQuarters",
   total: "coverTotal"
 };
 
+/**
+ * Setting keys used by this module.
+ *
+ * All settings are registered under {@link MODULE_ID} using these keys.
+ * @enum {string}
+ */
 export const SETTING_KEYS = {
   COVER_SCOPE: "coverRemovalScope",
   ONLY_IN_COMBAT: "onlyInCombat",
@@ -19,9 +34,14 @@ export const SETTING_KEYS = {
   HOVER_LABEL_POSITION: "hoverLabelPosition",
   HOVER_LABEL_Y_OFFSET: "hoverLabelYOffset",
   HOVER_LABEL_X_OFFSET: "hoverLabelXOffset",
-  GRIDLESS_DISTANCE_MODE: "gridlessDistanceMode",
+  GRIDLESS_DISTANCE_MODE: "gridlessDistanceMode"
 };
 
+/**
+ * Default creature heights in grid units by size category.
+ * 
+ * @type {Object<string, number>} 
+ */
 export const DEFAULT_SIZE_FT = {
   tiny: 1,
   sm: 3,
@@ -30,19 +50,37 @@ export const DEFAULT_SIZE_FT = {
   huge: 24,
   grg: 48
 };
+
+/**
+ * Base size keys used for iteration and configuration UIs.
+ * @type {string[]}
+ */
 export const BASE_KEYS = Object.keys(DEFAULT_SIZE_FT);
 
+/**
+ * Simplified grid modes used by this module.
+ *
+ * @enum {string}
+ */
 export const GRID_MODES = {
   SQUARE: "square",
   GRIDLESS: "gridless",
-  HEX: "hex",
+  HEX: "hex"
 };
 
+/**
+ * Normalize a scene's grid configuration into one of the supported GRID_MODES.
+ *
+ * @param {GridLayer["grid"]} grid   The scene grid configuration.
+ * @returns {GRID_MODES}             The simplified grid mode.
+ */
 export function getGridMode(grid) {
   const t = grid?.type;
   switch (t) {
-    case CONST.GRID_TYPES.GRIDLESS: return GRID_MODES.GRIDLESS;
-    case CONST.GRID_TYPES.SQUARE: return GRID_MODES.SQUARE;
+    case CONST.GRID_TYPES.GRIDLESS:
+      return GRID_MODES.GRIDLESS;
+    case CONST.GRID_TYPES.SQUARE:
+      return GRID_MODES.SQUARE;
     case CONST.GRID_TYPES.HEXODDR:
     case CONST.GRID_TYPES.HEXEVENR:
     case CONST.GRID_TYPES.HEXODDQ:
@@ -52,9 +90,14 @@ export function getGridMode(grid) {
       return GRID_MODES.SQUARE;
   }
 }
+
+/**
+ * Constants related to hover labels and icons used by this module.
+ * 
+ */
 export const HOVER = {
   DISTANCE_LABEL_PROP: `_${MODULE_ID}HoverDistanceLabel`,
   DISTANCE_LABEL_NAME: `${MODULE_ID}-hover-distance-label`,
   COVER_ICON_PROP: `_${MODULE_ID}HoverCoverIcon`,
-  COVER_ICON_NAME: `${MODULE_ID}-hover-cover-icon`,
-}
+  COVER_ICON_NAME: `${MODULE_ID}-hover-cover-icon`
+};

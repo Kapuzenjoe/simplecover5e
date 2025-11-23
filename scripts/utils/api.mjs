@@ -6,6 +6,9 @@ import {
 } from "../services/cover.engine.mjs";
 import { isBlockingCreatureToken } from "../utils/rpc.mjs";
 
+/**
+ * Register the library mode setting.
+ */
 function registerLibraryModeSetting() {
     if (game.settings.settings.has(`${MODULE_ID}.${SETTING_KEYS.LIBRARY_MODE}`)) return;
 
@@ -19,7 +22,8 @@ function registerLibraryModeSetting() {
 
 /**
  * Helper: create a reusable cover context + creature prisms.
- * @param {Scene} 
+ * @param {Scene} scene
+ * @returns {object|null}  The cover context or null.
  */
 function buildContextWithPrisms(scene) {
     const s = scene ?? canvas?.scene;

@@ -10,29 +10,14 @@
 - Cover thresholds:
   - **Square / Gridless**: if **1–2** lines are blocked, the target gains **Half Cover**; if **3–4** lines are blocked (and the effect still reaches), the target gains **Three-Quarters Cover**.
   - **Hex**: if **1–3** lines are blocked, the target gains **Half Cover**; if **4–6** lines are blocked (and the effect still reaches), the target gains **Three-Quarters Cover**.
-- Blocking tokens are treated as 3D prisms with configurable heights by creature size (see table below). When the **Wall Height** module is active, creature heights are taken from that module instead of these defaults. Effects are pushed directly into the roll (chat target AC / save bonus) and synchronized with token status effects.
-- Non-blocking creatures (hidden tokens, ethereal creatures, or dead actors) are ignored when evaluating cover.
+- Blocking tokens are treated as 3D prisms with configurable heights by creature size. When the **Wall Height** module is active, creature heights are taken from that module instead of these defaults. Non-blocking creatures (hidden tokens, ethereal creatures, or dead actors) are ignored when evaluating cover.
+- Effects are pushed directly into the roll (chat target AC / save bonus) and synchronized with token status effects.
 - Tokens that already have **Total Cover** applied (e.g. swallowed creatures) are respected: the module does not recalculate or overwrite their cover state.
 - On **gridless** scenes, larger tokens (Large and bigger) are evaluated using virtual sub-cells to approximate the multi-square behaviour from square grids where no RAW gridless procedure exists.
-- Tiny creatures use the token’s actual position and footprint within their cell/hex instead of the grid cell center, improving accuracy when multiple Tiny tokens share the same space.
+- Tiny creatures use the token’s actual position and footprint within their cell instead of the grid cell center (*currently only on square grid*), improving accuracy when multiple Tiny tokens share the same space.
 - The module introduces an *Ignore Cover* item property. Add it to spells, weapons, or feats that should ignore cover (for example, *Sacred Flame*) and the cover calculation will be skipped for that roll.
 - The feats **Sharpshooter** and **Spell Sniper** are automatically respected when present on the attacker, either by their English name or by a matching `system.identifier` (e.g. `"sharpshooter"` / `"spell-sniper"`).
 - (Optional) A token hover helper can display cover icons and/or a distance label near the hovered token, styled similarly to the core distance ruler and configurable in position and offset.
-
-### Default Creature Heights
-
-These are the default 3D heights (in grid units) used for cover evaluation. They can be customized in the module settings.
-
-> Note: If the **Wall Height** module is active, the values below are ignored and token heights are derived from that module.
-
-| Size        | Height (grid units) |
-|-------------|------------:|
-| tiny        |           1 |
-| small       |           3 |
-| medium      |           6 |
-| large       |          12 |
-| huge        |          24 |
-| gargantuan  |          48 |
 
 ## Settings
 
@@ -79,6 +64,12 @@ Simple Cover 5e is **partially compatible** with **Ready Set Roll 5e**:
   - Mechanics (hit / miss) work for **single-target** attacks.
   - The AC values shown under **Targets** on the Ready Set Roll card can sometimes be incorrect, because Simple Cover 5e mutates the dnd5e `messageFlags` during the attack roll, while Ready Set Roll appears to use its own data built earlier in the activity workflow.
 
+### Wall Height
+
+- When the **Wall Height** module is active, simplecover5e uses its per-token LOS height for 3D cover evaluation and ignores this module’s default creature height settings.
+- Walls with Wall Height bounds (`top` / `bottom`) are treated as 3D barriers: a cover line is only blocked if the 3D line between attacker and target passes through the wall’s height range.
+- For 3D LOS checks, the attacker’s ray starts at about **70%** of their height (approximate eye level) and aims at **50%** of the target’s height, so low walls tend to grant partial cover instead of behaving like unrealistic full-height barriers.
+
 ## Integration & API (Library Mode)
 
 Simple Cover 5e exposes a small API that other modules can use to query cover without relying on Active Effects or automatic roll mutation. The API is available via the module entry:
@@ -124,10 +115,6 @@ Hooks.on("simplecover5eReady", (api) => {
 ```
 
 This pattern allows other modules (such as automation/conditions modules) to reuse Simple Cover 5e’s cover engine while retaining full control over how bonuses are applied, how workflows are modified, and how any UI indicators are displayed.
-
-## Planned Features
-
-- Wall Height integration (Foundry V13 only; likely obsolete with V14+ scene levels)
 
 ## Examples (with active debug mode)
 
