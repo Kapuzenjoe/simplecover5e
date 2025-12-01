@@ -27,8 +27,8 @@
         "Hint": "When enabled, creatures can grant at most Half Cover. As soon as at least one line is blocked purely by creatures, the target gains Half Cover, but never Three-Quarters Cover from creatures alone. Walls continue to follow the standard DMG rules."
       },
       "Hover": {
-        "Name": "[Experimental] Hover Cover Display",
-        "Hint": "Controls whether and how cover information and distance are shown when hovering a token. Behavior and visuals may change in future versions.",
+        "Name": "Hover Cover Display",
+        "Hint": "Controls whether and how cover information and distance are shown when hovering a token.",
         "Options": {
           "Off": "Disabled",
           "CoverOnly": "Cover icons only",
@@ -61,6 +61,15 @@
           "EdgeToCenter": "Source edge to target center"
         }
       },
+      "CreaturesProne": {
+        "Name": "Prone Creature Height Adjustment",
+        "Hint": "Controls how prone creatures are treated when building their 3D prism for cover calculations. When the \"Wall Height\" module is active, \"Treat as one size smaller\" falls back to half height.",
+        "Options": {
+          "None": "None",
+          "LowerSize": "Treat as one size smaller",
+          "Half": "Treat as half as tall"
+        }
+      },
       "Debug": {
         "Name": "Show Cover Debug Lines",
         "Hint": "Draw helper lines while computing cover between tokens (for debugging/troubleshooting)."
@@ -70,14 +79,26 @@
         "Hint": "Default creature heights (in Grid Units) per size category used for 3D cover evaluation. When the \"Wall Height\" module is active, these defaults are ignored and heights are taken from that module instead."
       },
       "HeightsMenu": {
-        "Name": "Creature Heights",
-        "Label": "Configure Creature Heights",
+        "Name": "Configure Creature Heights",
+        "Label": "Creature Heights",
         "Hint": "Adjust default heights (in Grid Units) for each creature size used when computing cover. When the \"Wall Height\" module is active, these defaults are ignored and heights are taken from that module instead.",
         "Legend": "Creature Heights",
         "BodyHint": "Set the default height (in Grid Units) for each creature size. These values are used when treating tokens as 3D prisms for cover. When the \"Wall Height\" module is active, these defaults are ignored and heights are taken from that module instead.",
         "Buttons": {
           "Save": "Save",
           "Reset": "Reset"
+        }
+      },
+      "VariantMenu": {
+        "Name": "Configure Cover & Measurement Rules",
+        "Label": "Cover & Measurement Rules",
+        "Hint": "Configure how Simple Cover 5e calculates cover and measures distance on your scenes.",
+        "Buttons": {
+          "Save": "Save"
+        },
+        "Groups": {
+          "General": "Cover Rules",
+          "Measurement": "Measurement Rules"
         }
       }
     },

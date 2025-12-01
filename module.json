@@ -34,7 +34,7 @@
     "scripts/module.mjs"
   ],
   "styles": [
-    "css/hover.css"
+    "css/style.css"
   ],
   "flags": {
     "hotReload": {

@@ -34,7 +34,8 @@ export const SETTING_KEYS = {
   HOVER_LABEL_POSITION: "hoverLabelPosition",
   HOVER_LABEL_Y_OFFSET: "hoverLabelYOffset",
   HOVER_LABEL_X_OFFSET: "hoverLabelXOffset",
-  GRIDLESS_DISTANCE_MODE: "gridlessDistanceMode"
+  GRIDLESS_DISTANCE_MODE: "gridlessDistanceMode",
+  CREATURES_PRONE: "proneCreatures"
 };
 
 /**

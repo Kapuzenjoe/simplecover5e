@@ -27,8 +27,8 @@
                 "Hint": "Wenn aktiviert, können Kreaturen maximal Half Cover gewähren. Sobald mindestens eine Linie ausschließlich durch Kreaturen blockiert wird, erhält das Ziel Half Cover, aber niemals Three-Quarters Cover allein durch Kreaturen. Wände folgen weiterhin den normalen DMG-Regeln."
             },
             "Hover": {
-                "Name": "[Experimentell] Hover-Cover-Anzeige",
-                "Hint": "Steuert, ob und wie Cover-Informationen und Entfernungen beim Hovern eines Tokens angezeigt werden. Verhalten und Darstellung können sich in zukünftigen Versionen ändern.",
+                "Name": "Hover-Cover-Anzeige",
+                "Hint": "Steuert, ob und wie Cover-Informationen und Entfernungen beim Hovern eines Tokens angezeigt werden.",
                 "Options": {
                     "Off": "Deaktiviert",
                     "CoverOnly": "Nur Cover-Icons",
@@ -61,6 +61,15 @@
                     "EdgeToCenter": "Quellenkante zu Zielzentrum"
                 }
             },
+            "CreaturesProne": {
+                "Name": "Anpassung der Körperhöhe bei Liegend",
+                "Hint": "Steuert, wie liegende Kreaturen beim Erzeugen ihres 3D-Prismas für Deckungsberechnungen behandelt werden. Wenn das Modul \"Wall Height\" aktiv ist, fällt „Eine Größenkategorie kleiner behandeln“ auf halbe Höhe zurück.",
+                "Options": {
+                    "None": "Keine Anpassung",
+                    "LowerSize": "Eine Größenkategorie kleiner behandeln",
+                    "Half": "Nur halb so groß behandeln"
+                }
+            },
             "Debug": {
                 "Name": "Cover-Debug-Linien anzeigen",
                 "Hint": "Zeichnet Hilfslinien während der Cover-Berechnung zwischen Tokens (zum Debugging/Fehlerbeheben)."
@@ -78,6 +87,18 @@
                 "Buttons": {
                     "Save": "Speichern",
                     "Reset": "Zurücksetzen"
+                }
+            },
+            "VariantMenu": {
+                "Name": "Deckungs- & Messregeln",
+                "Label": "Deckungs- & Messregeln konfigurieren",
+                "Hint": "Lege fest, wie Simple Cover 5e Deckung berechnet und Entfernungen misst.",
+                "Buttons": {
+                    "Save": "Speichern"
+                },
+                "Groups": {
+                    "General": "Deckungsregeln",
+                    "Measurement": "Messregeln"
                 }
             }
         },

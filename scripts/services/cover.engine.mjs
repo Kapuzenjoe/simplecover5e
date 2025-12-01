@@ -1,4 +1,4 @@
-import { MODULE_ID, DEFAULT_SIZE_FT, SETTING_KEYS, GRID_MODES, getGridMode } from "../config/constants.config.mjs";
+import { MODULE_ID, DEFAULT_SIZE_FT, BASE_KEYS, SETTING_KEYS, GRID_MODES, getGridMode } from "../config/constants.config.mjs";
 // =========================
 // Geometry & occlusion
 // =========================
@@ -75,7 +75,27 @@ export function buildCreaturePrism(td, ctx) {
     const half = ctx.half;
     const er = ctx.aabbErodePx;
     const zMin = (td.elevation ?? 0) * ctx.pxPerFt;
-    const zMax = zMin + getCreatureHeightFt(td, ctx) * ctx.pxPerFt;
+    let heightFt = getCreatureHeightFt(td, ctx);
+
+    const actor = td.actor;
+    if (actor?.statuses?.has?.("prone") && game.settings.get(MODULE_ID, SETTING_KEYS.CREATURES_PRONE) !== "none") {
+        if (game.settings.get(MODULE_ID, SETTING_KEYS.CREATURES_PRONE) === "half") {
+            heightFt *= 0.5;
+        }
+        else if (game.settings.get(MODULE_ID, SETTING_KEYS.CREATURES_PRONE) === "lowerSize") {
+            if (game.modules?.get?.("wall-height")?.active === false) {
+                const sizeKey = getSizeKey(td);
+                const idx = BASE_KEYS.indexOf(sizeKey);
+                const smallerKey = idx > 0 ? BASE_KEYS[idx - 1] : sizeKey;
+
+                const heights = ctx.sizeFt ?? DEFAULT_SIZE_FT;
+                heightFt = heights[smallerKey] ?? heightFt;
+            } else {
+                heightFt *= 0.5;
+            }
+        }
+    }
+    const zMax = zMin + heightFt * ctx.pxPerFt;
 
     if (ctx.gridMode === GRID_MODES.GRIDLESS || ctx.gridMode === GRID_MODES.SQUARE) {
         const w = (td.width ?? 1) * grid.size;

@@ -1,5 +1,5 @@
 import { MODULE_ID, DEFAULT_SIZE_FT, SETTING_KEYS } from "./constants.config.mjs";
-import { SimpleCoverCreatureHeightsConfig } from "./menu.config.mjs";
+import { SimpleCoverCreatureHeightsConfig, SimpleCoverVariantConfig } from "./menu.config.mjs";
 import { clearCoverDebug } from "../services/cover.debug.mjs";
 import { clearCoverStatusEffect } from "../services/cover.service.mjs";
 
@@ -50,8 +50,28 @@ const SETTINGS = [
     name: "SIMPLE_COVER_5E.Settings.CreaturesHalfOnly.Name",
     hint: "SIMPLE_COVER_5E.Settings.CreaturesHalfOnly.Hint",
     type: new foundry.data.fields.BooleanField({ initial: false }),
+    requiresReload: false,
+    config: false
+  },
+  {
+    key: SETTING_KEYS.CREATURES_PRONE,
+    name: "SIMPLE_COVER_5E.Settings.CreaturesProne.Name",
+    hint: "SIMPLE_COVER_5E.Settings.CreaturesProne.Hint",
+    config: false,
+    type: new foundry.data.fields.StringField({
+      choices: {
+        none: "SIMPLE_COVER_5E.Settings.CreaturesProne.Options.None",
+        lowerSize: "SIMPLE_COVER_5E.Settings.CreaturesProne.Options.LowerSize",
+        half: "SIMPLE_COVER_5E.Settings.CreaturesProne.Options.Half"
+      },
+      initial: "none",
+      required: true,
+      blank: false,
+      trim: true
+    }),
     requiresReload: false
   },
+
   {
     key: SETTING_KEYS.HOVER,
     name: "SIMPLE_COVER_5E.Settings.Hover.Name",
@@ -70,7 +90,6 @@ const SETTINGS = [
     }),
     requiresReload: false
   },
-
   {
     key: SETTING_KEYS.HOVER_LABEL_POSITION,
     name: "SIMPLE_COVER_5E.Settings.HoverLabelPosition.Name",
@@ -122,7 +141,7 @@ const SETTINGS = [
     key: SETTING_KEYS.GRIDLESS_DISTANCE_MODE,
     name: "SIMPLE_COVER_5E.Settings.GridlessDistanceMode.Name",
     hint: "SIMPLE_COVER_5E.Settings.GridlessDistanceMode.Hint",
-    config: true,
+    config: false,
     type: new foundry.data.fields.StringField({
       choices: {
         centerCenter: "SIMPLE_COVER_5E.Settings.GridlessDistanceMode.Options.CenterCenter",
@@ -182,6 +201,15 @@ export function registerSettings() {
     hint: "SIMPLE_COVER_5E.Settings.HeightsMenu.Hint",
     icon: "fas fa-ruler-vertical",
     type: SimpleCoverCreatureHeightsConfig,
+    restricted: true
+  });
+  // Variant-Rules-ähnliches Menü
+  game.settings.registerMenu(MODULE_ID, "variantRulesMenu", {
+    name: "SIMPLE_COVER_5E.Settings.VariantMenu.Name",
+    label: "SIMPLE_COVER_5E.Settings.VariantMenu.Label",
+    hint: "SIMPLE_COVER_5E.Settings.VariantMenu.Hint",
+    icon: "fas fa-list-check",
+    type: SimpleCoverVariantConfig,
     restricted: true
   });
 }

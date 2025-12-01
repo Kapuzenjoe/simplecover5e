@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 1.1.0
+
+- Added a new Cover & Measurement Rules configuration menu.
+- Added an optional prone height adjustment for cover calculations (none, half height, or treat as one size smaller) (#10).
+
 ## Version 1.0.0
 
 - 1st Stable Release.

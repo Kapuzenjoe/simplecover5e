@@ -3,9 +3,10 @@
   align-items: center;
   gap: 0.25rem;
   z-index: 100;
-  border: 1px solid #ffcc00;       
-  box-shadow: 0 0 4px #ffcc00;     
+  border: 1px solid #ffcc00;
+  box-shadow: 0 0 4px #ffcc00;
 }
+
 #measurement .hover-distance-label .distance-row {
   display: flex;
   align-items: center;
@@ -22,4 +23,14 @@
   height: 25px;
   background-size: contain;
   background-repeat: no-repeat;
+}
+
+.simplecover5e-variant-config .window-content {
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.simplecover5e-variant-config .form-group>label {
+  flex: 0 0 260px;
+  white-space: normal;
 }
