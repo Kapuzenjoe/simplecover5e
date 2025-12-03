@@ -1,68 +1,140 @@
-import { MODULE_ID, SETTING_KEYS, GRID_MODES, getGridMode } from "../config/constants.config.mjs";
+const DEBUG_Z_INDEX = 1000;
+const DEFAULT_SEGMENT_ALPHA = 0.9;
+const DEFAULT_SEGMENT_WIDTH = 2;
+
+const DEFAULT_SHAPE_ALPHA = 0.7;
+const DEFAULT_SHAPE_LINE_WIDTH = 2;
+
+const SEGMENT_COLOR_BLOCKED = 0xff0000;
+const SEGMENT_COLOR_CLEAR = 0x00ff00;
+
+const TOKEN_COLOR_ATTACKER = 0x00ff00;
+const TOKEN_COLOR_TARGET = 0x0000ff;
+const TOKEN_COLOR_OCCLUDER = 0xffa500;
+
+/** @type {PIXI.Graphics|null} */
+let debugGraphics = null;
 
 /**
- * Draw up to 4 debug segments (blocked vs open).
- * @param {{segments:Array}} 
+ * Lazily create or return the shared debug PIXI.Graphics instance.
+ * The graphics object is attached to the canvas interface and reused between debug draws for performance.
+ *
+ * @returns {PIXI.Graphics|null} A reusable graphics instance or null if the canvas is not ready.
  */
-export async function drawCoverDebug({ segments }) {
-  if (!game.users.activeGM?.isSelf) return;
-  if (!canvas || !canvas.scene) return;
-  if (!segments || segments.length === 0) return;
+function getDebugGraphics() {
+  if (!debugGraphics || debugGraphics.destroyed) {
+    if (!canvas?.ready) return null;
 
-  const grid = canvas.scene?.grid ?? null;
-  const gridMode = getGridMode(grid);
+    const g = new PIXI.Graphics();
+    g.zIndex = DEBUG_Z_INDEX;
+    // Do not intercept pointer events on the debug overlay.
+    g.eventMode = "none";
 
-  const maxSegments = gridMode === GRID_MODES.HEX ? 6 : 4;
-  const count = Math.min(maxSegments, segments.length);
-
-  const docs = [];
-
-  for (let i = 0; i < count; i += 1) {
-    const s = segments[i];
-    const A = s._tested?.a ?? s.a;
-    const B = s._tested?.b ?? s.b;
-    docs.push({
-      shape: { type: "p", points: [A.x, A.y, B.x, B.y] },
-      strokeColor: s.blocked ? "#ff2d55" : "#34c759",
-      strokeAlpha: 0.95,
-      strokeWidth: 4,
-      fillAlpha: 0,
-      flags: { [MODULE_ID]: { [SETTING_KEYS.DEBUG]: true } }
-    });
+    debugGraphics = g;
+    canvas.interface.addChild(debugGraphics);
   }
-  try {
-    await canvas.scene.createEmbeddedDocuments("Drawing", docs);
-  } catch (err) {
-    console.warn("[cover] failed to draw cover debug segments", err);
+  return debugGraphics;
+}
+
+
+/**
+ * Clear the current cover debug graphics without destroying the graphics object.
+ * 
+ */
+export function clearCoverDebug() {
+  if (!debugGraphics || debugGraphics.destroyed) return;
+  debugGraphics.clear();
+}
+
+/**
+ * Draw a collection of polygons with a shared style.
+ *
+ * @param {PIXI.Graphics} g - Graphics object to draw on.
+ * @param {TokenPolygon[]} polygons - List of polygons to render.
+ * @param {number} color - Line color (0xRRGGBB).
+ * @param {number} alpha - Line opacity (0–1).
+ * @param {number} width - Line width in pixels.
+ */
+function drawPolygonSet(g, polygons, color, alpha, width) {
+  if (!Array.isArray(polygons) || !polygons.length) return;
+
+  g.lineStyle(width, color, alpha);
+
+  for (const poly of polygons) {
+    if (!poly?.length) continue;
+
+    g.moveTo(poly[0].x, poly[0].y);
+    for (let i = 1; i < poly.length; i++) {
+      g.lineTo(poly[i].x, poly[i].y);
+    }
+    g.lineTo(poly[0].x, poly[0].y);
   }
 }
 
 /**
- * Remove previously drawn cover debug drawings.
+ * Draw a single debug segment onto the graphics context.
+ *
+ * @param {PIXI.Graphics} g - Graphics object to draw on.
+ * @param {DebugSegment} segment - Segment configuration to render.
  */
-export async function clearCoverDebug() {
-  if (!game.user.isGM) return;
-  const scene = canvas.scene;
-  if (!scene) return;
+function drawDebugSegment(g, segment) {
+  if (!segment) return;
 
-  const drawings = scene.drawings;
-  if (!drawings) return;
+  const from = segment.from ?? segment.a;
+  const to = segment.to ?? segment.b;
+  if (!from || !to) return;
 
-  const toDelete = [];
-  for (let i = 0; i < drawings.size; i += 1) {
-    const d = drawings.contents[i];
-    if (!d) continue;
-    if (d.getFlag(MODULE_ID, SETTING_KEYS.DEBUG)) toDelete.push(d.id);
+  const blocked = !!segment.blocked;
+  const color = segment.color ?? (blocked ? SEGMENT_COLOR_BLOCKED : SEGMENT_COLOR_CLEAR);
+  const alpha = segment.alpha ?? DEFAULT_SEGMENT_ALPHA;
+  const width = segment.width ?? DEFAULT_SEGMENT_WIDTH;
+
+  g.lineStyle(width, color, alpha);
+  g.moveTo(from.x, from.y);
+  g.lineTo(to.x, to.y);
+}
+
+
+/**
+   * Draw debug information for cover evaluation onto the canvas.
+   *
+   * @param {Object} [options={}] - Debug rendering options.
+   * @param {DebugSegment[]} [options.segments=[]] - Segments to draw between sample points.
+   * @param {TokenShapeDebug} [options.tokenShapes] - Optional token and occluder polygons.
+   */
+export function drawCoverDebug({ segments = [], tokenShapes } = {}) {
+  const g = getDebugGraphics();
+  if (!g) return;
+
+  for (const seg of segments) {
+    drawDebugSegment(g, seg);
   }
 
-  if (!toDelete.length) return;
+  if (!tokenShapes) return;
 
-  try {
-    const existingIds = toDelete.filter(id => drawings.get(id));
-    if (existingIds.length) {
-      await scene.deleteEmbeddedDocuments("Drawing", existingIds);
-    }
-  } catch (err) {
-    console.warn(`[${MODULE_ID}] failed to clear cover debug drawings`, err);
-  }
+  const attackerPolys = tokenShapes.attacker ?? [];
+  const targetPolys = tokenShapes.target ?? [];
+  const occluderPolys = tokenShapes.occluders ?? [];
+
+  drawPolygonSet(
+    g,
+    attackerPolys,
+    TOKEN_COLOR_ATTACKER,
+    DEFAULT_SHAPE_ALPHA,
+    DEFAULT_SHAPE_LINE_WIDTH
+  );
+  drawPolygonSet(
+    g,
+    targetPolys,
+    TOKEN_COLOR_TARGET,
+    DEFAULT_SHAPE_ALPHA,
+    DEFAULT_SHAPE_LINE_WIDTH
+  );
+  drawPolygonSet(
+    g,
+    occluderPolys,
+    TOKEN_COLOR_OCCLUDER,
+    DEFAULT_SHAPE_ALPHA,
+    DEFAULT_SHAPE_LINE_WIDTH
+  );
 }

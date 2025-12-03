@@ -5,19 +5,24 @@
 ## How It Works
 
 - Uses the DMG-style line-of-effect approach:
-  - **Square / Gridless**: pick an optimal attacker corner and conceptually trace to the target’s four (inset) corners.
+  - **Square grid**: pick an optimal attacker corner and conceptually trace to the target’s four (inset) corners.
+  - **Gridless (Square mode)**: tokens are treated as squares; we pick an optimal attacker corner and trace to the target’s four (inset) corners, similar to a normal square grid.
+  - **Gridless (Circle mode)**: tokens are treated as circular footprints. Attacker and target use an **octagon** of sample points around the circle (8 inset points on the circumference). Larger creatures (Large and bigger) are approximated using multiple circles arranged inside the token footprint.
   - **Hex**: pick an optimal attacker corner and trace to the six (inset) corners of the target hex.
 - Cover thresholds:
-  - **Square / Gridless**: if **1–2** lines are blocked, the target gains **Half Cover**; if **3–4** lines are blocked (and the effect still reaches), the target gains **Three-Quarters Cover**.
+  - **Square / Gridless (Square mode)**: if **1–2** lines are blocked, the target gains **Half Cover**; if **3–4** lines are blocked (and the effect still reaches), the target gains **Three-Quarters Cover**.
   - **Hex**: if **1–3** lines are blocked, the target gains **Half Cover**; if **4–6** lines are blocked (and the effect still reaches), the target gains **Three-Quarters Cover**.
-- Blocking tokens are treated as 3D prisms with configurable heights by creature size. When the **Wall Height** module is active, creature heights are taken from that module instead of these defaults. Non-blocking creatures (hidden tokens, ethereal creatures, or dead actors) are ignored when evaluating cover.
+  - **Gridless (Circle mode)**: if **1-5** lines are blocked, the target gains **Half Cover**; if **6–8** lines are blocked (and the effect still reaches), the target gains **Three-Quarters Cover**.
+- Blocking tokens are treated as 3D prisms with configurable heights by creature size. When the **Wall Height** module is active, creature heights are taken from that module instead of these defaults. Non-blocking creatures (hidden tokens, ethereal creatures, or creatures with 0 max HP / defeated) are ignored when evaluating cover.
+- In **gridless Circle mode**, blocking creatures use slightly smaller internal squares as their blocking footprint, sized to sit safely inside the circular radius.
 - Effects are pushed directly into the roll (chat target AC / save bonus) and synchronized with token status effects.
 - Tokens that already have **Total Cover** applied (e.g. swallowed creatures) are respected: the module does not recalculate or overwrite their cover state.
-- On **gridless** scenes, larger tokens (Large and bigger) are evaluated using virtual sub-cells to approximate the multi-square behaviour from square grids where no RAW gridless procedure exists.
+- On **gridless** scenes, larger tokens (Large and bigger) are evaluated using multiple sample points (virtual sub-cells or multi-circle layouts) to approximate the multi-square behaviour from square grids where no RAW gridless procedure exists.
 - Tiny creatures use the token’s actual position and footprint within their cell instead of the grid cell center (*currently only on square grid*), improving accuracy when multiple Tiny tokens share the same space.
 - The module introduces an *Ignore Cover* item property. Add it to spells, weapons, or feats that should ignore cover (for example, *Sacred Flame*) and the cover calculation will be skipped for that roll.
 - The feats **Sharpshooter** and **Spell Sniper** are automatically respected when present on the attacker, either by their English name or by a matching `system.identifier` (e.g. `"sharpshooter"` / `"spell-sniper"`).
 - (Optional) A token hover helper can display cover icons and/or a distance label near the hovered token, styled similarly to the core distance ruler and configurable in position and offset.
+- (Optional) A debug overlay can draw the evaluated cover segments as colored lines (green for clear, red for blocked) and outline the token shapes used internally (attacker, target and creature occluders).
 
 ## Settings
 
@@ -35,8 +40,12 @@
 - **Hover Label X/Y Offset** — Additional horizontal and vertical offsets (in pixels) applied to the hover label position, allowing fine-tuning to avoid overlap with other UI elements.
 - **Gridless Distance Mode** — Controls how distance is measured on gridless scenes for the hover display: *Center to center*, *Source edge to target center*, or *Edge to edge*.
 
+- **Gridless Token Shape** — Controls how tokens in gridless scenes are approximated for distance and cover:
+  - *Square* — treats tokens as square footprints, using virtual sub-cells for larger creatures.
+  - *Circular* — treats tokens as circular footprints with octagon sampling for attacker/target and multi-circle layouts for Large and bigger creatures.
+- **Prone Creature Height Adjustment** — Controls how prone creatures are treated when building their 3D prism for cover calculations. You can keep their full height, treat them as one size smaller, or halve their height. When the **Wall Height** module is active, “Treat as one size smaller” falls back to half height.
 - **Show Cover Debug Lines** — Renders helper segments used during cover evaluation (GM only).
-- **Creature Heights** — Configure the default 3D heights (in feet) for each size category used when treating tokens as prisms for cover.
+- **Creature Heights** — Configure the default 3D heights (in feet / grid units) for each size category used when treating tokens as prisms for cover.
 
 ### Notes & Limitations
 

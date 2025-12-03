@@ -8,11 +8,6 @@ import {
 import { drawCoverDebug, clearCoverDebug } from "../services/cover.debug.mjs";
 import { toggleCoverEffectViaGM, isBlockingCreatureToken } from "../utils/rpc.mjs";
 
-
-// =========================
-// Config
-// =========================
-
 /**
  * Register the "ignoreCover" item property on dnd5e.
  */
@@ -25,10 +20,6 @@ export function ignoreCoverProperties() {
   CONFIG.DND5E.validProperties.spell.add("ignoreCover");
   CONFIG.DND5E.validProperties.feat.add("ignoreCover");
 }
-
-// =========================
-// Public Hooks
-// =========================
 
 /**
  * A hook event that fires before an attack roll is performed.
@@ -72,7 +63,10 @@ export function onPreRollAttack(config, dialog, message) {
     if (targetActor.statuses?.has?.(COVER_STATUS_IDS.total)) continue;
     const res = evaluateCoverFromOccluders(attackerToken.document, t.document, ctx, { debug: debugOn });
     if (debugOn && res.debugSegments?.length && game.users.activeGM) {
-      drawCoverDebug({ segments: res.debugSegments });
+      drawCoverDebug({
+        segments: res.debugSegments ?? [],
+        tokenShapes: res.debugTokenShapes
+      });
     }
 
     let wantId =
@@ -144,7 +138,12 @@ export function onPreRollSavingThrow(config, dialog, message) {
   if (debugOn && game.users.activeGM) clearCoverDebug();
 
   const res = evaluateCoverFromOccluders(sourceToken.document, targetToken.document, ctx, { debug: debugOn });
-  if (debugOn && res.debugSegments?.length && game.users.activeGM) drawCoverDebug({ segments: res.debugSegments });
+  if (debugOn && res.debugSegments?.length && game.users.activeGM) {
+    drawCoverDebug({
+      segments: res.debugSegments ?? [],
+      tokenShapes: res.debugTokenShapes
+    });
+  }
 
   let wantId =
     res.cover === "threeQuarters" ? COVER_STATUS_IDS.threeQuarters :
@@ -255,10 +254,6 @@ export async function clearCoverOnDeleteCombat(combat) {
   }
 }
 
-// =========================
-// Helper
-// =========================
-
 /**
  * Return true if cover should be skipped for this roll due to spell-specific rules.
  * @param {Item5e} item
@@ -338,7 +333,7 @@ function adjustMessageTargetAC(message, targetUuid, delta) {
 function getCurrentACCoverBonus(actor) {
   const v = actor?.system?.attributes?.ac?.cover;
   const n = Number(v);
-  return Number.isFinite(n) ? n : 0; 
+  return Number.isFinite(n) ? n : 0;
 }
 
 /**

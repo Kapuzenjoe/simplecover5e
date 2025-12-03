@@ -7,11 +7,11 @@ import { MODULE_ID, SETTING_KEYS, GRID_MODES, getGridMode } from "../config/cons
  * Gridless modes:
  *  - edgeEdge      -> edge to edge (source + target radius)
  *  - centerCenter  -> center to center (no adjustment)
- *  - edgeCenter    -> source edge to target center (legacy / previous behaviour)
+ *  - edgeToCenter  -> source edge to target center (legacy / previous behaviour)
  *
- * @param {TokenDocument} sourceToken   The source token.
- * @param {TokenDocument} targetToken   The target token.
- * @returns {number}                    The minimal distance in grid units.
+ * @param {Token|TokenDocument} sourceToken - Source token or document.
+ * @param {Token|TokenDocument} targetToken - Target token or document.
+ * @returns {number} The minimal distance in grid units (never negative).
  */
 export function measureTokenDistance(sourceToken, targetToken) {
   const scene = sourceToken.parent;
@@ -20,12 +20,44 @@ export function measureTokenDistance(sourceToken, targetToken) {
   const gridMode = getGridMode(grid);
   const isGridless = gridMode === GRID_MODES.GRIDLESS;
 
+  const shapeMode = isGridless
+    ? (game.settings.get(MODULE_ID, SETTING_KEYS.GRIDLESS_TOKEN_SHAPE) ?? "square")
+    : null;
+  const useSquareShape = isGridless && shapeMode === "square";
+
+  const getGridlessPseudoSquareOffsets = (td) => {
+    const wPx = (td.width ?? 1) * grid.size;
+    const hPx = (td.height ?? 1) * grid.size;
+    const cols = Math.max(1, Math.round(wPx / grid.size));
+    const rows = Math.max(1, Math.round(hPx / grid.size));
+    const cellW = wPx / cols;
+    const cellH = hPx / rows;
+
+    const centers = [];
+    for (let ix = 0; ix < cols; ix++) {
+      for (let iy = 0; iy < rows; iy++) {
+        centers.push({
+          x: td.x + (ix + 0.5) * cellW,
+          y: td.y + (iy + 0.5) * cellH
+        });
+      }
+    }
+    return centers;
+  };
+
+  const sourceDoc = sourceToken.document ?? sourceToken;
+  const targetDoc = targetToken.document ?? targetToken;
+
   const sourceOffsets = isGridless
-    ? [sourceToken.getCenterPoint()]
+    ? (useSquareShape
+      ? getGridlessPseudoSquareOffsets(sourceDoc)
+      : [sourceToken.getCenterPoint()])
     : sourceToken.getOccupiedGridSpaceOffsets();
 
   const targetOffsets = isGridless
-    ? [targetToken.getCenterPoint()]
+    ? (useSquareShape
+      ? getGridlessPseudoSquareOffsets(targetDoc)
+      : [targetToken.getCenterPoint()])
     : targetToken.getOccupiedGridSpaceOffsets();
 
   const sourceElevation = sourceToken.elevation ?? 0;

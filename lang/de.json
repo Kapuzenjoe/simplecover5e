@@ -61,6 +61,14 @@
                     "EdgeToCenter": "Quellenkante zu Zielzentrum"
                 }
             },
+            "GridlessTokenShape": {
+                "Name": "Tokenform in gridlosen Szenen",
+                "Hint": "Legt fest, ob Tokens in gridlosen Szenen als Quadrate oder als Kreise (mit mehreren Kreisen für größere Kreaturen) für Distanz- und Deckungsberechnungen behandelt werden.",
+                "Options": {
+                    "Square": "Quadrate",
+                    "Circle": "Kreise"
+                }
+            },
             "CreaturesProne": {
                 "Name": "Anpassung der Körperhöhe bei Liegend",
                 "Hint": "Steuert, wie liegende Kreaturen beim Erzeugen ihres 3D-Prismas für Deckungsberechnungen behandelt werden. Wenn das Modul \"Wall Height\" aktiv ist, fällt „Eine Größenkategorie kleiner behandeln“ auf halbe Höhe zurück.",

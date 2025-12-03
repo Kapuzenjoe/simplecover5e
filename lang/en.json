@@ -61,6 +61,14 @@
           "EdgeToCenter": "Source edge to target center"
         }
       },
+      "GridlessTokenShape": {
+        "Name": "Gridless Token Shape",
+        "Hint": "Controls how tokens in gridless scenes are approximated for distance and cover: as square footprints or as circular footprints with multi-circle layouts for larger creatures.",
+        "Options": {
+          "Square": "Square",
+          "Circle": "Circular"
+        }
+      },
       "CreaturesProne": {
         "Name": "Prone Creature Height Adjustment",
         "Hint": "Controls how prone creatures are treated when building their 3D prism for cover calculations. When the \"Wall Height\" module is active, \"Treat as one size smaller\" falls back to half height.",

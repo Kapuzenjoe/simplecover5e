@@ -193,7 +193,8 @@ export class SimpleCoverVariantConfig extends HandlebarsApplicationMixin(Applica
 
             case "measurement":
                 context.fields = [
-                    this.#createSettingField(SETTING_KEYS.GRIDLESS_DISTANCE_MODE)
+                    this.#createSettingField(SETTING_KEYS.GRIDLESS_DISTANCE_MODE),
+                    this.#createSettingField(SETTING_KEYS.GRIDLESS_TOKEN_SHAPE),
                 ].filter(Boolean);
                 context.legend = game.i18n.localize("SIMPLE_COVER_5E.Settings.VariantMenu.Groups.Measurement");
                 break;

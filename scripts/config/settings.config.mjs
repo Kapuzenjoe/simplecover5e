@@ -71,7 +71,6 @@ const SETTINGS = [
     }),
     requiresReload: false
   },
-
   {
     key: SETTING_KEYS.HOVER,
     name: "SIMPLE_COVER_5E.Settings.Hover.Name",
@@ -156,6 +155,23 @@ const SETTINGS = [
     requiresReload: false
   },
   {
+    key: SETTING_KEYS.GRIDLESS_TOKEN_SHAPE,
+    name: "SIMPLE_COVER_5E.Settings.GridlessTokenShape.Name",
+    hint: "SIMPLE_COVER_5E.Settings.GridlessTokenShape.Hint",
+    config: false,
+    type: new foundry.data.fields.StringField({
+      choices: {
+        square: "SIMPLE_COVER_5E.Settings.GridlessTokenShape.Options.Square",
+        circle: "SIMPLE_COVER_5E.Settings.GridlessTokenShape.Options.Circle"
+      },
+      initial: "square",
+      required: true,
+      blank: false,
+      trim: true
+    }),
+    requiresReload: false
+  },
+  {
     key: SETTING_KEYS.DEBUG,
     name: "SIMPLE_COVER_5E.Settings.Debug.Name",
     hint: "SIMPLE_COVER_5E.Settings.Debug.Hint",
@@ -203,7 +219,7 @@ export function registerSettings() {
     type: SimpleCoverCreatureHeightsConfig,
     restricted: true
   });
-  // Variant-Rules-ähnliches Menü
+
   game.settings.registerMenu(MODULE_ID, "variantRulesMenu", {
     name: "SIMPLE_COVER_5E.Settings.VariantMenu.Name",
     label: "SIMPLE_COVER_5E.Settings.VariantMenu.Label",
