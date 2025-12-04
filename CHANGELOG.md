@@ -5,7 +5,8 @@
 - Added a cover debug overlay that visualizes cover rays, token shapes, and creature occluders.
 - Added a gridless token shape setting to treat tokens as either squares or circles for both distance and cover calculations (#9).
 - Creatures with 0 max hit points are now ignored as cover blockers.
-- Refactored cover evaluation
+- Refactored cover evaluation.
+- Debug mode is now also available via Library mode.
 
 ## Version 1.1.0
 

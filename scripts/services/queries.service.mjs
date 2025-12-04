@@ -46,7 +46,7 @@ export function initQueries() {
     CONFIG.queries[`${MODULE_ID}.clearDebug`] = async () => {
         try {
             if (!game.user.isGM) return { ok: false, reason: "not-gm" };
-            await clearCoverDebug();
+            clearCoverDebug();
             return { ok: true };
         } catch {
             return { ok: false, reason: "exception" };

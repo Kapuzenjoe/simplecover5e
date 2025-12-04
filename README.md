@@ -50,6 +50,7 @@
 ### Notes & Limitations
 
 - Gridless and hex behaviour for large creatures and Tiny positioning are reasonable approximations where RAW is unclear; feedback and alternative suggestions are welcome.
+- Known issue: on hex maps, blocking tokens (occluders) are currently blocked as 3D squares and not by the occupied hex fields themselves, which can lead to faulty behavior.
 
 ## Compatibility
 

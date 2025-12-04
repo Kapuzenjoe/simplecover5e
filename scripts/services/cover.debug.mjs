@@ -27,7 +27,6 @@ function getDebugGraphics() {
 
     const g = new PIXI.Graphics();
     g.zIndex = DEBUG_Z_INDEX;
-    // Do not intercept pointer events on the debug overlay.
     g.eventMode = "none";
 
     debugGraphics = g;

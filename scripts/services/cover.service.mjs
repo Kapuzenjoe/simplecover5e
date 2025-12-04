@@ -51,7 +51,7 @@ function resolveTokensForScope(combat, scope) {
  */
 export async function clearCoverStatusEffect(combat) {
 
-  const scope = game.settings.get(MODULE_ID, SETTING_KEYS.COVER_SCOPE); // "all" | "combatants" | "players"
+  const scope = game.settings.get(MODULE_ID, SETTING_KEYS.COVER_SCOPE);
   const targets = resolveTokensForScope(combat, scope);
 
   const ids = Object.values(COVER_STATUS_IDS);

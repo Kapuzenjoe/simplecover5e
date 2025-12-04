@@ -222,7 +222,6 @@ function wallsBlock(aCorner, bCorner, sightSource, attackerDoc, targetDoc, ctx) 
         return { blocked: false, A, B };
     }
 
-    // Without wall-height every collision is treated as fully blocking.
     if (!wallHeightActive) {
         return { blocked: true, A, B };
     }
@@ -233,7 +232,6 @@ function wallsBlock(aCorner, bCorner, sightSource, attackerDoc, targetDoc, ctx) 
         const edgeSet = vertex.edges ?? vertex.cwEdges ?? vertex.ccwEdges;
         if (!edgeSet) continue;
 
-        // If any collided edge does not have wall-height flags, it is fully blocking.          
         for (const edge of edgeSet) {
             const whFlags = edge?.object?.document?.flags?.["wall-height"];
             if (!whFlags) {
@@ -257,7 +255,7 @@ function wallsBlock(aCorner, bCorner, sightSource, attackerDoc, targetDoc, ctx) 
 
             if (debugOn && activeGM) {
                 console.log(
-                    "[simplecover5e] wall-height line check",
+                    `[${MODULE_ID}] wall-height line check:`,
                     {
                         attacker: { id: attackerDoc.id, zFt: attZ },
                         target: { id: targetDoc.id, z: tgtZ },
@@ -400,7 +398,7 @@ function getTokenSampleCenters(td, ctx) {
             const r1 = bigRadius - mediumRadius;
             const diag = r1 / Math.SQRT2;
 
-            centers.push({ x: cx, y: cy });
+            // centers.push({ x: cx, y: cy });
             centers.push({ x: cx + r1, y: cy });
             centers.push({ x: cx - r1, y: cy });
             centers.push({ x: cx, y: cy + r1 });
@@ -419,10 +417,10 @@ function getTokenSampleCenters(td, ctx) {
             const diag = rOuter / Math.SQRT2;
             const inner = mediumRadius;
 
-            centers.push({ x: cx + inner, y: cy + inner });
-            centers.push({ x: cx + inner, y: cy - inner });
-            centers.push({ x: cx - inner, y: cy + inner });
-            centers.push({ x: cx - inner, y: cy - inner });
+            // centers.push({ x: cx + inner, y: cy + inner });
+            // centers.push({ x: cx + inner, y: cy - inner });
+            // centers.push({ x: cx - inner, y: cy + inner });
+            // centers.push({ x: cx - inner, y: cy - inner });
 
             centers.push({ x: cx + rOuter, y: cy });
             centers.push({ x: cx - rOuter, y: cy });

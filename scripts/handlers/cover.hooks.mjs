@@ -202,7 +202,7 @@ export async function clearCoverOnUpdateCombat(combat, update) {
       await clearCoverDebug();
     }
   } catch (err) {
-    console.warn("[cover] clear on update combat", err);
+    console.warn(`[${MODULE_ID}] clear on update combat`, err);
   }
 }
 
@@ -229,7 +229,7 @@ export async function clearCoverOnMovement(token, movement, operation, user) {
       await clearCoverDebug();
     }
   } catch (err) {
-    console.warn("[cover] clear on token movement", err);
+    console.warn(`[${MODULE_ID}] clear on token movement`, err);
   }
 }
 
@@ -250,7 +250,7 @@ export async function clearCoverOnDeleteCombat(combat) {
       await clearCoverDebug();
     }
   } catch (err) {
-    console.warn("[cover] clear on delete combat", err);
+    console.warn(`[${MODULE_ID}] clear on delete combat`, err);
   }
 }
 

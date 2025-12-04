@@ -177,7 +177,7 @@ export async function onHoverToken(token, hoverState) {
   let posX = center.x;
   let posY = center.y;
 
-  const positionSetting = game.settings.get(MODULE_ID, SETTING_KEYS.HOVER_LABEL_POSITION); // "below" | "above" | "on"
+  const positionSetting = game.settings.get(MODULE_ID, SETTING_KEYS.HOVER_LABEL_POSITION);
   const extraYOffset = Number(
     game.settings.get(MODULE_ID, SETTING_KEYS.HOVER_LABEL_Y_OFFSET) ?? 0
   );

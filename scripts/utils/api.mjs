@@ -5,6 +5,7 @@ import {
     evaluateCoverFromOccluders,
 } from "../services/cover.engine.mjs";
 import { isBlockingCreatureToken } from "../utils/rpc.mjs";
+import { drawCoverDebug, clearCoverDebug } from "../services/cover.debug.mjs";
 
 /**
  * Register the library mode setting.
@@ -55,10 +56,20 @@ function getCover({ attacker, target, scene = canvas?.scene, debug = false } = {
     const targetDoc = target.document ?? target;
     if (!attackerDoc || !targetDoc) return null;
 
+    const debugOn = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.DEBUG);
+    if (debugOn && game.users.activeGM) clearCoverDebug();
+
     const ctx = buildContextWithPrisms(scene);
     if (!ctx) return null;
 
-    return evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, { debug });
+    const result = evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, { debug })
+    if (debugOn && result.debugSegments?.length && game.users.activeGM) {
+        drawCoverDebug({
+            segments: result.debugSegments ?? [],
+            tokenShapes: result.debugTokenShapes
+        });
+    }
+    return result;;
 }
 
 /**
@@ -77,6 +88,9 @@ function getCoverForTargets({ attacker, targets = null, scene = canvas?.scene, d
     const attackerDoc = attacker.document ?? attacker;
     if (!attackerDoc) return [];
 
+    const debugOn = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.DEBUG);
+    if (debugOn && game.users.activeGM) clearCoverDebug();
+
     const ctx = buildContextWithPrisms(scene);
     if (!ctx) return [];
 
@@ -89,6 +103,12 @@ function getCoverForTargets({ attacker, targets = null, scene = canvas?.scene, d
         const targetDoc = t?.document ?? t;
         if (!targetDoc) continue;
         const result = evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, { debug });
+        if (debugOn && result.debugSegments?.length && game.users.activeGM) {
+            drawCoverDebug({
+                segments: result.debugSegments ?? [],
+                tokenShapes: result.debugTokenShapes
+            });
+        }
         out.push({ target: t, result });
     }
     return out;
@@ -103,7 +123,7 @@ function getLibraryMode() {
 
 async function setLibraryMode(enabled) {
     if (!game.user.isGM) {
-        console.warn(`${MODULE_ID} | Only a GM may change library mode.`);
+        console.warn(`[${MODULE_ID}] setLibraryMode: Only a GM may change library mode.`);
         return false;
     }
     await game.settings.set(MODULE_ID, SETTING_KEYS.LIBRARY_MODE, !!enabled);
