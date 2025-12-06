@@ -23,6 +23,12 @@
       "name": "Deutsch",
       "path": "lang/de.json",
       "flags": {}
+    },
+    {
+      "lang": "ja",
+      "name": "日本語",
+      "path": "lang/ja.json",
+      "flags": {}
     }
   ],
   "compatibility": {
