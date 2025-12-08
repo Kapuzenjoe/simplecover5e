@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 1.2.1
+
+- Add Japanese translation. (#12)
+- Better JS DOCs for the API Mode Code.
+
 ## Version 1.2.0
 
 - Added a cover debug overlay that visualizes cover rays, token shapes, and creature occluders.

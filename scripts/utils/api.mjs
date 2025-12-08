@@ -8,7 +8,7 @@ import { isBlockingCreatureToken } from "../utils/rpc.mjs";
 import { drawCoverDebug, clearCoverDebug } from "../services/cover.debug.mjs";
 
 /**
- * Register the library mode setting.
+ * Register the library mode setting for this module.
  */
 function registerLibraryModeSetting() {
     if (game.settings.settings.has(`${MODULE_ID}.${SETTING_KEYS.LIBRARY_MODE}`)) return;
@@ -22,9 +22,10 @@ function registerLibraryModeSetting() {
 }
 
 /**
- * Helper: create a reusable cover context + creature prisms.
- * @param {Scene} scene
- * @returns {object|null}  The cover context or null.
+ * Build the cover evaluation context and precompute creature prisms.
+ *
+ * @param {Scene} [scene=canvas.scene]      The scene for which to build the cover context.
+ * @returns {object|null}                   The cover evaluation context.
  */
 function buildContextWithPrisms(scene) {
     const s = scene ?? canvas?.scene;
@@ -39,15 +40,15 @@ function buildContextWithPrisms(scene) {
 }
 
 /**
- * API: compute cover between attacker + target.
+ * Compute cover between a single attacker and a single target.
  *
- * @param {object} options
- * @param {Token|TokenDocument} options.attacker
- * @param {Token|TokenDocument} options.target
- * @param {Scene} [options.scene]
- * @param {boolean} [options.debug]
+ * @param {object} options                                  Options controlling the cover evaluation.
+ * @param {Token|TokenDocument} options.attacker            The attacking Token or TokenDocument.
+ * @param {Token|TokenDocument} options.target              The target Token or TokenDocument.
+ * @param {Scene} [options.scene=canvas.scene]              The scene on which to evaluate cover.
+ * @param {boolean} [options.debug=false]                   Whether to force debug output for this evaluation.
  *
- * @returns { { cover: "none"|"half"|"threeQuarters", debugSegments?: any[] } | null }
+ * @returns {{ cover: "none"|"half"|"threeQuarters", debugSegments?: any[], debugTokenShapes?: any[] } | null}
  */
 function getCover({ attacker, target, scene = canvas?.scene, debug = false } = {}) {
     if (!attacker || !target || !scene) return null;
@@ -56,13 +57,13 @@ function getCover({ attacker, target, scene = canvas?.scene, debug = false } = {
     const targetDoc = target.document ?? target;
     if (!attackerDoc || !targetDoc) return null;
 
-    const debugOn = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.DEBUG);
+    const debugOn = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.DEBUG) || debug;
     if (debugOn && game.users.activeGM) clearCoverDebug();
 
     const ctx = buildContextWithPrisms(scene);
     if (!ctx) return null;
 
-    const result = evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, { debug })
+    const result = evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, { debug: debugOn })
     if (debugOn && result.debugSegments?.length && game.users.activeGM) {
         drawCoverDebug({
             segments: result.debugSegments ?? [],
@@ -73,22 +74,22 @@ function getCover({ attacker, target, scene = canvas?.scene, debug = false } = {
 }
 
 /**
- * API: compute cover between attacker and a list of targets
+ * Compute cover between a single attacker and multiple targets.
  *
- * @param {object} options
- * @param {Token|TokenDocument} options.attacker
- * @param {Token[]|TokenDocument[]} [options.targets] 
- * @param {Scene} [options.scene]
- * @param {boolean} [options.debug]
+ * @param {object} options                                           Options controlling the cover evaluation.
+ * @param {Token|TokenDocument} options.attacker                     The attacking Token or TokenDocument.
+ * @param {Token[]|TokenDocument[]} [options.targets]                An explicit list of targets; defaults to the user's current targets.
+ * @param {Scene} [options.scene=canvas.scene]                       The scene on which to evaluate cover.
+ * @param {boolean} [options.debug=false]                            Whether to force debug output for this evaluation.
  *
- * @returns {Array<{ target: Token|TokenDocument, result: { cover: string, debugSegments?: any[] } }>}
+ * @returns {Array<{ target: Token|TokenDocument, result: { cover: "none"|"half"|"threeQuarters", debugSegments?: any[], debugTokenShapes?: any[] } }>}
  */
 function getCoverForTargets({ attacker, targets = null, scene = canvas?.scene, debug = false } = {}) {
     if (!attacker || !scene) return [];
     const attackerDoc = attacker.document ?? attacker;
     if (!attackerDoc) return [];
 
-    const debugOn = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.DEBUG);
+    const debugOn = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.DEBUG) || debug;
     if (debugOn && game.users.activeGM) clearCoverDebug();
 
     const ctx = buildContextWithPrisms(scene);
@@ -102,7 +103,7 @@ function getCoverForTargets({ attacker, targets = null, scene = canvas?.scene, d
     for (const t of list) {
         const targetDoc = t?.document ?? t;
         if (!targetDoc) continue;
-        const result = evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, { debug });
+        const result = evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, { debug: debugOn });
         if (debugOn && result.debugSegments?.length && game.users.activeGM) {
             drawCoverDebug({
                 segments: result.debugSegments ?? [],
@@ -115,12 +116,15 @@ function getCoverForTargets({ attacker, targets = null, scene = canvas?.scene, d
 }
 
 /**
- * API: library mode helpers
+ * Get whether the module is currently operating in library mode.
  */
 function getLibraryMode() {
     return !!game.settings.get(MODULE_ID, SETTING_KEYS.LIBRARY_MODE);
 }
 
+/**
+ * Enable or disable library mode for this module.
+ */
 async function setLibraryMode(enabled) {
     if (!game.user.isGM) {
         console.warn(`[${MODULE_ID}] setLibraryMode: Only a GM may change library mode.`);
@@ -131,7 +135,7 @@ async function setLibraryMode(enabled) {
 }
 
 /**
- * Init entrypoint
+ * Initialize and expose the module API on the module instance.
  */
 export function initApi() {
     registerLibraryModeSetting();
