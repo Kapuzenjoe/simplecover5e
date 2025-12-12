@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 1.2.2
+
+- Fixed Tiny attacker/target sampling on hex grids: Tiny tokens no longer use the full hex cell footprint for corner/ray evaluation.
+- Fixed creature occluders on hex grids: occluding tokens are now approximated with shrunken per-occupied-hex AABBs (plus a center filler for larger sizes) to better match hex cell footprints while keeping fast AABB-based intersection tests (#11).
+
 ## Version 1.2.1
 
 - Add Japanese translation. (#12)

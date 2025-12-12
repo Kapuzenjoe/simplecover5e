@@ -168,6 +168,54 @@ export function buildCreaturePrism(td, ctx) {
         return prisms;
     }
 
+    if (gridMode === GRID_MODES.HEX) {
+        const offs = td.getOccupiedGridSpaceOffsets?.() ?? [];
+        const centers = offs.length
+            ? offs.map(o => grid.getCenterPoint(o))
+            : [grid.getCenterPoint({ x: td.x, y: td.y })];
+
+        const scale = sizeKey === "tiny" ? 0.5 : 1;
+
+        let cellHalfW = 0;
+        let cellHalfH = 0;
+        for (const c of centers) {
+            const innerRect = getHexCellInnerRect(c, ctx);
+
+            const cellCx = innerRect?.cx ?? c.x;
+            const cellCy = innerRect?.cy ?? c.y;
+
+            cellHalfW = Math.max(((innerRect?.halfW) * scale) - er, 0);
+            cellHalfH = Math.max(((innerRect?.halfH) * scale) - er, 0);
+
+            prisms.push({
+                minX: cellCx - cellHalfW,
+                minY: cellCy - cellHalfH,
+                maxX: cellCx + cellHalfW,
+                maxY: cellCy + cellHalfH,
+                minZ: zMin + 0.1,
+                maxZ: zMax - 0.1
+            });
+        }
+
+        const centerScale = (sizeKey === "huge") ? 2 : (sizeKey === "grg") ? 3 : 1;
+
+        if (centers.length > 1 || centerScale > 1) {
+            const baseHalf = Math.max(cellHalfW, cellHalfH);
+            const fillHalf = Math.max((baseHalf * centerScale) - er, 0);
+
+            prisms.push({
+                minX: cx - fillHalf,
+                minY: cy - fillHalf,
+                maxX: cx + fillHalf,
+                maxY: cy + fillHalf,
+                minZ: zMin + 0.1,
+                maxZ: zMax - 0.1
+            });
+        }
+
+        return prisms;
+    }
+
     const offs = td.getOccupiedGridSpaceOffsets?.() ?? [];
     const centers = offs.length
         ? offs.map(o => grid.getCenterPoint(o))
@@ -499,11 +547,8 @@ function buildBoxCorners(center, radius, insetPx) {
    * @param {object} ctx - Cover evaluation context containing the grid.
    * @returns {Array<{raw:{x:number,y:number}, inset:{x:number,y:number}}>|null}
    */
-function buildHexCorners(center, insetPx, ctx) {
+function buildHexCorners(center, insetPx, ctx, scale = 1) {
     const { grid } = ctx;
-    if (!grid || typeof grid.getOffset !== "function" || typeof grid.getVertices !== "function") {
-        return null;
-    }
 
     const coords = grid.getOffset(center);
     if (!coords) return null;
@@ -523,14 +568,18 @@ function buildHexCorners(center, insetPx, ctx) {
     hexCenter.y /= verts.length;
 
     return verts.map(v => {
-        const vx = v.x - hexCenter.x;
-        const vy = v.y - hexCenter.y;
+        const raw = {
+            x: hexCenter.x + (v.x - hexCenter.x) * scale,
+            y: hexCenter.y + (v.y - hexCenter.y) * scale
+        };
+
+        const vx = raw.x - hexCenter.x;
+        const vy = raw.y - hexCenter.y;
         const L = Math.hypot(vx, vy) || 1;
 
-        const raw = { x: v.x, y: v.y };
         const inset = {
-            x: v.x - (vx / L) * insetPx,
-            y: v.y - (vy / L) * insetPx
+            x: raw.x - (vx / L) * insetPx,
+            y: raw.y - (vy / L) * insetPx
         };
         return { raw, inset };
     });
@@ -579,6 +628,64 @@ function buildCircleCorners(center, radius, insetPx) {
 
     return corners;
 }
+
+/**
+ * Compute an axis-aligned rectangle which fits well *inside* a single hex cell.
+ *
+ * @param {{x:number,y:number}} center - Approximate center point of the hex cell in canvas pixels.
+ * @param {object} ctx - Cover evaluation context.
+ * @returns {{cx:number,cy:number,halfW:number,halfH:number}|null}
+ */
+function getHexCellInnerRect(center, ctx) {
+    const { grid } = ctx;
+
+    const coords = grid.getOffset(center);
+    if (!coords) return null;
+
+    const verts = grid.getVertices(coords);
+    if (!Array.isArray(verts) || verts.length < 6) return null;
+
+    const hexCenter = verts.reduce(
+        (acc, v) => {
+            acc.x += v.x;
+            acc.y += v.y;
+            return acc;
+        },
+        { x: 0, y: 0 }
+    );
+    hexCenter.x /= verts.length;
+    hexCenter.y /= verts.length;
+
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const v of verts) {
+        if (v.x < minX) minX = v.x;
+        if (v.x > maxX) maxX = v.x;
+        if (v.y < minY) minY = v.y;
+        if (v.y > maxY) maxY = v.y;
+    }
+    if (!Number.isFinite(minX) || !Number.isFinite(minY) || !Number.isFinite(maxX) || !Number.isFinite(maxY)) {
+        return null;
+    }
+
+    const bbW = Math.max(0, maxX - minX);
+    const bbH = Math.max(0, maxY - minY);
+
+    const EPS = 1e-3;
+    const topCount = verts.filter(v => Math.abs(v.y - maxY) <= EPS).length;
+    const flatTop = topCount >= 2;
+
+    const halfW = flatTop ? (bbW / 4) : (bbW / 2);
+    const halfH = flatTop ? (bbH / 2) : (bbH / 4);
+
+    return {
+        cx: hexCenter.x,
+        cy: hexCenter.y,
+        halfW,
+        halfH
+    };
+}
+
+
 /**
  * Build inset token corners for a given sample center based on grid mode and shape.
  *
@@ -590,9 +697,10 @@ function buildCircleCorners(center, radius, insetPx) {
  * @param {object} ctx - Cover evaluation context.
  * @returns {Array<{raw:{x:number,y:number}, inset:{x:number,y:number}}>|null}
  */
-function buildTokenCornersForCenter(center, radius, insetPx, gridMode, useCircleShape, ctx) {
+function buildTokenCornersForCenter(center, radius, insetPx, gridMode, useCircleShape, ctx, sizeKey) {
     if (gridMode === GRID_MODES.HEX) {
-        return buildHexCorners(center, insetPx, ctx);
+        const scale = (sizeKey === "tiny") ? 0.5 : 1;
+        return buildHexCorners(center, insetPx, ctx, scale);
     }
     if (useCircleShape) {
         return buildCircleCorners(center, radius, insetPx);
@@ -658,7 +766,9 @@ function addBigCircleDebug(td, sizeKey, bucket, ctx) {
 /**
  * Evaluate DMG cover for attacker -> target.
  * Draws lines from one best attacker corner to all corners of one best target cell (4 on square/gridless, 6 on hex). Walls (sight) and other creatures (AABBs) block.
- *
+ * 
+ * toDO: in V14 use new Core Functions: https://github.com/foundryvtt/foundryvtt/issues/13683
+ * 
  * @param {TokenDocument} attackerDoc - Token document of the attacking creature.
  * @param {TokenDocument} targetDoc - Token document of the target creature.
  * @param {object} ctx - Cover evaluation context created by {@link buildCoverContext}.
@@ -705,7 +815,7 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
     }
 
     for (const tCenter of targetSamples) {
-        const tgtCorners = buildTokenCornersForCenter(tCenter, targetRadius, insetPx, gridMode, useCircleShape, ctx);
+        const tgtCorners = buildTokenCornersForCenter(tCenter, targetRadius, insetPx, gridMode, useCircleShape, ctx, targetSizeKey);
         if (!tgtCorners || !tgtCorners.length) continue;
 
         if (debugTokenShapes) {
@@ -715,7 +825,7 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
         const totalLinesForThisTarget = tgtCorners.length;
 
         for (const aCenter of attackerSamples) {
-            const atkCorners = buildTokenCornersForCenter(aCenter, attackerRadius, insetPx, gridMode, useCircleShape, ctx);
+            const atkCorners = buildTokenCornersForCenter(aCenter, attackerRadius, insetPx, gridMode, useCircleShape, ctx, attackerSizeKey);
             if (!atkCorners || !atkCorners.length) continue;
 
             if (debugTokenShapes) {

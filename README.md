@@ -47,11 +47,6 @@
 - **Show Cover Debug Lines** — Renders helper segments used during cover evaluation (GM only).
 - **Creature Heights** — Configure the default 3D heights (in feet / grid units) for each size category used when treating tokens as prisms for cover.
 
-### Notes & Limitations
-
-- Gridless and hex behaviour for large creatures and Tiny positioning are reasonable approximations where RAW is unclear; feedback and alternative suggestions are welcome.
-- Known issue: on hex maps, blocking tokens (occluders) are currently blocked as 3D squares and not by the occupied hex fields themselves, which can lead to faulty behavior.
-
 ## Compatibility
 
 ### Midi-QOL
