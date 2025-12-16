@@ -1,5 +1,10 @@
 # Simple Cover 5e
 
+![Static Badge](https://img.shields.io/badge/Foundry-v13-informational)
+![Static Badge](https://img.shields.io/badge/Dnd5e-v5.2-informational)
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/peterlankton86911)
+
 **Simple Cover 5e** automatically evaluates cover for the **DnD5e** system in Foundry VTT during attack rolls and saving throws (multi-target supported). It applies the correct mechanical bonuses (+2 / +5) to the roll, updates chat/card displays, and sets/clears target status effects. The module also adds a custom *Ignore Cover* item property that you can enable on specific items (e.g., *Sacred Flame*) to bypass cover for that roll.
 
 ## How It Works
