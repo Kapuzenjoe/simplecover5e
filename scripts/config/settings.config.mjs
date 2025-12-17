@@ -54,6 +54,14 @@ const SETTINGS = [
     config: false
   },
   {
+    key: SETTING_KEYS.IGNORE_DISTANCE_AOE,
+    name: "SIMPLE_COVER_5E.Settings.IgnoreDistanceAOE.Name",
+    hint: "SIMPLE_COVER_5E.Settings.IgnoreDistanceAOE.Hint",
+    type: new foundry.data.fields.BooleanField({ initial: false }),
+    requiresReload: false,
+    config: false
+  },
+  {
     key: SETTING_KEYS.CREATURES_PRONE,
     name: "SIMPLE_COVER_5E.Settings.CreaturesProne.Name",
     hint: "SIMPLE_COVER_5E.Settings.CreaturesProne.Hint",

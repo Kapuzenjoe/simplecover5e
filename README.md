@@ -49,6 +49,7 @@
   - *Square* — treats tokens as square footprints, using virtual sub-cells for larger creatures.
   - *Circular* — treats tokens as circular footprints with octagon sampling for attacker/target and multi-circle layouts for Large and bigger creatures.
 - **Prone Creature Height Adjustment** — Controls how prone creatures are treated when building their 3D prism for cover calculations. You can keep their full height, treat them as one size smaller, or halve their height. When the **Wall Height** module is active, “Treat as one size smaller” falls back to half height.
+- **Ignore cover for ranged AoE spells** — Skips cover checks for spells/effects that create an area at range (e.g., Fireball). This applies when the activity has a range value greater than 1 and either (a) uses an AoE template with range units other than self/touch/special, or (b) affects type is "space".
 - **Show Cover Debug Lines** — Renders helper segments used during cover evaluation (GM only).
 - **Creature Heights** — Configure the default 3D heights (in feet / grid units) for each size category used when treating tokens as prisms for cover.
 

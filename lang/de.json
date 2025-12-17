@@ -26,6 +26,10 @@
                 "Name": "Cover durch Kreaturen auf 1/2 Cover begrenzen",
                 "Hint": "Wenn aktiviert, können Kreaturen maximal Half Cover gewähren. Sobald mindestens eine Linie ausschließlich durch Kreaturen blockiert wird, erhält das Ziel Half Cover, aber niemals Three-Quarters Cover allein durch Kreaturen. Wände folgen weiterhin den normalen DMG-Regeln."
             },
+            "IgnoreDistanceAOE": {
+                "Name": "Deckung bei AoE-Zaubern auf Distanz ignorieren",
+                "Hint": "Überspringt Deckungsprüfungen für Zauber/Effekte, die einen Wirkbereich auf Distanz erzeugen (z. B. Feuerball). Dies gilt, wenn die Aktivität eine Reichweite von mehr als 1 hat und entweder (a) eine AoE-Schablone mit Reichweiteneinheiten ungleich self/touch/special verwendet oder (b) der affects-Typ \"space\" ist."
+            },
             "Hover": {
                 "Name": "Hover-Cover-Anzeige",
                 "Hint": "Steuert, ob und wie Cover-Informationen und Entfernungen beim Hovern eines Tokens angezeigt werden.",

@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 1.2.3
+
+- Added optional setting “Ignore cover for ranged AoE spells” to skip cover checks for ranged area effects (e.g., Fireball) when range is greater than 1 and the effect uses an AoE template (non-self/touch/special) or targets space (#13).
+
 ## Version 1.2.2
 
 - Fixed Tiny attacker/target sampling on hex grids: Tiny tokens no longer use the full hex cell footprint for corner/ray evaluation.

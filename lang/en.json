@@ -26,6 +26,10 @@
         "Name": "Limit Cover from Creatures to 1/2 Cover",
         "Hint": "When enabled, creatures can grant at most Half Cover. As soon as at least one line is blocked purely by creatures, the target gains Half Cover, but never Three-Quarters Cover from creatures alone. Walls continue to follow the standard DMG rules."
       },
+      "IgnoreDistanceAOE": {
+        "Name": "Ignore cover for ranged AoE spells",
+        "Hint": "Skips cover checks for spells/effects that create an area at range (e.g., Fireball). This applies when the activity has a range greater than 1 and either (a) uses an AoE template with range units other than self/touch/special, or (b) affects type is \"space\"."
+      },
       "Hover": {
         "Name": "Hover Cover Display",
         "Hint": "Controls whether and how cover information and distance are shown when hovering a token.",

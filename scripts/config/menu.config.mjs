@@ -187,6 +187,7 @@ export class SimpleCoverVariantConfig extends HandlebarsApplicationMixin(Applica
                 context.fields = [
                     this.#createSettingField(SETTING_KEYS.CREATURES_HALF_ONLY), 
                     this.#createSettingField(SETTING_KEYS.CREATURES_PRONE),
+                    this.#createSettingField(SETTING_KEYS.IGNORE_DISTANCE_AOE),
                 ].filter(Boolean);
                 context.legend = game.i18n.localize("SIMPLE_COVER_5E.Settings.VariantMenu.Groups.General");
                 break;

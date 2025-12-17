@@ -73,9 +73,10 @@ export function onPreRollAttack(config, dialog, message) {
       res.cover === "threeQuarters" ? COVER_STATUS_IDS.threeQuarters :
         res.cover === "half" ? COVER_STATUS_IDS.half : null;
 
+    const activity = config.subject ?? null;
     const item = config.subject?.item ?? null;
     const actionType = config.subject?.actionType ?? null;
-    if (spellIgnoresCover(item, actor, actionType)) wantId = null;
+    if (spellIgnoresCover(activity, item, actor, actionType)) wantId = null;
 
     const currentBonus = getCurrentACCoverBonus(targetActor);
     const desiredBonus = desiredBonusFromWant(wantId, COVER_STATUS_IDS);
@@ -124,6 +125,7 @@ export function onPreRollSavingThrow(config, dialog, message) {
 
   const srcMsg = getSourceChatMessageFromEvent(config?.event);
   const item = srcMsg?.getAssociatedItem?.();
+  const activity = srcMsg?.getAssociatedActivity?.();
   const sourceActor = srcMsg?.speakerActor
   const sourceToken = sourceActor?.getActiveTokens?.()[0]
   if (!sourceToken) return;
@@ -148,7 +150,7 @@ export function onPreRollSavingThrow(config, dialog, message) {
   let wantId =
     res.cover === "threeQuarters" ? COVER_STATUS_IDS.threeQuarters :
       res.cover === "half" ? COVER_STATUS_IDS.half : null;
-  if (spellIgnoresCover(item, actor)) wantId = null;
+  if (spellIgnoresCover(activity, item, actor)) wantId = null;
 
   const onHalf = actor.statuses?.has?.(COVER_STATUS_IDS.half);
   const onThree = actor.statuses?.has?.(COVER_STATUS_IDS.threeQuarters);
@@ -256,10 +258,11 @@ export async function clearCoverOnDeleteCombat(combat) {
 
 /**
  * Return true if cover should be skipped for this roll due to spell-specific rules.
+ * @param {Activtiy5e} activity 
  * @param {Item5e} item
  * @param {object} config
  */
-function spellIgnoresCover(item, actor, actionType = null) {
+function spellIgnoresCover(activity, item, actor, actionType = null) {
   const props = item?.system?.properties;
   const items = actor?.items;
   if (props?.has?.("ignoreCover")) return true;
@@ -278,6 +281,24 @@ function spellIgnoresCover(item, actor, actionType = null) {
     ) {
       return true;
     }
+  }
+  if (game.settings.get(MODULE_ID, SETTING_KEYS.IGNORE_DISTANCE_AOE)) {
+    const rangeValue = activity?.range?.value ?? 0;
+    if (rangeValue <= 1) return false;
+
+    const rangeUnits = activity?.range?.units ?? "";
+    const templateType = activity?.target?.template?.type ?? "";
+    const affectsType = activity?.target?.affects?.type ?? "";
+
+    const excludedUnits = new Set(["self", "touch", "special"]);
+    const excludedTemplateTypes = new Set(["", "radius"]);
+
+    const isDistanceAOE =
+      !excludedUnits.has(rangeUnits) && !excludedTemplateTypes.has(templateType);
+
+    const isDistanceSpace = affectsType === "space";
+
+    return isDistanceAOE || isDistanceSpace;
   }
   return false;
 }

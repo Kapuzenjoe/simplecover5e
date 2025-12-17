@@ -27,6 +27,7 @@ export const SETTING_KEYS = {
   RMV_ON_COMBAT: "rmvCovCombat",
   RMV_ON_MOVE: "rmvCovMovement",
   CREATURES_HALF_ONLY: "creaturesHalfCoverOnly",
+  IGNORE_DISTANCE_AOE: "IgnoreDistanceAOE",
   DEBUG: "debugCover",
   CREATURE_HEIGHTS: "creatureHeights",
   HOVER: "hover",
