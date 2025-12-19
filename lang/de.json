@@ -26,9 +26,17 @@
                 "Name": "Cover durch Kreaturen auf 1/2 Cover begrenzen",
                 "Hint": "Wenn aktiviert, können Kreaturen maximal Half Cover gewähren. Sobald mindestens eine Linie ausschließlich durch Kreaturen blockiert wird, erhält das Ziel Half Cover, aber niemals Three-Quarters Cover allein durch Kreaturen. Wände folgen weiterhin den normalen DMG-Regeln."
             },
+            "IgnoreAllAOE": {
+                "Name": "Deckung bei allen Flächeneffekten ignorieren",
+                "Hint": "Überspringt Deckungsprüfungen, sobald die Aktivität irgendeine Flächen-Schablone definiert. Wenn eine Schablone vorhanden ist, wird für diesen Wurf keine Deckung berechnet."
+            },
             "IgnoreDistanceAOE": {
-                "Name": "Deckung bei AoE-Zaubern auf Distanz ignorieren",
-                "Hint": "Überspringt Deckungsprüfungen für Zauber/Effekte, die einen Wirkbereich auf Distanz erzeugen (z. B. Feuerball). Dies gilt, wenn die Aktivität eine Reichweite von mehr als 1 hat und entweder (a) eine AoE-Schablone mit Reichweiteneinheiten ungleich self/touch/special verwendet oder (b) der affects-Typ \"space\" ist."
+                "Name": "Deckung bei AoE-Schablonen auf Distanz ignorieren",
+                "Hint": "Überspringt Deckungsprüfungen für Aktivitäten, die einen Wirkbereich auf Distanz erzeugen (z. B. Feuerball). Dies gilt, wenn die Aktivität eine Reichweite größer als 1 hat und eine AoE-Schablone mit Reichweiteneinheiten ungleich self/touch/special verwendet."
+            },
+            "IgnoreDistanceSpace": {
+                "Name": "Deckung bei Zielwahl auf Distanz (Space) ignorieren",
+                "Hint": "Überspringt Deckungsprüfungen, wenn die Aktivität einen Punkt im Raum auf Distanz anvisiert (Reichweite > 1 und affects-Typ ist \"space\"). Das wird häufig bei Beschwörungs-Features/-Zaubern verwendet, bei denen der eigentliche Angriff/Effekt von der beschworenen Kreatur ausgeht. Deckung sollte dann von der Beschwörung aus berechnet werden, nicht vom ursprünglichen Feature/Zauber."
             },
             "Hover": {
                 "Name": "Hover-Cover-Anzeige",

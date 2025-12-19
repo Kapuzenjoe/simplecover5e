@@ -6,7 +6,7 @@ import {
   evaluateCoverFromOccluders,
 } from "../services/cover.engine.mjs";
 import { drawCoverDebug, clearCoverDebug } from "../services/cover.debug.mjs";
-import { toggleCoverEffectViaGM, isBlockingCreatureToken } from "../utils/rpc.mjs";
+import { toggleCoverEffectViaGM, isBlockingCreatureToken, itemIgnoresCover } from "../utils/rpc.mjs";
 
 /**
  * Register the "ignoreCover" item property on dnd5e.
@@ -74,9 +74,7 @@ export function onPreRollAttack(config, dialog, message) {
         res.cover === "half" ? COVER_STATUS_IDS.half : null;
 
     const activity = config.subject ?? null;
-    const item = config.subject?.item ?? null;
-    const actionType = config.subject?.actionType ?? null;
-    if (spellIgnoresCover(activity, item, actor, actionType)) wantId = null;
+    if (itemIgnoresCover(activity)) wantId = null;
 
     const currentBonus = getCurrentACCoverBonus(targetActor);
     const desiredBonus = desiredBonusFromWant(wantId, COVER_STATUS_IDS);
@@ -124,7 +122,6 @@ export function onPreRollSavingThrow(config, dialog, message) {
   if (!targetToken) return;
 
   const srcMsg = getSourceChatMessageFromEvent(config?.event);
-  const item = srcMsg?.getAssociatedItem?.();
   const activity = srcMsg?.getAssociatedActivity?.();
   const sourceActor = srcMsg?.speakerActor
   const sourceToken = sourceActor?.getActiveTokens?.()[0]
@@ -150,7 +147,7 @@ export function onPreRollSavingThrow(config, dialog, message) {
   let wantId =
     res.cover === "threeQuarters" ? COVER_STATUS_IDS.threeQuarters :
       res.cover === "half" ? COVER_STATUS_IDS.half : null;
-  if (spellIgnoresCover(activity, item, actor)) wantId = null;
+  if (itemIgnoresCover(activity)) wantId = null;
 
   const onHalf = actor.statuses?.has?.(COVER_STATUS_IDS.half);
   const onThree = actor.statuses?.has?.(COVER_STATUS_IDS.threeQuarters);
@@ -254,53 +251,6 @@ export async function clearCoverOnDeleteCombat(combat) {
   } catch (err) {
     console.warn(`[${MODULE_ID}] clear on delete combat`, err);
   }
-}
-
-/**
- * Return true if cover should be skipped for this roll due to spell-specific rules.
- * @param {Activtiy5e} activity 
- * @param {Item5e} item
- * @param {object} config
- */
-function spellIgnoresCover(activity, item, actor, actionType = null) {
-  const props = item?.system?.properties;
-  const items = actor?.items;
-  if (props?.has?.("ignoreCover")) return true;
-  if (actionType === "rwak") {
-    if (
-      items.getName("Sharpshooter") ||
-      items.some(i => i.system?.identifier === "sharpshooter")
-    ) {
-      return true;
-    }
-  }
-  if (actionType === "rsak") {
-    if (
-      items.getName("Spell Sniper") ||
-      items.some(i => i.system?.identifier === "spell-sniper")
-    ) {
-      return true;
-    }
-  }
-  if (game.settings.get(MODULE_ID, SETTING_KEYS.IGNORE_DISTANCE_AOE)) {
-    const rangeValue = activity?.range?.value ?? 0;
-    if (rangeValue <= 1) return false;
-
-    const rangeUnits = activity?.range?.units ?? "";
-    const templateType = activity?.target?.template?.type ?? "";
-    const affectsType = activity?.target?.affects?.type ?? "";
-
-    const excludedUnits = new Set(["self", "touch", "special"]);
-    const excludedTemplateTypes = new Set(["", "radius"]);
-
-    const isDistanceAOE =
-      !excludedUnits.has(rangeUnits) && !excludedTemplateTypes.has(templateType);
-
-    const isDistanceSpace = affectsType === "space";
-
-    return isDistanceAOE || isDistanceSpace;
-  }
-  return false;
 }
 
 /**

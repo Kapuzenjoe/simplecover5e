@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 1.2.4
+
+- Added `api.getIgnoreCover(activity)` to let integrations determine whether cover should be ignored for a given activity when "Library Mode" is enabled.
+- Extended the optional “Ignore cover for ranged AoE spells” behavior with two additional toggles: “Ignore cover for all area effects” and “Ignore cover for ranged space targeting” (#13).
+
 ## Version 1.2.3
 
 - Added optional setting “Ignore cover for ranged AoE spells” to skip cover checks for ranged area effects (e.g., Fireball) when range is greater than 1 and the effect uses an AoE template (non-self/touch/special) or targets space (#13).

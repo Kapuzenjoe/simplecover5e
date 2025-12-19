@@ -49,7 +49,9 @@
   - *Square* — treats tokens as square footprints, using virtual sub-cells for larger creatures.
   - *Circular* — treats tokens as circular footprints with octagon sampling for attacker/target and multi-circle layouts for Large and bigger creatures.
 - **Prone Creature Height Adjustment** — Controls how prone creatures are treated when building their 3D prism for cover calculations. You can keep their full height, treat them as one size smaller, or halve their height. When the **Wall Height** module is active, “Treat as one size smaller” falls back to half height.
-- **Ignore cover for ranged AoE spells** — Skips cover checks for spells/effects that create an area at range (e.g., Fireball). This applies when the activity has a range value greater than 1 and either (a) uses an AoE template with range units other than self/touch/special, or (b) affects type is "space".
+- **Ignore cover for all area effects** — Skips cover checks whenever the activity defines any area template. If a template is present, no cover is calculated for that roll.
+- **Ignore cover for ranged AoE templates** — Skips cover checks for activities that create an area at range (e.g., Fireball). This applies when the activity has a range value greater than 1 and uses an AoE template with range units other than self/touch/special.
+- **Ignore cover for ranged space targeting** — Skips cover checks when the activity targets a space at range (range > 1 and affects type is "space"). This is commonly used by summon features/spells, where the actual attack/effect is resolved from the summoned creature. Cover should be evaluated from the summon instead of the source feature/spell.
 - **Show Cover Debug Lines** — Renders helper segments used during cover evaluation (GM only).
 - **Creature Heights** — Configure the default 3D heights (in feet / grid units) for each size category used when treating tokens as prisms for cover.
 
@@ -57,8 +59,7 @@
 
 ### Midi-QOL
 
-- Works out of the box.
-- Simple Cover 5e only mutates dnd5e roll / message data and does not patch Midi-QOL directly.
+- Official integration is available with **Midi-QOL v13.0.30+**.
 
 ### Ready Set Roll 5e
 
@@ -112,7 +113,15 @@ Convenience helper to compute cover for an attacker against multiple targets (or
 api.getLibraryMode() / api.setLibraryMode(enabled)
 ```
 
-Query or toggle a “library mode” flag. When library mode is enabled, Simple Cover 5e will still provide cover calculations via the API, but will not automatically apply Active Effects or mutate roll configuration on its own. The setting is stored as a world setting and is intentionally not shown in the UI; it is meant to be controlled by integrating modules (or GMs via console).
+Query or toggle a "library mode" flag. When library mode is enabled, Simple Cover 5e will still provide cover calculations via the API, but will not automatically apply Active Effects or mutate roll configuration on its own. The setting is stored as a world setting and is intentionally not shown in the UI; it is meant to be controlled by integrating modules (or GMs via console).
+
+```js
+api.getIgnoreCover(activity) 
+```
+
+Returns `true` when cover should be ignored for the given `activity` based on Simple Cover 5e’s ignore rules.
+
+In "Library Mode", the *Ignore Cover* item properties are not automatically taken into account. Integrations should call this helper to evaluate ignore-cover logic (including the Ignore Cover item property and feat-based checks such as Sharpshooter / Spell Sniper) before applying any cover modifiers.
 
 ### Ready Hook
 

@@ -28,6 +28,8 @@ export const SETTING_KEYS = {
   RMV_ON_MOVE: "rmvCovMovement",
   CREATURES_HALF_ONLY: "creaturesHalfCoverOnly",
   IGNORE_DISTANCE_AOE: "IgnoreDistanceAOE",
+  IGNORE_ALL_AOE: "IgnoreAllAOE",
+  IGNORE_DISTANCE_SPACE: "IgnoreDistanceSpace",
   DEBUG: "debugCover",
   CREATURE_HEIGHTS: "creatureHeights",
   HOVER: "hover",

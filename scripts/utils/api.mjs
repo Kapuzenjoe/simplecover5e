@@ -4,7 +4,7 @@ import {
     buildCreaturePrism,
     evaluateCoverFromOccluders,
 } from "../services/cover.engine.mjs";
-import { isBlockingCreatureToken } from "../utils/rpc.mjs";
+import { isBlockingCreatureToken, itemIgnoresCover } from "../utils/rpc.mjs";
 import { drawCoverDebug, clearCoverDebug } from "../services/cover.debug.mjs";
 
 /**
@@ -19,6 +19,16 @@ function registerLibraryModeSetting() {
         type: Boolean,
         default: false,
     });
+}
+
+/**
+ * Checks whether cover should be ignored for the given activity.
+ * 
+ * @param {Activtiy5e} activity - The activity being evaluated for cover.
+ * @returns {boolean} True if cover should be ignored, otherwise false.
+ */
+function getIgnoreCover(activity) {
+    return itemIgnoresCover(activity);
 }
 
 /**
@@ -145,6 +155,7 @@ export function initApi() {
         getCoverForTargets,
         getLibraryMode,
         setLibraryMode,
+        getIgnoreCover
     };
 
     const mod = game.modules.get(MODULE_ID);
