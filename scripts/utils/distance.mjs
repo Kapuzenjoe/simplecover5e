@@ -5,9 +5,9 @@ import { MODULE_ID, SETTING_KEYS, GRID_MODES, getGridMode } from "../config/cons
  * Uses the system's grid measurement, including its diagonal rule (e.g. 1/1/1 or 1/2/1).
  *
  * Gridless modes:
- *  - edgeEdge      -> edge to edge (source + target radius)
- *  - centerCenter  -> center to center (no adjustment)
- *  - edgeToCenter  -> source edge to target center (legacy / previous behaviour)
+ *  - edgeEdge      -> edge to edge
+ *  - centerCenter  -> center to center
+ *  - edgeToCenter  -> source edge to target center
  *
  * @param {Token|TokenDocument} sourceToken - Source token or document.
  * @param {Token|TokenDocument} targetToken - Target token or document.

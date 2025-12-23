@@ -4,6 +4,7 @@ import {
   buildCoverContext,
   buildCreaturePrism,
   evaluateCoverFromOccluders,
+  evaluateLOS,
 } from "../services/cover.engine.mjs";
 import { drawCoverDebug, clearCoverDebug } from "../services/cover.debug.mjs";
 import { toggleCoverEffectViaGM, isBlockingCreatureToken, itemIgnoresCover } from "../utils/rpc.mjs";
@@ -60,39 +61,62 @@ export function onPreRollAttack(config, dialog, message) {
     const targetActor = t.document.actor;
     const targetActorId = targetActor.uuid;
 
-    if (targetActor.statuses?.has?.(COVER_STATUS_IDS.total)) continue;
+    if (targetActor.statuses?.has?.(COVER_STATUS_IDS.total) && !game.settings?.get?.(MODULE_ID, SETTING_KEYS.LOS_CHECK)) continue;
+
     const res = evaluateCoverFromOccluders(attackerToken.document, t.document, ctx, { debug: debugOn });
+
+    let los = { hasLOS: true, targetLosPoints: [] };
+
+    if (res.cover !== COVER_STATUS_IDS.none && game.settings?.get?.(MODULE_ID, SETTING_KEYS.LOS_CHECK)) {
+      los = evaluateLOS(attackerToken.document, t.document, ctx)
+
+      if (!los.hasLOS) {
+        res.cover = "total"
+      }
+    }
+
+    const activity = config.subject ?? null;
+    const { coverId, bonus: desiredBonus } = itemIgnoresCover(activity, COVER_STATUS_IDS[res.cover] ?? COVER_STATUS_IDS.none);
+
     if (debugOn && res.debugSegments?.length && game.users.activeGM) {
       drawCoverDebug({
         segments: res.debugSegments ?? [],
-        tokenShapes: res.debugTokenShapes
+        tokenShapes: res.debugTokenShapes,
+        targetLosPoints: los.targetLosPoints
       });
     }
 
-    let wantId =
-      res.cover === "threeQuarters" ? COVER_STATUS_IDS.threeQuarters :
-        res.cover === "half" ? COVER_STATUS_IDS.half : null;
-
-    const activity = config.subject ?? null;
-    if (itemIgnoresCover(activity)) wantId = null;
-
-    const currentBonus = getCurrentACCoverBonus(targetActor);
-    const desiredBonus = desiredBonusFromWant(wantId, COVER_STATUS_IDS);
-    const delta = desiredBonus - currentBonus;
-
-    if (delta) {
-      adjustMessageTargetAC(message, targetActorId, delta);
-      if (typeof config.target === "number") {
-        config.target = Math.max(0, (config.target || 0) + delta);
-      }
-    }
     const onHalf = targetActor.statuses?.has?.(COVER_STATUS_IDS.half);
     const onThree = targetActor.statuses?.has?.(COVER_STATUS_IDS.threeQuarters);
+    const ontTotal = targetActor.statuses?.has?.(COVER_STATUS_IDS.total);
+
+    const currentBonus = getCurrentACCoverBonus(targetActor);
+
+    if (desiredBonus !== null) {
+      const delta = desiredBonus - currentBonus;
+      if (delta) {
+        adjustMessageTargetAC(message, targetActorId, delta);
+        if (typeof config.target === "number") {
+          config.target = Math.max(0, (config.target || 0) + delta);
+        }
+      }
+      else if (ontTotal) {
+        adjustMessageTargetAC(message, targetActorId, targetActor?.system?.attributes?.ac?.value);
+        if (targets.length === 1){
+          config.target = targetActor?.system?.attributes?.ac?.value
+        } 
+      }
+    }
+    else { //total cover
+      adjustMessageTargetAC(message, targetActorId, null);
+      config.target = null;
+    }
 
 
-    if (desiredBonus === 5) {
+
+    if (coverId === COVER_STATUS_IDS.threeQuarters) {
       if (!onThree) toggleCoverEffectViaGM(targetActorId, COVER_STATUS_IDS.threeQuarters, true);
-    } else if (desiredBonus === 2) {
+    } else if (coverId === COVER_STATUS_IDS.half) {
       if (!onHalf) toggleCoverEffectViaGM(targetActorId, COVER_STATUS_IDS.half, true);
     } else {
       if (onThree) toggleCoverEffectViaGM(targetActorId, COVER_STATUS_IDS.threeQuarters, false);
@@ -144,10 +168,7 @@ export function onPreRollSavingThrow(config, dialog, message) {
     });
   }
 
-  let wantId =
-    res.cover === "threeQuarters" ? COVER_STATUS_IDS.threeQuarters :
-      res.cover === "half" ? COVER_STATUS_IDS.half : null;
-  if (itemIgnoresCover(activity)) wantId = null;
+  const { coverId, bonus: desiredBonus } = itemIgnoresCover(activity, COVER_STATUS_IDS[res.cover] ?? COVER_STATUS_IDS.none);
 
   const onHalf = actor.statuses?.has?.(COVER_STATUS_IDS.half);
   const onThree = actor.statuses?.has?.(COVER_STATUS_IDS.threeQuarters);
@@ -163,25 +184,24 @@ export function onPreRollSavingThrow(config, dialog, message) {
     if (idx !== -1) parts.splice(idx, 1);
   };
 
-  if ((wantId === COVER_STATUS_IDS.half) && !onHalf) {
-    addSaveBonus(2);
+  if ((coverId === COVER_STATUS_IDS.half) && !onHalf) {
+    addSaveBonus(desiredBonus);
     removeSaveBonus();
     toggleCoverEffectViaGM(actor.uuid, COVER_STATUS_IDS.half, true);
-  } else if ((wantId === null) && onHalf) {
+  } else if ((coverId === null) && onHalf) {
     removeSaveBonus();
     toggleCoverEffectViaGM(actor.uuid, COVER_STATUS_IDS.half, false);
   }
 
-  if ((wantId === COVER_STATUS_IDS.threeQuarters) && !onThree) {
-    addSaveBonus(5);
+  if ((coverId === COVER_STATUS_IDS.threeQuarters) && !onThree) {
+    addSaveBonus(desiredBonus);
     removeSaveBonus();
     toggleCoverEffectViaGM(actor.uuid, COVER_STATUS_IDS.threeQuarters, true);
-  } else if ((wantId === null) && onThree) {
+  } else if ((coverId === null) && onThree) {
     removeSaveBonus();
     toggleCoverEffectViaGM(actor.uuid, COVER_STATUS_IDS.threeQuarters, false);
   }
 }
-
 
 /**
  * Cleanup cover when the combat turn or round changes.
@@ -225,7 +245,7 @@ export async function clearCoverOnMovement(token, movement, operation, user) {
     await clearCoverStatusEffect(active);
 
     if (game.settings.get(MODULE_ID, SETTING_KEYS.DEBUG)) {
-      await clearCoverDebug();
+      clearCoverDebug();
     }
   } catch (err) {
     console.warn(`[${MODULE_ID}] clear on token movement`, err);
@@ -246,7 +266,7 @@ export async function clearCoverOnDeleteCombat(combat) {
     await clearCoverStatusEffect(combat);
 
     if (game.settings.get(MODULE_ID, SETTING_KEYS.DEBUG)) {
-      await clearCoverDebug();
+      clearCoverDebug();
     }
   } catch (err) {
     console.warn(`[${MODULE_ID}] clear on delete combat`, err);
@@ -279,19 +299,23 @@ function getSourceChatMessageFromEvent(ev) {
 
 /**
  * Adjust the shown AC of a specific target in the pending dnd5e chat message.
- * Safely no-ops if the structure doesn't match.
+ *
  * @param {object} message     The hook's 'message' arg.
  * @param {string} targetUuid  TokenDocument UUID to match.
  * @param {number} delta       AC delta (+/-).
  */
 function adjustMessageTargetAC(message, targetUuid, delta) {
   const targets = message?.data?.flags?.dnd5e?.targets;
-  if (!Array.isArray(targets) || !targetUuid || !delta) return;
+
   for (const t of targets) {
     const uuid = t?.uuid ?? t?.tokenUuid ?? null;
     if (!uuid || uuid !== targetUuid) continue;
-    const base = Number(t.ac ?? 0);
-    t.ac = (Number.isFinite(base) ? base : 0) + delta;
+    const base = t.ac
+    if (delta === null) {
+      t.ac = null;
+      break;
+    }
+    t.ac = (Number.isFinite(base) ? base : null) + delta;
     break;
   }
 }
@@ -306,16 +330,3 @@ function getCurrentACCoverBonus(actor) {
   const n = Number(v);
   return Number.isFinite(n) ? n : 0;
 }
-
-/**
- * Return the desired cover bonus from the desired cover status ID.
- * @param {*} wantId  
- * @param {*} IDS 
- * @returns {number}  The desired cover bonus (0/2/5).
- */
-function desiredBonusFromWant(wantId, IDS) {
-  if (wantId === IDS.threeQuarters) return 5;
-  if (wantId === IDS.half) return 2;
-  return 0;
-}
-

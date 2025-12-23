@@ -1,8 +1,9 @@
-import { MODULE_ID, SETTING_KEYS } from "../config/constants.config.mjs";
+import { MODULE_ID, COVER_STATUS_IDS, SETTING_KEYS } from "../config/constants.config.mjs";
 import {
     buildCoverContext,
     buildCreaturePrism,
     evaluateCoverFromOccluders,
+    evaluateLOS,
 } from "../services/cover.engine.mjs";
 import { isBlockingCreatureToken, itemIgnoresCover } from "../utils/rpc.mjs";
 import { drawCoverDebug, clearCoverDebug } from "../services/cover.debug.mjs";
@@ -22,13 +23,19 @@ function registerLibraryModeSetting() {
 }
 
 /**
- * Checks whether cover should be ignored for the given activity.
- * 
- * @param {Activtiy5e} activity - The activity being evaluated for cover.
- * @returns {boolean} True if cover should be ignored, otherwise false.
+ * Checks whether cover should be ignored for the given activity and returns
+ * the effective cover id plus its associated bonus.
+ *
+ * @param {Activity5e} activity - The activity being evaluated for cover.
+ * @param {string|null} coverId - The requested cover status effect id (e.g. "coverHalf") or null for none.
+ * @returns {{ coverId: (string|null), bonus: number }} The effective cover id and its corresponding bonus.
  */
-function getIgnoreCover(activity) {
-    return itemIgnoresCover(activity);
+function getIgnoreCover(activity, coverId) {
+    return itemIgnoresCover(activity, coverId);
+}
+
+function getLOS(attackerDoc, targetDoc, ctx,) {
+    return evaluateLOS(attackerDoc, targetDoc, ctx);
 }
 
 /**
@@ -57,10 +64,11 @@ function buildContextWithPrisms(scene) {
  * @param {Token|TokenDocument} options.target              The target Token or TokenDocument.
  * @param {Scene} [options.scene=canvas.scene]              The scene on which to evaluate cover.
  * @param {boolean} [options.debug=false]                   Whether to force debug output for this evaluation.
+ * @param {boolean} [options.losCheck=false]                Whether to perform a wall line-of-sight check.
  *
  * @returns {{ cover: "none"|"half"|"threeQuarters", debugSegments?: any[], debugTokenShapes?: any[] } | null}
  */
-function getCover({ attacker, target, scene = canvas?.scene, debug = false } = {}) {
+function getCover({ attacker, target, scene = canvas?.scene, debug = false, losCheck = false } = {}) {
     if (!attacker || !target || !scene) return null;
 
     const attackerDoc = attacker.document ?? attacker;
@@ -74,10 +82,20 @@ function getCover({ attacker, target, scene = canvas?.scene, debug = false } = {
     if (!ctx) return null;
 
     const result = evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, { debug: debugOn })
+
+    let los = { hasLOS: true, targetLosPoints: [] };
+    if (losCheck) {
+        los = evaluateLOS(attackerDoc, targetDoc, ctx)
+        if (!los.hasLOS) {
+            result.cover = "total"
+        }
+    }
+
     if (debugOn && result.debugSegments?.length && game.users.activeGM) {
         drawCoverDebug({
             segments: result.debugSegments ?? [],
-            tokenShapes: result.debugTokenShapes
+            tokenShapes: result.debugTokenShapes,
+            targetLosPoints: los.targetLosPoints
         });
     }
     return result;;
@@ -155,7 +173,8 @@ export function initApi() {
         getCoverForTargets,
         getLibraryMode,
         setLibraryMode,
-        getIgnoreCover
+        getIgnoreCover,
+        getLOS
     };
 
     const mod = game.modules.get(MODULE_ID);

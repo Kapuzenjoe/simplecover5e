@@ -22,6 +22,10 @@
         "Name": "Clear Cover on Token Movement",
         "Hint": "Automatically remove the Cover condition when a token moves during active combat, honoring the selected Cover Removal Scope."
       },
+      "losCheck": {
+        "Name": "Wall Line of Sight Check",
+        "Hint": "When enabled, the module also checks line of sight against sight-blocking walls. This can be used to detect cases where the target is fully blocked by walls."
+      },
       "CreaturesHalfOnly": {
         "Name": "Limit Cover from Creatures to 1/2 Cover",
         "Hint": "When enabled, creatures can grant at most Half Cover. As soon as at least one line is blocked purely by creatures, the target gains Half Cover, but never Three-Quarters Cover from creatures alone. Walls continue to follow the standard DMG rules."

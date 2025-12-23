@@ -5,15 +5,28 @@
 export const MODULE_ID = "simplecover5e";
 
 /**
- * Status effect ids used to represent cover levels on tokens.
+ * Cover status effect ids used to represent cover levels on tokens.
  *
- * @enum {string}
+ * @enum {string|null}
  */
-export const COVER_STATUS_IDS = {
+export const COVER_STATUS_IDS = Object.freeze({
+  none: null,
   half: "coverHalf",
   threeQuarters: "coverThreeQuarters",
   total: "coverTotal"
-};
+});
+
+/**
+ * Lookup table mapping a cover status effect id to its associated AC bonus.
+ *
+ * @type {Map<string|null, number>}
+ */
+export const COVER_BONUS_BY_ID = new Map([
+  [COVER_STATUS_IDS.none, 0],
+  [COVER_STATUS_IDS.half, 2],
+  [COVER_STATUS_IDS.threeQuarters, 5],
+  [COVER_STATUS_IDS.total, null]
+]);
 
 /**
  * Setting keys used by this module.
@@ -26,6 +39,7 @@ export const SETTING_KEYS = {
   ONLY_IN_COMBAT: "onlyInCombat",
   RMV_ON_COMBAT: "rmvCovCombat",
   RMV_ON_MOVE: "rmvCovMovement",
+  LOS_CHECK: "losCheck",
   CREATURES_HALF_ONLY: "creaturesHalfCoverOnly",
   IGNORE_DISTANCE_AOE: "IgnoreDistanceAOE",
   IGNORE_ALL_AOE: "IgnoreAllAOE",

@@ -1,8 +1,9 @@
-import { MODULE_ID, SETTING_KEYS, HOVER } from "../config/constants.config.mjs";
+import { MODULE_ID, COVER_STATUS_IDS, SETTING_KEYS, HOVER } from "../config/constants.config.mjs";
 import {
   buildCoverContext,
   buildCreaturePrism,
   evaluateCoverFromOccluders,
+  evaluateLOS,
 } from "../services/cover.engine.mjs";
 import { measureTokenDistance } from "../utils/distance.mjs";
 import { isBlockingCreatureToken } from "../utils/rpc.mjs";
@@ -13,6 +14,7 @@ import { isBlockingCreatureToken } from "../utils/rpc.mjs";
 const COVER_ICON_PATHS = {
   half: "systems/dnd5e/icons/svg/statuses/cover-half.svg",
   threeQuarters: "systems/dnd5e/icons/svg/statuses/cover-three-quarters.svg",
+  total: "systems/dnd5e/icons/svg/statuses/cover-total.svg"
 };
 
 /**
@@ -86,8 +88,17 @@ export async function onHoverToken(token, hoverState) {
         { debug: false }
       );
 
+      let los = { hasLOS: true, targetLosPoints: [] };
+      if (coverEval.cover !== COVER_STATUS_IDS.none && game.settings?.get?.(MODULE_ID, SETTING_KEYS.LOS_CHECK)) {
+        los = evaluateLOS(actorToken.document, hoveredToken.document, ctx)
+
+        if (!los.hasLOS) {
+          coverEval.cover = "total"
+        }
+      }
+
       const coverResult = coverEval?.cover ?? "none";
-      if (coverResult === "half" || coverResult === "threeQuarters") {
+      if (coverResult !== "none") {
         coverKey = coverResult;
       }
     }

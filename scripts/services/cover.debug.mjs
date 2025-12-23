@@ -12,6 +12,10 @@ const TOKEN_COLOR_ATTACKER = 0x00ff00;
 const TOKEN_COLOR_TARGET = 0x0000ff;
 const TOKEN_COLOR_OCCLUDER = 0xffa500;
 
+const DEFAULT_POINT_ALPHA = 0.9;
+const DEFAULT_POINT_RADIUS = 2;
+const DEFAULT_POINT_LINE_WIDTH = 1;
+
 /** @type {PIXI.Graphics|null} */
 let debugGraphics = null;
 
@@ -79,20 +83,43 @@ function drawPolygonSet(g, polygons, color, alpha, width) {
 function drawDebugSegment(g, segment) {
   if (!segment) return;
 
-  const from = segment.from ?? segment.a;
-  const to = segment.to ?? segment.b;
+  const from = segment.a;
+  const to = segment.b;
   if (!from || !to) return;
 
   const blocked = !!segment.blocked;
-  const color = segment.color ?? (blocked ? SEGMENT_COLOR_BLOCKED : SEGMENT_COLOR_CLEAR);
-  const alpha = segment.alpha ?? DEFAULT_SEGMENT_ALPHA;
-  const width = segment.width ?? DEFAULT_SEGMENT_WIDTH;
+  const color = (blocked ? SEGMENT_COLOR_BLOCKED : SEGMENT_COLOR_CLEAR);
+  const alpha = DEFAULT_SEGMENT_ALPHA;
+  const width = DEFAULT_SEGMENT_WIDTH;
 
   g.lineStyle(width, color, alpha);
   g.moveTo(from.x, from.y);
   g.lineTo(to.x, to.y);
 }
 
+/**
+ * Draw a set of debug points as circles.
+ *
+ * @param {PIXI.Graphics} g - Graphics object to draw on.
+ * @param {Array<{x:number,y:number}>} points - List of points to draw.
+ * @param {number} color - Circle color.
+ * @param {number} alpha - Opacity (0–1).
+ * @param {number} radius - Circle radius in pixels.
+ * @param {number} lineWidth - Outline width in pixels.
+ */
+function drawPointSet(g, points, color, alpha, radius, lineWidth) {
+  if (!points.length) return;
+
+  g.lineStyle(lineWidth, color, alpha);
+  g.beginFill(color, alpha * 0.35);
+
+  for (const p of points) {
+    if (!p) continue;
+    g.drawCircle(p.x, p.y, radius);
+  }
+
+  g.endFill();
+}
 
 /**
    * Draw debug information for cover evaluation onto the canvas.
@@ -101,7 +128,7 @@ function drawDebugSegment(g, segment) {
    * @param {DebugSegment[]} [options.segments=[]] - Segments to draw between sample points.
    * @param {TokenShapeDebug} [options.tokenShapes] - Optional token and occluder polygons.
    */
-export function drawCoverDebug({ segments = [], tokenShapes } = {}) {
+export function drawCoverDebug({ segments = [], tokenShapes, targetLosPoints = [] } = {}) {
   const g = getDebugGraphics();
   if (!g) return;
 
@@ -109,6 +136,29 @@ export function drawCoverDebug({ segments = [], tokenShapes } = {}) {
     drawDebugSegment(g, seg);
   }
 
+  if (targetLosPoints.length) {
+    const blockedPts = targetLosPoints.filter(p => p?.blocked);
+    const clearPts = targetLosPoints.filter(p => p && !p.blocked);
+
+    drawPointSet(
+      g,
+      blockedPts,
+      SEGMENT_COLOR_BLOCKED,
+      DEFAULT_POINT_ALPHA,
+      DEFAULT_POINT_RADIUS,
+      DEFAULT_POINT_LINE_WIDTH
+    );
+
+    drawPointSet(
+      g,
+      clearPts,
+      SEGMENT_COLOR_CLEAR,
+      DEFAULT_POINT_ALPHA,
+      DEFAULT_POINT_RADIUS,
+      DEFAULT_POINT_LINE_WIDTH
+    );
+  }
+  
   if (!tokenShapes) return;
 
   const attackerPolys = tokenShapes.attacker ?? [];

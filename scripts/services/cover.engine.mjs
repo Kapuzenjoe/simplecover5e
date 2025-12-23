@@ -259,22 +259,38 @@ function wallsBlock(aCorner, bCorner, sightSource, attackerDoc, targetDoc, ctx) 
     const debugOn = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.DEBUG);
     const activeGM = game.users?.activeGM;
 
-    const collide = (P, Q) =>
-        backend.testCollision(P, Q, { type: "sight", mode: "all", source: sightSource }) || [];
+    const collideAny = (P, Q) =>
+        backend.testCollision(P, Q, {
+            type: "sight",
+            mode: "any",
+            source: sightSource,
+            useThreshold: true,
+            priority: sightSource?.priority
+        })
 
-    let collisions = collide(A, B);
+    const collideAll = (P, Q) =>
+        backend.testCollision(P, Q, {
+            type: "sight",
+            mode: "all",
+            source: sightSource,
+            useThreshold: true,
+            priority: sightSource?.priority
+        }) || [];
 
-    if (!collisions.length) collisions = collide(aCorner.raw, A);
-    if (!collisions.length) collisions = collide(bCorner.raw, B);
-    if (!collisions.length) {
+    let collisions = collideAny(A, B);
+
+    if (!collisions && aCorner.raw) collisions = collideAny(aCorner.raw, A);
+    if (!collisions && bCorner.raw) collisions = collideAny(bCorner.raw, B);
+    if (!collisions) {
         return { blocked: false, A, B };
     }
 
     if (!wallHeightActive) {
         return { blocked: true, A, B };
     }
+    const collisionsAll = collideAll(A, B);
 
-    for (const vertex of collisions) {
+    for (const vertex of collisionsAll) {
         if (!vertex) continue;
 
         const edgeSet = vertex.edges ?? vertex.cwEdges ?? vertex.ccwEdges;
@@ -374,7 +390,6 @@ function getLineHeightAtVertex(A, B, vertex, attackerDoc, targetDoc, ctx) {
  * @returns {boolean} True if the segment intersects the AABB.
  */
 function segIntersectsAABB3D(p, q, b) {
-    //toDo: new alogorithm for hex grids
     let t0 = 0;
     let t1 = 1;
 
@@ -876,28 +891,16 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
                 const totalBlocked = blockedWalls + blockedCreatures;
                 const reachable = totalLinesForThisTarget - totalBlocked;
 
-                let wallsThreshold;
-                let totalBlockedThreshold;
-
-                if (isHexGrid) {
-                    wallsThreshold = 4;
-                    totalBlockedThreshold = 4;
-                } else if (isCircleMode) {
-                    wallsThreshold = 6;
-                    totalBlockedThreshold = 6;
-                } else {
-                    wallsThreshold = 3;
-                    totalBlockedThreshold = 3;
-                }
+                const threshold = isHexGrid ? 4 : (isCircleMode ? 6 : 3);
 
                 let coverLevel;
                 if (creaturesHalfOnly) {
-                    if (blockedWalls >= wallsThreshold) coverLevel = 2;
+                    if (blockedWalls >= threshold) coverLevel = 2;
                     else if (blockedWalls >= 1) coverLevel = 1;
                     else if (blockedCreatures >= 1) coverLevel = 1;
                     else coverLevel = 0;
                 } else {
-                    if (totalBlocked >= totalBlockedThreshold) coverLevel = 2;
+                    if (totalBlocked >= threshold) coverLevel = 2;
                     else if (totalBlocked >= 1) coverLevel = 1;
                     else coverLevel = 0;
                 }
@@ -915,4 +918,71 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
 
     const cover = best.coverLevel === 2 ? "threeQuarters" : (best.coverLevel === 1 ? "half" : "none");
     return debug ? { cover, debugSegments: best.segs, debugTokenShapes } : { cover };
+}
+
+/**
+ * Evaluate whether an attacker has line of sight (LOS) to a target, considering *walls only*.
+ * The test samples a 3x3 grid of points around the target center using a tolerance radius
+ * equivalent to Foundry's token visibility sampling: tolerance = min(tokenWidthPx, tokenHeightPx) / 4.
+ *
+ * The attacker origin is a single point: the vision source position when available, otherwise
+ * the attacker's token center.
+ *
+ * The function returns early as soon as any sampled ray is NOT blocked by sight walls.
+ *
+ * @param {TokenDocument} attackerDoc - Token document of the attacking creature.
+ * @param {TokenDocument} targetDoc - Token document of the target creature.
+ * @param {object} ctx - Cover evaluation context created by {@link buildCoverContext}.
+ * @returns {boolean} True if at least one sampled ray is not blocked by walls (LOS exists); false otherwise.
+ */
+export function evaluateLOS(attackerDoc, targetDoc, ctx) {
+    const attackerToken = attackerDoc?.object;
+    const targetToken = targetDoc?.object;
+
+    if (!attackerToken || !targetToken) return { hasLOS: true, targetTests: [] };
+
+    const sightSource = attackerToken.vision?.source ?? null;
+
+    const origin = sightSource
+        ? { x: sightSource.x, y: sightSource.y }
+        : { x: attackerToken.center.x, y: attackerToken.center.y };
+
+    const targetCenter = { x: targetToken.center.x, y: targetToken.center.y };
+
+    const gridSize = ctx?.grid?.size ?? 0;
+    const wPx = (Number(targetDoc.width ?? 1) || 1) * gridSize;
+    const hPx = (Number(targetDoc.height ?? 1) || 1) * gridSize;
+    const tol = Math.min(wPx, hPx) / 4;
+
+    const t = Number.isFinite(tol) && tol > 0 ? tol : 0;
+
+    const offsets = [
+        { x: 0, y: 0 },
+        { x: -t, y: -t },
+        { x: -t, y: t },
+        { x: t, y: t },
+        { x: t, y: -t },
+        { x: -t, y: 0 },
+        { x: t, y: 0 },
+        { x: 0, y: -t },
+        { x: 0, y: t }
+    ];
+
+    const targetPoints = offsets.map(o => ({ x: targetCenter.x + o.x, y: targetCenter.y + o.y }));
+
+    const targetLosPoints = [];
+    let hasLOS = false;
+
+    for (const p of targetPoints) {
+        const originPoint = { raw: null, inset: origin };
+        const targetPoint = { raw: null, inset: p };
+        const wallResult = wallsBlock(originPoint, targetPoint, sightSource, attackerDoc, targetDoc, ctx);
+        targetLosPoints.push({ x: p.x, y: p.y, blocked: wallResult.blocked });
+        if (!wallResult.blocked) hasLOS = true;
+    }
+
+    return {
+        hasLOS,
+        targetLosPoints
+    };
 }

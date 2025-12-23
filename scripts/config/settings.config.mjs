@@ -45,6 +45,14 @@ const SETTINGS = [
     type: new foundry.data.fields.BooleanField({ initial: false }),
     requiresReload: false
   },
+    {
+    key: SETTING_KEYS.LOS_CHECK,
+    name: "SIMPLE_COVER_5E.Settings.losCheck.Name",
+    hint: "SIMPLE_COVER_5E.Settings.losCheck.Hint",
+    type: new foundry.data.fields.BooleanField({ initial: false }),
+    requiresReload: false,
+    config: false
+  },
   {
     key: SETTING_KEYS.CREATURES_HALF_ONLY,
     name: "SIMPLE_COVER_5E.Settings.CreaturesHalfOnly.Name",

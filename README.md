@@ -116,10 +116,11 @@ api.getLibraryMode() / api.setLibraryMode(enabled)
 Query or toggle a "library mode" flag. When library mode is enabled, Simple Cover 5e will still provide cover calculations via the API, but will not automatically apply Active Effects or mutate roll configuration on its own. The setting is stored as a world setting and is intentionally not shown in the UI; it is meant to be controlled by integrating modules (or GMs via console).
 
 ```js
-api.getIgnoreCover(activity) 
+api.getIgnoreCover(activity, coverId) 
+// @returns {{ coverId: (string|null), bonus: number }}
 ```
 
-Returns `true` when cover should be ignored for the given `activity` based on Simple Cover 5e’s ignore rules.
+Returns the effective cover id (e.g. `coverHalf`) plus its associated AC/DEX bonus for the given `activity` based on Simple Cover 5e’s ignore rules.
 
 In "Library Mode", the *Ignore Cover* item properties are not automatically taken into account. Integrations should call this helper to evaluate ignore-cover logic (including the Ignore Cover item property and feat-based checks such as Sharpshooter / Spell Sniper) before applying any cover modifiers.
 

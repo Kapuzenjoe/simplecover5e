@@ -185,6 +185,7 @@ export class SimpleCoverVariantConfig extends HandlebarsApplicationMixin(Applica
         switch (partId) {
             case "general":
                 context.fields = [
+                    this.#createSettingField(SETTING_KEYS.LOS_CHECK), 
                     this.#createSettingField(SETTING_KEYS.CREATURES_HALF_ONLY), 
                     this.#createSettingField(SETTING_KEYS.CREATURES_PRONE),
                     this.#createSettingField(SETTING_KEYS.IGNORE_DISTANCE_AOE),

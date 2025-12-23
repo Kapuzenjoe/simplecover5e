@@ -1,4 +1,4 @@
-import { MODULE_ID, COVER_STATUS_IDS, SETTING_KEYS } from "../config/constants.config.mjs";
+import { MODULE_ID, COVER_STATUS_IDS, COVER_BONUS_BY_ID, SETTING_KEYS } from "../config/constants.config.mjs";
 
 const EXCLUDED_UNITS = new Set(["self", "touch", "special"]);
 const EXCLUDED_TEMPLATE_TYPES = new Set(["", "radius"]);
@@ -52,31 +52,39 @@ export function isBlockingCreatureToken(token) {
 }
 
 /**
- * Return true if cover should be skipped for this roll due to spell-specific rules.
- * @param {Activtiy5e} activity - The activity being evaluated for cover.
- * @returns {boolean} True if cover should be ignored, otherwise false.
+ * Checks whether cover should be ignored for the given activity and returns
+ * the effective cover id plus its associated bonus.
+ *
+ * @param {Activity5e} activity - The activity being evaluated for cover.
+ * @param {string|null} coverId - The requested cover status effect id (e.g. "coverHalf") or null for none.
+ * @returns {{ coverId: (string|null), bonus: number }} The effective cover id and its corresponding bonus.
  */
-export function itemIgnoresCover(activity) {
+export function itemIgnoresCover(activity, coverId = COVER_STATUS_IDS.none) {
+  // toDo: 
+  // - automated Wand of the War Mage 
+  // - flags on actors
+  // - activity props
+
   const item = activity?.item;
   const actor = activity?.actor;
   const actionType = activity?.actionType;
   const props = item?.system?.properties;
   const items = actor?.items;
 
-  if (props?.has?.("ignoreCover")) return true;
+  if (props?.has?.("ignoreCover")) return { coverId: COVER_STATUS_IDS.none, bonus: 0 };
 
-  if (actionType === "rwak") {
-    if (items?.getName("Sharpshooter") || items?.some(i => i.system?.identifier === "sharpshooter")) return true;
+  if (actionType === "rwak" && coverId !== COVER_STATUS_IDS.total) {
+    if (items?.getName("Sharpshooter") || items?.some(i => i.system?.identifier === "sharpshooter")) return { coverId: COVER_STATUS_IDS.none, bonus: 0 };
   }
 
-  if (actionType === "rsak") {
-    if (items?.getName("Spell Sniper") || items?.some(i => i.system?.identifier === "spell-sniper")) return true;
+  if (actionType === "rsak" && coverId !== COVER_STATUS_IDS.total) {
+    if (items?.getName("Spell Sniper") || items?.some(i => i.system?.identifier === "spell-sniper")) return { coverId: COVER_STATUS_IDS.none, bonus: 0 };
   }
 
   const templateType = activity?.target?.template?.type ?? "";
 
   if (game.settings.get(MODULE_ID, SETTING_KEYS.IGNORE_ALL_AOE)) {
-    if (templateType !== "") return true;
+    if (templateType !== "") return { coverId: COVER_STATUS_IDS.none, bonus: 0 };
   } else if (game.settings.get(MODULE_ID, SETTING_KEYS.IGNORE_DISTANCE_AOE)) {
     const rangeValue = activity?.range?.value ?? 0;
     const rangeUnits = activity?.range?.units ?? "";
@@ -85,13 +93,13 @@ export function itemIgnoresCover(activity) {
       rangeValue > 1 &&
       !EXCLUDED_UNITS.has(rangeUnits) &&
       !EXCLUDED_TEMPLATE_TYPES.has(templateType)
-    ) return true;
+    ) return { coverId: COVER_STATUS_IDS.none, bonus: 0 };
   }
 
   if (game.settings.get(MODULE_ID, SETTING_KEYS.IGNORE_DISTANCE_SPACE)) {
     const rangeValue = activity?.range?.value ?? 0;
-    if (rangeValue > 1 && (activity?.target?.affects?.type ?? "") === "space") return true;
+    if (rangeValue > 1 && (activity?.target?.affects?.type ?? "") === "space") return { coverId: COVER_STATUS_IDS.none, bonus: 0 };
   }
 
-  return false;
+  return { coverId, bonus: COVER_BONUS_BY_ID.get(coverId) };
 }
