@@ -5,28 +5,30 @@
 export const MODULE_ID = "simplecover5e";
 
 /**
- * Cover status effect ids used to represent cover levels on tokens.
+ * Central cover constants.
  *
- * @enum {string|null}
+ * - IDS: maps cover levels ("none"|"half"|"threeQuarters"|"total") to system effect ids (or null for none).
+ * - BONUS: maps cover levels ("none"|"half"|"threeQuarters"|"total") to AC/DEX bonus (null for total cover).
+ *
+ * @type {{
+ *   IDS: { none: null, half: string, threeQuarters: string, total: string },
+ *   BONUS: { none: number, half: number, threeQuarters: number, total: (number|null) }
+ * }}
  */
-export const COVER_STATUS_IDS = Object.freeze({
-  none: null,
-  half: "coverHalf",
-  threeQuarters: "coverThreeQuarters",
-  total: "coverTotal"
+export const COVER = Object.freeze({
+  IDS: Object.freeze({
+    none: null,
+    half: "coverHalf",
+    threeQuarters: "coverThreeQuarters",
+    total: "coverTotal"
+  }),
+  BONUS: Object.freeze({
+    none: 0,
+    half: 2,
+    threeQuarters: 5,
+    total: null
+  })
 });
-
-/**
- * Lookup table mapping a cover status effect id to its associated AC bonus.
- *
- * @type {Map<string|null, number>}
- */
-export const COVER_BONUS_BY_ID = new Map([
-  [COVER_STATUS_IDS.none, 0],
-  [COVER_STATUS_IDS.half, 2],
-  [COVER_STATUS_IDS.threeQuarters, 5],
-  [COVER_STATUS_IDS.total, null]
-]);
 
 /**
  * Setting keys used by this module.

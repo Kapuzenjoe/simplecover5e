@@ -117,10 +117,10 @@ Query or toggle a "library mode" flag. When library mode is enabled, Simple Cove
 
 ```js
 api.getIgnoreCover(activity, coverId) 
-// @returns {{ coverId: (string|null), bonus: number }}
+// @returns {{ coverId: ("none"|"half"|"threeQuarters"|"total"), bonus: (number|null) }}
 ```
 
-Returns the effective cover id (e.g. `coverHalf`) plus its associated AC/DEX bonus for the given `activity` based on Simple Cover 5e’s ignore rules.
+Returns the effective cover id (e.g. `half`) plus its associated AC/DEX bonus for the given `activity` based on Simple Cover 5e’s ignore rules.
 
 In "Library Mode", the *Ignore Cover* item properties are not automatically taken into account. Integrations should call this helper to evaluate ignore-cover logic (including the Ignore Cover item property and feat-based checks such as Sharpshooter / Spell Sniper) before applying any cover modifiers.
 

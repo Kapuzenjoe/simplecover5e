@@ -1,7 +1,8 @@
-import { MODULE_ID, SETTING_KEYS, COVER_STATUS_IDS } from "../config/constants.config.mjs";
+import { MODULE_ID, SETTING_KEYS, COVER } from "../config/constants.config.mjs";
 
 /**
  * Check if the given token/actor is player-owned.
+ * 
  * @param {{Token5e, Actor5e}}  
  * @returns {boolean}  True if player-owned.
  */
@@ -14,6 +15,7 @@ function isPlayerOwned({ token, actor }) {
  *  - "all":     all tokens on scene
  *  - "combatants": only combatants
  *  - "players": only player-owned combatants
+ * 
  * @param {Combat} combat
  * @param {String} scope 
  */
@@ -47,6 +49,7 @@ function resolveTokensForScope(combat, scope) {
 
 /**
  * clear cover statuses
+ * 
  * @param {Combat} combat
  */
 export async function clearCoverStatusEffect(combat) {
@@ -54,7 +57,7 @@ export async function clearCoverStatusEffect(combat) {
   const scope = game.settings.get(MODULE_ID, SETTING_KEYS.COVER_SCOPE);
   const targets = resolveTokensForScope(combat, scope);
 
-  const ids = Object.values(COVER_STATUS_IDS);
+  const ids = Object.values(COVER.IDS).filter(Boolean);
   const jobs = [];
 
   for (const { actor } of targets) {

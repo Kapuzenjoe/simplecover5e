@@ -3,10 +3,12 @@
 ## Version 1.3.0
 
 - Extended cover ignore evaluation: the helper now takes the currently calculated cover status (as a DnD effect ID) and returns an object containing the resolved coverId and bonus.
-- **Breaking**: Updated API `api.getIgnoreCover(activity)` to `api.getIgnoreCover(activity, cover)` and changed the return type from `boolean` to `{ coverId: (string|null), bonus: number }`
+- **Breaking**: Updated API `api.getIgnoreCover(activity)` to `api.getIgnoreCover(activity, coverId)` and changed the return type from `boolean` to `{{ coverId: ("none"|"half"|"threeQuarters"|"total"), bonus: (number|null) }}`
 - Added an optional wall-based LOS evaluation. The LOS test is like the Foundry-Vision Check: single origin at the attacker’s vision source position and a 3×3 sampling grid around the target center. (#15)
 - Extended `api.getCover` and `api.getCover.getCoverForTargets` with a new optional parameter `losCheck` to automatically run the wall-based LOS check as part of the cover calculation.
 - Added `api.getLOS(attackerDoc, targetDoc, ctx)` for consumers who want to run the wall-based LOS check independently (without performing a cover calculation).
+- code harmonization and optimization
+- debug now works for multitarget
 
 ## Version 1.2.4
 

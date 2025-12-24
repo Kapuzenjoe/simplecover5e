@@ -933,7 +933,7 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
  * @param {TokenDocument} attackerDoc - Token document of the attacking creature.
  * @param {TokenDocument} targetDoc - Token document of the target creature.
  * @param {object} ctx - Cover evaluation context created by {@link buildCoverContext}.
- * @returns {boolean} True if at least one sampled ray is not blocked by walls (LOS exists); false otherwise.
+ * @returns {{ hasLOS: boolean, targetLosPoints: Array<{ x: number, y: number, blocked: boolean }> }} 
  */
 export function evaluateLOS(attackerDoc, targetDoc, ctx) {
     const attackerToken = attackerDoc?.object;

@@ -1,4 +1,4 @@
-import { MODULE_ID, COVER_STATUS_IDS, SETTING_KEYS } from "../config/constants.config.mjs";
+import { MODULE_ID, SETTING_KEYS } from "../config/constants.config.mjs";
 import {
     buildCoverContext,
     buildCreaturePrism,
@@ -23,17 +23,24 @@ function registerLibraryModeSetting() {
 }
 
 /**
- * Checks whether cover should be ignored for the given activity and returns
- * the effective cover id plus its associated bonus.
+ * Checks whether cover should be ignored for the given activity and returns the effective cover id plus its associated bonus.
  *
  * @param {Activity5e} activity - The activity being evaluated for cover.
- * @param {string|null} coverId - The requested cover status effect id (e.g. "coverHalf") or null for none.
- * @returns {{ coverId: (string|null), bonus: number }} The effective cover id and its corresponding bonus.
+ * @param  {"none"|"half"|"threeQuarters"|"total"} coverId - The requested cover level ("none"|"half"|"threeQuarters"|"total") 
+ * @returns {{ coverId: ("none"|"half"|"threeQuarters"|"total"), bonus: (number|null) }} The effective cover id and its corresponding bonus.
  */
-function getIgnoreCover(activity, coverId) {
+export function getIgnoreCover(activity, coverId) {
     return itemIgnoresCover(activity, coverId);
 }
 
+/**
+ * Evaluate line of sight between attacker and target.
+ * 
+ * @param {TokenDocument} attackerDoc  - The attacking TokenDocument.
+ * @param {TokenDocument} targetDoc    - The target TokenDocument.
+ * @param {object} ctx                 - The cover evaluation context.
+ * @returns {{ hasLOS: boolean, targetLosPoints: Array<{ x: number, y: number, blocked: boolean }> }} 
+ */
 function getLOS(attackerDoc, targetDoc, ctx,) {
     return evaluateLOS(attackerDoc, targetDoc, ctx);
 }
@@ -63,19 +70,21 @@ function buildContextWithPrisms(scene) {
  * @param {Token|TokenDocument} options.attacker            The attacking Token or TokenDocument.
  * @param {Token|TokenDocument} options.target              The target Token or TokenDocument.
  * @param {Scene} [options.scene=canvas.scene]              The scene on which to evaluate cover.
- * @param {boolean} [options.debug=false]                   Whether to force debug output for this evaluation.
+ * @param {boolean|null} [options.debug=null]               Whether to force debug output. "null"" uses the module's Debug setting; "true" forces on; "false" forces off.
  * @param {boolean} [options.losCheck=false]                Whether to perform a wall line-of-sight check.
  *
  * @returns {{ cover: "none"|"half"|"threeQuarters", debugSegments?: any[], debugTokenShapes?: any[] } | null}
  */
-function getCover({ attacker, target, scene = canvas?.scene, debug = false, losCheck = false } = {}) {
+export function getCover({ attacker, target, scene = canvas?.scene, debug = null, losCheck = false } = {}) {
     if (!attacker || !target || !scene) return null;
 
     const attackerDoc = attacker.document ?? attacker;
     const targetDoc = target.document ?? target;
     if (!attackerDoc || !targetDoc) return null;
 
-    const debugOn = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.DEBUG) || debug;
+    const settingDebug = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.DEBUG);
+    const debugOn = (debug === null) ? settingDebug : !!debug;
+
     if (debugOn && game.users.activeGM) clearCoverDebug();
 
     const ctx = buildContextWithPrisms(scene);
@@ -104,20 +113,24 @@ function getCover({ attacker, target, scene = canvas?.scene, debug = false, losC
 /**
  * Compute cover between a single attacker and multiple targets.
  *
- * @param {object} options                                           Options controlling the cover evaluation.
- * @param {Token|TokenDocument} options.attacker                     The attacking Token or TokenDocument.
- * @param {Token[]|TokenDocument[]} [options.targets]                An explicit list of targets; defaults to the user's current targets.
- * @param {Scene} [options.scene=canvas.scene]                       The scene on which to evaluate cover.
- * @param {boolean} [options.debug=false]                            Whether to force debug output for this evaluation.
- *
+ * @param {object} options                                  Options controlling the cover evaluation.
+ * @param {Token|TokenDocument} options.attacker            The attacking Token or TokenDocument.
+ * @param {Token[]|TokenDocument[]} [options.targets]       An explicit list of targets; defaults to the user's current targets.
+ * @param {Scene} [options.scene=canvas.scene]              The scene on which to evaluate cover.
+ * @param {boolean|null} [options.debug=null]               Whether to force debug output. "null"" uses the module's Debug setting; "true" forces on; "false" forces off.
+ * @param {boolean} [options.losCheck=false]                Whether to perform a wall line-of-sight check.
+ * 
  * @returns {Array<{ target: Token|TokenDocument, result: { cover: "none"|"half"|"threeQuarters", debugSegments?: any[], debugTokenShapes?: any[] } }>}
  */
-function getCoverForTargets({ attacker, targets = null, scene = canvas?.scene, debug = false } = {}) {
+export function getCoverForTargets({ attacker, targets = null, scene = canvas?.scene, debug = null, losCheck = false } = {}) {
     if (!attacker || !scene) return [];
+
     const attackerDoc = attacker.document ?? attacker;
     if (!attackerDoc) return [];
 
-    const debugOn = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.DEBUG) || debug;
+    const settingDebug = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.DEBUG);
+    const debugOn = (debug === null) ? settingDebug : !!debug;
+
     if (debugOn && game.users.activeGM) clearCoverDebug();
 
     const ctx = buildContextWithPrisms(scene);
@@ -131,15 +144,29 @@ function getCoverForTargets({ attacker, targets = null, scene = canvas?.scene, d
     for (const t of list) {
         const targetDoc = t?.document ?? t;
         if (!targetDoc) continue;
-        const result = evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, { debug: debugOn });
-        if (debugOn && result.debugSegments?.length && game.users.activeGM) {
+
+        const result = evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, { debug: debugOn })
+
+        let los = { hasLOS: true, targetLosPoints: [] };
+        if (losCheck) {
+            los = evaluateLOS(attackerDoc, targetDoc, ctx)
+            if (!los.hasLOS) {
+                result.cover = "total"
+            }
+        }
+        out.push({ target: t, result, los });
+    }
+
+    if (debugOn && out.length && game.users.activeGM) {
+        for (const e of out) {
             drawCoverDebug({
-                segments: result.debugSegments ?? [],
-                tokenShapes: result.debugTokenShapes
+                segments: e.result?.debugSegments ?? [],
+                tokenShapes: e.result?.debugTokenShapes,
+                targetLosPoints: e.los?.targetLosPoints ?? []
             });
         }
-        out.push({ target: t, result });
     }
+
     return out;
 }
 

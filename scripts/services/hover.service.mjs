@@ -1,12 +1,6 @@
-import { MODULE_ID, COVER_STATUS_IDS, SETTING_KEYS, HOVER } from "../config/constants.config.mjs";
-import {
-  buildCoverContext,
-  buildCreaturePrism,
-  evaluateCoverFromOccluders,
-  evaluateLOS,
-} from "../services/cover.engine.mjs";
+import { MODULE_ID, SETTING_KEYS, HOVER } from "../config/constants.config.mjs";
 import { measureTokenDistance } from "../utils/distance.mjs";
-import { isBlockingCreatureToken } from "../utils/rpc.mjs";
+import { getCover } from "../utils/api.mjs";
 
 /**
  * Property name for storing hover distance label on Token instance.
@@ -73,40 +67,16 @@ export async function onHoverToken(token, hoverState) {
 
   let coverKey = "";
   if (hoverMode === "coverOnly" || hoverMode === "coverAndDistance") {
-    const scene = hoveredToken.scene;
-    if (scene) {
-      const ctx = buildCoverContext(canvas.scene);
-      const blockingTokens = canvas.tokens.placeables.filter(t => isBlockingCreatureToken(t));
-      ctx.creaturePrisms = new Map(
-        blockingTokens.map(t => [t.id, buildCreaturePrism(t.document, ctx)])
-      );
+    const losCheck = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.LOS_CHECK);
+    const result = getCover({ attacker: actorToken, target: hoveredToken, scene: hoveredToken.scene, debug: false, losCheck: losCheck });
 
-      const coverEval = evaluateCoverFromOccluders(
-        actorToken.document,
-        hoveredToken.document,
-        ctx,
-        { debug: false }
-      );
-
-      let los = { hasLOS: true, targetLosPoints: [] };
-      if (coverEval.cover !== COVER_STATUS_IDS.none && game.settings?.get?.(MODULE_ID, SETTING_KEYS.LOS_CHECK)) {
-        los = evaluateLOS(actorToken.document, hoveredToken.document, ctx)
-
-        if (!los.hasLOS) {
-          coverEval.cover = "total"
-        }
-      }
-
-      const coverResult = coverEval?.cover ?? "none";
-      if (coverResult !== "none") {
-        coverKey = coverResult;
-      }
+    if (result?.cover !== "none") {
+      coverKey = result?.cover || "";
     }
   }
 
   const showCoverIcon =
-    (hoverMode === "coverOnly" || hoverMode === "coverAndDistance") &&
-    !!coverKey;
+    (hoverMode === "coverOnly" || hoverMode === "coverAndDistance") && !!coverKey;
 
   let labelText = "";
   if (hoverMode === "coverAndDistance") {
