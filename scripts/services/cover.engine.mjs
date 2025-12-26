@@ -277,7 +277,7 @@ export function buildCreaturePrism(td, ctx) {
  * @param {CoverContext} ctx                                                 The cover evaluation context.
  * @returns {{blocked:boolean, A:{x:number,y:number}, B:{x:number,y:number}}} Whether the segment is blocked and the tested inset segment.
  */
-function wallsBlock(aCorner, bCorner, sightSource, attackerDoc, targetDoc, ctx) {
+function wallsBlock(aCorner, bCorner, sightSource, attackerDoc, targetDoc, ctx, losCheck = false) {
     const A = aCorner.inset;
     const B = bCorner.inset;
     const backend = CONFIG.Canvas.polygonBackends.sight;
@@ -329,8 +329,8 @@ function wallsBlock(aCorner, bCorner, sightSource, attackerDoc, targetDoc, ctx) 
             }
         }
 
-        const { lineZ, attZ, tgtZ } = getLineHeightAtVertex(A, B, vertex, attackerDoc, targetDoc, ctx);
-        if (!Number.isFinite(lineZ)) continue;
+        const { coverLineZ, attZ, tgtZ, losLineZ } = getLineHeightAtVertex(A, B, vertex, attackerDoc, targetDoc, ctx);
+        if (!Number.isFinite(coverLineZ)) continue;
 
         for (const edge of edgeSet) {
             const whFlags = edge?.object?.document?.flags?.["wall-height"];
@@ -350,7 +350,7 @@ function wallsBlock(aCorner, bCorner, sightSource, attackerDoc, targetDoc, ctx) 
                         attacker: { id: attackerDoc.id, zFt: attZ },
                         target: { id: targetDoc.id, z: tgtZ },
                         wall: { id: edge?.object?.document.id, bottom: wallBottom, top: wallTop },
-                        lineZ,
+                        coverLineZ,
                         tVertex: {
                             x: vertex.x,
                             y: vertex.y
@@ -358,7 +358,12 @@ function wallsBlock(aCorner, bCorner, sightSource, attackerDoc, targetDoc, ctx) 
                     }
                 );
             }
-            if (lineZ >= wallBottom && lineZ <= wallTop) {
+            if (losCheck) {
+                if (losLineZ >= wallBottom && losLineZ <= wallTop) {
+                    return { blocked: true, A, B };
+                }
+            }
+            else if (coverLineZ >= wallBottom && coverLineZ <= wallTop) {
                 return { blocked: true, A, B };
             }
         }
@@ -399,11 +404,14 @@ function getLineHeightAtVertex(A, B, vertex, attackerDoc, targetDoc, ctx) {
     const tgtHeightFt = getCreatureHeightFt(targetDoc, ctx);
 
     const attZ = attBottomFt + (Number.isFinite(attHeightFt) ? attHeightFt * 0.7 : 0);
+    const losAttZ = attBottomFt + (Number.isFinite(attHeightFt) ? attHeightFt  : 0);
     const tgtZ = tgtBottomFt + (Number.isFinite(tgtHeightFt) ? tgtHeightFt * 0.5 : 0);
+    const losTgtZ = tgtBottomFt + (Number.isFinite(tgtHeightFt) ? tgtHeightFt : 0);
 
-    const lineZ = attZ + t * (tgtZ - attZ);
+    const coverLineZ = attZ + t * (tgtZ - attZ);
+    const losLineZ = Math.min(losAttZ, attZ + t * (losTgtZ - attZ));
 
-    return { lineZ, attZ, tgtZ };
+    return { coverLineZ, attZ, tgtZ, losLineZ };
 }
 
 /**
@@ -999,11 +1007,12 @@ export function evaluateLOS(attackerDoc, targetDoc, ctx) {
 
     const targetLosPoints = [];
     let hasLOS = false;
+    const losCheck = true;
 
     for (const p of targetPoints) {
         const originPoint = { raw: null, inset: origin };
         const targetPoint = { raw: null, inset: p };
-        const wallResult = wallsBlock(originPoint, targetPoint, sightSource, attackerDoc, targetDoc, ctx);
+        const wallResult = wallsBlock(originPoint, targetPoint, sightSource, attackerDoc, targetDoc, ctx, losCheck);
         targetLosPoints.push({ x: p.x, y: p.y, blocked: wallResult.blocked });
         if (!wallResult.blocked) hasLOS = true;
     }
