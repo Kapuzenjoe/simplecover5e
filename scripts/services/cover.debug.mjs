@@ -23,7 +23,7 @@ let debugGraphics = null;
  * Lazily create or return the shared debug PIXI.Graphics instance.
  * The graphics object is attached to the canvas interface and reused between debug draws for performance.
  *
- * @returns {PIXI.Graphics|null} A reusable graphics instance or null if the canvas is not ready.
+ * @returns {PIXI.Graphics|null}       A reusable graphics instance or null if the canvas is not ready.
  */
 function getDebugGraphics() {
   if (!debugGraphics || debugGraphics.destroyed) {
@@ -41,8 +41,9 @@ function getDebugGraphics() {
 
 
 /**
- * Clear the current cover debug graphics without destroying the graphics object.
- * 
+ * Clear the current cover debug graphics without destroying the shared graphics object.
+ *
+ * @returns {void}
  */
 export function clearCoverDebug() {
   if (!debugGraphics || debugGraphics.destroyed) return;
@@ -122,12 +123,15 @@ function drawPointSet(g, points, color, alpha, radius, lineWidth) {
 }
 
 /**
-   * Draw debug information for cover evaluation onto the canvas.
-   *
-   * @param {Object} [options={}] - Debug rendering options.
-   * @param {DebugSegment[]} [options.segments=[]] - Segments to draw between sample points.
-   * @param {TokenShapeDebug} [options.tokenShapes] - Optional token and occluder polygons.
-   */
+ * Draw cover debug information onto the canvas.
+ * This renders sampled segments, optional token/occluder outlines, and optional LoS sample points.
+ *
+ * @param {object} [options={}]                            Debug rendering options.
+ * @param {DebugSegment[]} [options.segments=[]]           Segments to draw between sample points.
+ * @param {TokenShapeDebug} [options.tokenShapes]          Optional token and occluder polygons.
+ * @param {Array<{x:number,y:number,blocked:boolean}>} [options.targetLosPoints=[]] Optional LoS sample points.
+ * @returns {void}
+ */
 export function drawCoverDebug({ segments = [], tokenShapes, targetLosPoints = [] } = {}) {
   const g = getDebugGraphics();
   if (!g) return;
@@ -158,7 +162,7 @@ export function drawCoverDebug({ segments = [], tokenShapes, targetLosPoints = [
       DEFAULT_POINT_LINE_WIDTH
     );
   }
-  
+
   if (!tokenShapes) return;
 
   const attackerPolys = tokenShapes.attacker ?? [];

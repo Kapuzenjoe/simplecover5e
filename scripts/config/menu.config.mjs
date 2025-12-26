@@ -3,7 +3,8 @@ import { MODULE_ID, DEFAULT_SIZE_FT, SETTING_KEYS, BASE_KEYS } from "./constants
 const { HandlebarsApplicationMixin, ApplicationV2 } = foundry.applications.api;
 
 /**
- * Configuration application for default creature heights used by Simple Cover 5e.
+ * A configuration form for default creature heights used by Simple Cover 5e.
+ * Values are stored under the {@link SETTING_KEYS.CREATURE_HEIGHTS} world setting.
  *
  * @extends {ApplicationV2}
  */
@@ -133,7 +134,7 @@ export class SimpleCoverCreatureHeightsConfig extends HandlebarsApplicationMixin
 }
 
 /**
- * Configuration application for Cover & Measurement rules used by Simple Cover 5e.
+ * A configuration form for cover and measurement rule variants.
  *
  * @extends {ApplicationV2}
  */

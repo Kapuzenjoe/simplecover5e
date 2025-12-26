@@ -1,27 +1,48 @@
-import * as settings from "./config/settings.config.mjs";
-import * as coverHandler from "./handlers/cover.hooks.mjs";
-import * as queries from "./services/queries.service.mjs";
-import * as debug from "./services/cover.debug.mjs";
-import * as hover from "./services/hover.service.mjs";
-import * as api from "./utils/api.mjs";  
-
+import { registerSettings, getSceneControlButtons } from "./config/settings.config.mjs";
+import {
+  ignoreCoverProperties,
+  clearCoverOnUpdateCombat,
+  clearCoverOnDeleteCombat,
+  clearCoverOnMovement,
+  onPreRollAttack,
+  onPreRollSavingThrow,
+} from "./handlers/cover.hooks.mjs";
+import { initQueries } from "./services/queries.service.mjs";
+import { clearCoverDebug } from "./services/cover.debug.mjs";
+import { onHoverToken } from "./services/hover.service.mjs";
+import { initApi } from "./utils/api.mjs";
 
 // === Init Phase ===
 Hooks.once("init", () => {
-  settings.registerSettings();
-  queries.initQueries();
-  coverHandler.ignoreCoverProperties();
-  api.initApi();
+  registerSettings();
+  initQueries();
+  ignoreCoverProperties();
+  initApi();
 });
-Hooks.once("canvasReady", () => {
-  debug.clearCoverDebug();
-});
-Hooks.on('getSceneControlButtons', settings.getSceneControlButtons);
+
+Hooks.once("canvasReady", clearCoverDebug);
+Hooks.on("getSceneControlButtons", getSceneControlButtons);
 
 // === Calc Cover Hooks ===
-Hooks.on("updateCombat", coverHandler.clearCoverOnUpdateCombat); 
-Hooks.on("deleteCombat", coverHandler.clearCoverOnDeleteCombat);
-Hooks.on("moveToken", coverHandler.clearCoverOnMovement); 
-Hooks.on("dnd5e.preRollAttack", coverHandler.onPreRollAttack);
-Hooks.on("dnd5e.preRollSavingThrow", coverHandler.onPreRollSavingThrow); 
-Hooks.on("hoverToken", hover.onHoverToken);
+for (const [hook, fn] of [
+  ["updateCombat", clearCoverOnUpdateCombat],
+  ["deleteCombat", clearCoverOnDeleteCombat],
+  ["moveToken", clearCoverOnMovement],
+  ["dnd5e.preRollAttack", onPreRollAttack],
+  ["dnd5e.preRollSavingThrow", onPreRollSavingThrow],
+  ["hoverToken", onHoverToken],
+]) {
+  Hooks.on(hook, fn);
+}
+
+// === Register Flags for DAE ===
+
+Hooks.once("dae.setupComplete", () => {
+  const fields = [
+    "flags.simplecover5e.ignoreAllCover",
+    "flags.simplecover5e.ignoreHalfCover",
+    "flags.simplecover5e.ignoreThreeQuartersCover"
+  ];
+
+  window.DAE?.addAutoFields?.(fields);
+});

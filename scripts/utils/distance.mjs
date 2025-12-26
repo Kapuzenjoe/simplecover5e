@@ -1,17 +1,17 @@
 import { MODULE_ID, SETTING_KEYS, GRID_MODES, getGridMode } from "../config/constants.config.mjs";
 
 /**
- * Measure the minimal 3D distance between two tokens in grid units.
- * Uses the system's grid measurement, including its diagonal rule (e.g. 1/1/1 or 1/2/1).
+ * Measure the minimal 3D distance between two tokens in scene grid units.
+ * Uses Foundry's grid measurement (including diagonal rules) and optionally adjusts distances in gridless modes.
  *
- * Gridless modes:
- *  - edgeEdge      -> edge to edge
- *  - centerCenter  -> center to center
- *  - edgeToCenter  -> source edge to target center
+ * Gridless distance modes:
+ *  - "edgeEdge":      edge-to-edge
+ *  - "centerCenter":  center-to-center
+ *  - "edgeToCenter":  source edge to target center
  *
- * @param {Token|TokenDocument} sourceToken - Source token or document.
- * @param {Token|TokenDocument} targetToken - Target token or document.
- * @returns {number} The minimal distance in grid units (never negative).
+ * @param {Token|TokenDocument} sourceToken      The source token or document.
+ * @param {Token|TokenDocument} targetToken      The target token or document.
+ * @returns {number}                             The minimal distance in grid units (clamped to 0+).
  */
 export function measureTokenDistance(sourceToken, targetToken) {
   const scene = sourceToken.parent;
@@ -95,7 +95,7 @@ export function measureTokenDistance(sourceToken, targetToken) {
   let result = minDistance;
 
   if (isGridless) {
-    const mode = game.settings.get(MODULE_ID, SETTING_KEYS.GRIDLESS_DISTANCE_MODE) ?? "edgetoCenter";
+    const mode = game.settings.get(MODULE_ID, SETTING_KEYS.GRIDLESS_DISTANCE_MODE) ?? "edgeToCenter";
 
     if (mode === "edgeEdge" || mode === "edgeToCenter") {
       const unitsPerPixel = grid.distance / grid.size;

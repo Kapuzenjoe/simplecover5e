@@ -2,13 +2,23 @@
 
 ## Version 1.3.0
 
-- Extended cover ignore evaluation: the helper now takes the currently calculated cover status (as a DnD effect ID) and returns an object containing the resolved coverId and bonus.
-- **Breaking**: Updated API `api.getIgnoreCover(activity)` to `api.getIgnoreCover(activity, coverId)` and changed the return type from `boolean` to `{{ coverId: ("none"|"half"|"threeQuarters"|"total"), bonus: (number|null) }}`
-- Added an optional wall-based LOS evaluation. The LOS test is like the Foundry-Vision Check: single origin at the attacker’s vision source position and a 3×3 sampling grid around the target center. (#15)
-- Extended `api.getCover` and `api.getCover.getCoverForTargets` with a new optional parameter `losCheck` to automatically run the wall-based LOS check as part of the cover calculation.
-- Added `api.getLOS(attackerDoc, targetDoc, ctx)` for consumers who want to run the wall-based LOS check independently (without performing a cover calculation).
-- code harmonization and optimization
-- debug now works for multitarget
+Big Holiday Update: optional wall-based LoS checks (Total Cover), actor flags and a more capable Library Mode API.
+
+- **Cover rules expansion:** cover rules evaluation now considers the *computed* cover level and returns the resolved `cover` plus its associated AC/DEX `bonus`.
+- **Breaking (API):** `api.getIgnoreCover(activity)` --> `api.getIgnoreCover(activity, cover)`  
+  - Return type changed from `boolean` to `{ cover: ("none"|"half"|"threeQuarters"|"total"), bonus: (number|null) }`.
+- **New (Optional): Wall LoS check for Total Cover** (#15)  
+  - Mirrors Foundry’s visibility sampling: a single origin at the attacker’s vision-source position and a 3×3 grid around the target center.
+- **API extensions:** `api.getCover` and `api.getCoverForTargets` now support:
+  - `losCheck` to automatically run the wall-based LoS check as part of cover evaluation.
+  - `activity` for direct cover rules integration.
+- **API output improvement:** `api.getCover` / `api.getCoverForTargets` now also return the AC/DEX cover `bonus` (0, 2, 5, or `null` for Total Cover).
+- **New (API):** `api.getLOS(attackerDoc, targetDoc, ctx)` to run the wall-based LoS check independently (without computing cover).
+- **Debug:** cover debug overlay now supports multi-target workflows and shows LoS check Points.
+- **Rules:** added actor flags for ignore-cover behavior (#14).
+- **Rules:** automated cover rules handling for *Wand of the War Mage* (currently detected by name only) (#14).
+- **Maintenance:** general code cleanup, harmonization, and optimizations.
+- **Docs:** new Wiki pages for Settings, Cover Rules, and API (Library Mode): [Wiki](<https://github.com/Kapuzenjoe/simplecover5e/wiki>)
 
 ## Version 1.2.4
 

@@ -5,8 +5,28 @@ import {
     evaluateCoverFromOccluders,
     evaluateLOS,
 } from "../services/cover.engine.mjs";
-import { isBlockingCreatureToken, itemIgnoresCover } from "../utils/rpc.mjs";
+import { isBlockingCreatureToken } from "../services/cover.service.mjs";
+import { ignoresCover } from "../utils/rules.cover.mjs";
 import { drawCoverDebug, clearCoverDebug } from "../services/cover.debug.mjs";
+
+/**
+ * @typedef {"none"|"half"|"threeQuarters"|"total"} CoverLevel
+ *
+ * @typedef {object} LosPoint
+ * @property {number} x
+ * @property {number} y
+ * @property {boolean} blocked
+ *
+ * @typedef {object} LosResult
+ * @property {boolean} hasLOS
+ * @property {LosPoint[]} targetLosPoints
+ *
+ * @typedef {object} CoverEvaluationResult
+ * @property {CoverLevel} cover
+ * @property {0|2|5|null} bonus
+ * @property {any[]} [debugSegments]
+ * @property {any[]} [debugTokenShapes]
+ */
 
 /**
  * Register the library mode setting for this module.
@@ -23,40 +43,43 @@ function registerLibraryModeSetting() {
 }
 
 /**
- * Checks whether cover should be ignored for the given activity and returns the effective cover id plus its associated bonus.
+ * Resolve the effective cover level for an activity, including ignore-cover rules.
  *
- * @param {Activity5e} activity - The activity being evaluated for cover.
- * @param  {"none"|"half"|"threeQuarters"|"total"} coverId - The requested cover level ("none"|"half"|"threeQuarters"|"total") 
- * @returns {{ coverId: ("none"|"half"|"threeQuarters"|"total"), bonus: (number|null) }} The effective cover id and its corresponding bonus.
+ * @param {Activity5e} activity                      The activity being evaluated.
+ * @param {"none"|"half"|"threeQuarters"|"total"} cover The computed/requested cover level.
+ * @returns {{ CoverLevel, bonus: (number|null) }} The effective cover level and its corresponding bonus.
+ *
  */
-export function getIgnoreCover(activity, coverId) {
-    return itemIgnoresCover(activity, coverId);
+function getIgnoreCover(activity, cover) {
+    return ignoresCover(activity, cover);
 }
 
 /**
- * Evaluate line of sight between attacker and target.
- * 
- * @param {TokenDocument} attackerDoc  - The attacking TokenDocument.
- * @param {TokenDocument} targetDoc    - The target TokenDocument.
- * @param {object} ctx                 - The cover evaluation context.
- * @returns {{ hasLOS: boolean, targetLosPoints: Array<{ x: number, y: number, blocked: boolean }> }} 
+ * Evaluate line of sight (LoS) from an attacker to a target.
+ *
+ * @param {TokenDocument} attackerDoc   The attacking TokenDocument.
+ * @param {TokenDocument} targetDoc     The target TokenDocument.
+ * @param {object} ctx                  The cover evaluation context.
+ * @returns {LosResult}                 The LoS result and sampled target points.
  */
-function getLOS(attackerDoc, targetDoc, ctx,) {
+function getLOS(attackerDoc, targetDoc, ctx) {
     return evaluateLOS(attackerDoc, targetDoc, ctx);
 }
 
 /**
- * Build the cover evaluation context and precompute creature prisms.
+ * Build the cover evaluation context and precompute creature prisms for blocking tokens.
  *
- * @param {Scene} [scene=canvas.scene]      The scene for which to build the cover context.
- * @returns {object|null}                   The cover evaluation context.
+ * @param {Scene} [scene=canvas.scene]  The scene for which to build the cover context.
+ * @returns {object|null}               The cover evaluation context, or null if no scene is available.
  */
-function buildContextWithPrisms(scene) {
+function buildContextWithPrisms(scene = canvas?.scene) {
     const s = scene ?? canvas?.scene;
     if (!s) return null;
 
     const ctx = buildCoverContext(s);
-    const blockingTokens = canvas.tokens.placeables.filter(t => isBlockingCreatureToken(t));
+    const placeables = canvas?.tokens?.placeables ?? [];
+    const blockingTokens = placeables.filter(t => isBlockingCreatureToken(t));
+
     ctx.creaturePrisms = new Map(
         blockingTokens.map(t => [t.id, buildCreaturePrism(t.document, ctx)])
     );
@@ -64,18 +87,18 @@ function buildContextWithPrisms(scene) {
 }
 
 /**
- * Compute cover between a single attacker and a single target.
+ * Compute cover between a single attacker and a single target, optionally including a wall LoS check.
  *
- * @param {object} options                                  Options controlling the cover evaluation.
+ * @param {object} [options={}]                             Options controlling the cover evaluation.
  * @param {Token|TokenDocument} options.attacker            The attacking Token or TokenDocument.
  * @param {Token|TokenDocument} options.target              The target Token or TokenDocument.
  * @param {Scene} [options.scene=canvas.scene]              The scene on which to evaluate cover.
- * @param {boolean|null} [options.debug=null]               Whether to force debug output. "null"" uses the module's Debug setting; "true" forces on; "false" forces off.
- * @param {boolean} [options.losCheck=false]                Whether to perform a wall line-of-sight check.
- *
- * @returns {{ cover: "none"|"half"|"threeQuarters", debugSegments?: any[], debugTokenShapes?: any[] } | null}
+ * @param {boolean|null} [options.debug=null]               Whether to force debug output. Null uses the module Debug setting.
+ * @param {boolean} [options.losCheck=false]                Whether to perform a wall line-of-sight check (no LoS => total cover).
+ * @param {Activity5e|null} [options.activity=null]         The activity being evaluated for cover.
+ * @returns {CoverEvaluationResult|null}                    The computed cover result, or null if inputs are invalid.
  */
-export function getCover({ attacker, target, scene = canvas?.scene, debug = null, losCheck = false } = {}) {
+export function getCover({ attacker, target, scene = canvas?.scene, debug = null, losCheck = false, activity = null } = {}) {
     if (!attacker || !target || !scene) return null;
 
     const attackerDoc = attacker.document ?? attacker;
@@ -96,8 +119,15 @@ export function getCover({ attacker, target, scene = canvas?.scene, debug = null
     if (losCheck) {
         los = evaluateLOS(attackerDoc, targetDoc, ctx)
         if (!los.hasLOS) {
-            result.cover = "total"
+            result.cover = "total";
+            result.bonus = null;
         }
+    }
+
+    if (activity) {
+        const { cover: desiredCover, bonus: desiredBonus } = getIgnoreCover(activity, result?.cover ?? "none");
+        result.cover = desiredCover;
+        result.bonus = desiredBonus;
     }
 
     if (debugOn && result.debugSegments?.length && game.users.activeGM) {
@@ -107,22 +137,22 @@ export function getCover({ attacker, target, scene = canvas?.scene, debug = null
             targetLosPoints: los.targetLosPoints
         });
     }
-    return result;;
+    return result;
 }
 
 /**
- * Compute cover between a single attacker and multiple targets.
+ * Compute cover between a single attacker and multiple targets, optionally including a wall LoS check.
  *
- * @param {object} options                                  Options controlling the cover evaluation.
+ * @param {object} [options={}]                             Options controlling the cover evaluation.
  * @param {Token|TokenDocument} options.attacker            The attacking Token or TokenDocument.
- * @param {Token[]|TokenDocument[]} [options.targets]       An explicit list of targets; defaults to the user's current targets.
+ * @param {Token[]|TokenDocument[]|null} [options.targets]  Explicit targets; defaults to the user's current targets.
  * @param {Scene} [options.scene=canvas.scene]              The scene on which to evaluate cover.
- * @param {boolean|null} [options.debug=null]               Whether to force debug output. "null"" uses the module's Debug setting; "true" forces on; "false" forces off.
- * @param {boolean} [options.losCheck=false]                Whether to perform a wall line-of-sight check.
- * 
- * @returns {Array<{ target: Token|TokenDocument, result: { cover: "none"|"half"|"threeQuarters", debugSegments?: any[], debugTokenShapes?: any[] } }>}
+ * @param {boolean|null} [options.debug=null]               Whether to force debug output. Null uses the module Debug setting.
+ * @param {boolean} [options.losCheck=false]                Whether to perform a wall line-of-sight check (no LoS => total cover).
+ * @param {Activity5e|null} [options.activity=null]         The activity being evaluated for cover.
+ * @returns {Array<{ target: Token|TokenDocument, result: CoverEvaluationResult, los: LosResult }>} The per-target cover results.
  */
-export function getCoverForTargets({ attacker, targets = null, scene = canvas?.scene, debug = null, losCheck = false } = {}) {
+export function getCoverForTargets({ attacker, targets = null, scene = canvas?.scene, debug = null, losCheck = false, activity = null } = {}) {
     if (!attacker || !scene) return [];
 
     const attackerDoc = attacker.document ?? attacker;
@@ -151,9 +181,17 @@ export function getCoverForTargets({ attacker, targets = null, scene = canvas?.s
         if (losCheck) {
             los = evaluateLOS(attackerDoc, targetDoc, ctx)
             if (!los.hasLOS) {
-                result.cover = "total"
+                result.cover = "total";
+                result.bonus = null;
             }
         }
+
+        if (activity) {
+            const { cover: desiredCover, bonus: desiredBonus } = getIgnoreCover(activity, result?.cover ?? "none");
+            result.cover = desiredCover;
+            result.bonus = desiredBonus;
+        }
+
         out.push({ target: t, result, los });
     }
 
@@ -172,6 +210,8 @@ export function getCoverForTargets({ attacker, targets = null, scene = canvas?.s
 
 /**
  * Get whether the module is currently operating in library mode.
+ *
+ * @returns {boolean} True if library mode is enabled.
  */
 function getLibraryMode() {
     return !!game.settings.get(MODULE_ID, SETTING_KEYS.LIBRARY_MODE);
@@ -179,6 +219,9 @@ function getLibraryMode() {
 
 /**
  * Enable or disable library mode for this module.
+ *
+ * @param {boolean} enabled   The desired library mode state.
+ * @returns {Promise<boolean>} True if the setting was updated; otherwise false.
  */
 async function setLibraryMode(enabled) {
     if (!game.user.isGM) {
@@ -191,6 +234,8 @@ async function setLibraryMode(enabled) {
 
 /**
  * Initialize and expose the module API on the module instance.
+ *
+ * @returns {void}
  */
 export function initApi() {
     registerLibraryModeSetting();

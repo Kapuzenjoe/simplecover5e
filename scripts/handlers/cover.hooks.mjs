@@ -1,8 +1,8 @@
 import { MODULE_ID, COVER, SETTING_KEYS } from "../config/constants.config.mjs";
 import { clearCoverStatusEffect } from "../services/cover.service.mjs";
-import { getCover, getCoverForTargets, getIgnoreCover } from "../utils/api.mjs";
+import { getCover, getCoverForTargets } from "../utils/api.mjs";
 import { clearCoverDebug } from "../services/cover.debug.mjs";
-import { toggleCoverEffectViaGM } from "../utils/rpc.mjs";
+import { toggleCoverEffectViaGM } from "../services/queries.service.mjs";
 
 /**
  * Register the "ignoreCover" item property on dnd5e.
@@ -38,22 +38,22 @@ export function onPreRollAttack(config, dialog, message) {
     actor?.getActiveTokens?.()[0] ??
     canvas.tokens?.controlled?.[0] ?? null;
   if (!attackerToken) return;
+  const activity = config.subject ?? null;
 
   const targets = Array.from(game.user?.targets ?? [])
     .filter(t => t?.document && !t.document.actor?.defeated);
   if (!targets.length) return;
 
   const losCheck = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.LOS_CHECK);
-  const resultArray = getCoverForTargets({ attacker: attackerToken, targets: targets, scene: attackerToken.scene, losCheck: losCheck });
-
-  const activity = config.subject ?? null;
+  const resultArray = getCoverForTargets({ attacker: attackerToken, targets: targets, scene: attackerToken.scene, losCheck: losCheck, activity: activity });
 
   for (const out of resultArray) {
     const targetActor = out.target?.actor
     if (!targetActor) continue;
     if (targetActor.statuses?.has?.(COVER.IDS.total) && !losCheck) continue;
 
-    const { coverId, bonus: desiredBonus } = getIgnoreCover(activity, out?.result?.cover ?? "none");
+    const desiredCover = out.result?.cover
+    const desiredBonus = out.result?.bonus
 
     const currentStatus =
       targetActor.statuses?.has?.(COVER.IDS.total) ? "total"
@@ -64,16 +64,18 @@ export function onPreRollAttack(config, dialog, message) {
     const currentBonus = getCurrentACCoverBonus(targetActor);
 
     if (desiredBonus !== null) {
+      const baseAC = targetActor?.system?.attributes?.ac?.value;
       const delta = desiredBonus - currentBonus;
       if (delta) {
-        adjustMessageTargetAC(message, targetActor.uuid, delta);
-        if (targets.length === 1 && typeof config.target === "number") {
+        if (currentStatus === "total") adjustMessageTargetAC(message, targetActor.uuid, delta + baseAC);
+        else if (targets.length === 1 && typeof config.target === "number") {
           config.target = Math.max(0, (config.target || 0) + delta);
+          adjustMessageTargetAC(message, targetActor.uuid, delta);
         }
+        else adjustMessageTargetAC(message, targetActor.uuid, delta);
       }
       else if (currentStatus === "total") {
-        const baseAC = targetActor?.system?.attributes?.ac?.value;
-        adjustMessageTargetAC(message, targetActor.uuid, 0, baseAC);
+        adjustMessageTargetAC(message, targetActor.uuid, baseAC);
         if (targets.length === 1) config.target = baseAC;
       }
     }
@@ -82,12 +84,12 @@ export function onPreRollAttack(config, dialog, message) {
       if (targets.length === 1) config.target = null;
     }
 
-    if (coverId === "none") {
+    if (desiredCover === "none") {
       if (currentStatus !== "none") {
         toggleCoverEffectViaGM(targetActor.uuid, COVER.IDS[currentStatus], false);
       }
-    } else if (coverId !== currentStatus) {
-      toggleCoverEffectViaGM(targetActor.uuid, COVER.IDS[coverId], true);
+    } else if (desiredCover !== currentStatus) {
+      toggleCoverEffectViaGM(targetActor.uuid, COVER.IDS[desiredCover], true);
     }
   }
 };
@@ -120,8 +122,7 @@ export function onPreRollSavingThrow(config, dialog, message) {
   const losCheck = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.LOS_CHECK);
   if (actor.statuses?.has?.(COVER.IDS.total) && !losCheck) return;
 
-  const result = getCover({ attacker: sourceToken, target: targetToken, scene: sourceToken.scene, losCheck: losCheck });
-  const { coverId, bonus: desiredBonus } = getIgnoreCover(activity, result?.cover ?? "none");
+  const result = getCover({ attacker: sourceToken, target: targetToken, scene: sourceToken.scene, losCheck: losCheck, activity: activity });
 
   const currentStatus =
     actor.statuses?.has?.(COVER.IDS.total) ? "total"
@@ -144,19 +145,19 @@ export function onPreRollSavingThrow(config, dialog, message) {
   };
 
   removeSaveBonus();
-  if (coverId === "total") {
+  if (result.cover === "total") {
     addSaveBonus(9999);
   }
-  else if (typeof desiredBonus === "number" && Number.isFinite(desiredBonus)) {
-    addSaveBonus(desiredBonus);
+  else if (typeof result.bonus === "number" && Number.isFinite(result.bonus)) {
+    addSaveBonus(result.bonus);
   }
 
-  if (coverId === "none") {
+  if (result.cover === "none") {
     if (currentStatus !== "none") {
       toggleCoverEffectViaGM(actor.uuid, COVER.IDS[currentStatus], false);
     }
-  } else if (coverId !== currentStatus) {
-    toggleCoverEffectViaGM(actor.uuid, COVER.IDS[coverId], true);
+  } else if (result.cover !== currentStatus) {
+    toggleCoverEffectViaGM(actor.uuid, COVER.IDS[result.cover], true);
   }
 }
 
@@ -175,7 +176,7 @@ export async function clearCoverOnUpdateCombat(combat, update) {
     await clearCoverStatusEffect(combat);
 
     if (game.settings.get(MODULE_ID, SETTING_KEYS.DEBUG)) {
-      await clearCoverDebug();
+      clearCoverDebug();
     }
   } catch (err) {
     console.warn(`[${MODULE_ID}] clear on update combat`, err);
@@ -261,7 +262,7 @@ function getSourceChatMessageFromEvent(ev) {
  * @param {string} targetUuid  TokenDocument UUID to match.
  * @param {number} delta       AC delta (+/-).
  */
-function adjustMessageTargetAC(message, targetUuid, delta, base) {  
+function adjustMessageTargetAC(message, targetUuid, delta) {
   const targets = message?.data?.flags?.dnd5e?.targets;
   if (!Array.isArray(targets)) return;
 
@@ -273,7 +274,7 @@ function adjustMessageTargetAC(message, targetUuid, delta, base) {
       t.ac = null;
       break;
     }
-    t.ac = (Number.isFinite(base) ? base : null) + delta;
+    t.ac = (Number.isFinite(base) ? base : 0) + delta;
     break;
   }
 }

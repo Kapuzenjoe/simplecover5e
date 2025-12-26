@@ -2,7 +2,9 @@ import { MODULE_ID } from "../config/constants.config.mjs";
 import { clearCoverDebug } from "../services/cover.debug.mjs";
 
 /**
- * Initialize module-specific GM queries.
+ * Register module-specific GM query handlers.
+ *
+ * @returns {void}
  */
 export function initQueries() {
     CONFIG.queries ??= {};
@@ -54,3 +56,24 @@ export function initQueries() {
     };
 }
 
+/**
+ * Toggle a cover status effect on an actor via the active GM.
+ * This returns false if no active GM is available or the query fails.
+ *
+ * @param {string} actorUuid                 The UUID of the actor to update.
+ * @param {string} effectId                  The status effect id to toggle.
+ * @param {boolean} enable                   Whether the effect should be enabled.
+ * @returns {Promise<boolean>}               True if the GM handled the request successfully.
+ */
+export async function toggleCoverEffectViaGM(actorUuid, effectId, enable) {
+    const gm = game.users.activeGM;
+    if (!gm) { console.warn(`[${MODULE_ID}] no active GM`); return false; }
+
+    try {
+        const res = await gm.query(`${MODULE_ID}.toggleCover`, { actorUuid, effectId, enable }, { timeout: 8000 });
+        return !!res?.ok;
+    } catch (e) {
+        console.warn(`[${MODULE_ID}] GM query failed:`, e);
+        return false;
+    }
+}

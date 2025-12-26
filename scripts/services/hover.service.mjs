@@ -3,7 +3,7 @@ import { measureTokenDistance } from "../utils/distance.mjs";
 import { getCover } from "../utils/api.mjs";
 
 /**
- * Property name for storing hover distance label on Token instance.
+ * Icon paths for DnD5e cover status indicators used by the hover label.
  */
 const COVER_ICON_PATHS = {
   half: "systems/dnd5e/icons/svg/statuses/cover-half.svg",
@@ -12,8 +12,10 @@ const COVER_ICON_PATHS = {
 };
 
 /**
- * Remove hover decorations from token.
- * @param {Token5e} token 
+ * Remove any hover label elements previously attached to a token.
+ *
+ * @param {Token5e} token                 The token to clean up.
+ * @returns {void}
  */
 function removeHoverDecorations(token) {
   if (!token) return;
@@ -25,14 +27,12 @@ function removeHoverDecorations(token) {
 }
 
 /**
- * Show distance/cover to hovered token (client-side only).
- * Behavior controlled by SETTING_KEYS.HOVER:
- *  - "off"              -> no label
- *  - "coverOnly"        -> cover icon only
- *  - "coverAndDistance" -> cover icon + distance
+ * Update hover UI for a token by showing cover and/or distance from the single controlled token.
+ * The output is client-side only and controlled by the HOVER setting.
  *
- * @param {Token5e} token        Hovered token.
- * @param {boolean} hoverState   True if hover started, false if hover ended.
+ * @param {Token5e} token                       The hovered token.
+ * @param {boolean} hoverState                  True when hover starts; false when hover ends.
+ * @returns {Promise<void>}                     Resolves after the label has been updated.
  */
 export async function onHoverToken(token, hoverState) {
   const hoveredToken = token;

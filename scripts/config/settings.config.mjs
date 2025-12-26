@@ -4,7 +4,8 @@ import { clearCoverDebug } from "../services/cover.debug.mjs";
 import { clearCoverStatusEffect } from "../services/cover.service.mjs";
 
 /**
- * Module settings used by Simple Cover 5e.
+ * Settings definitions for Simple Cover 5e.
+ * These entries are registered under {@link MODULE_ID} by {@link registerSettings}.
  */
 const SETTINGS = [
   {
@@ -45,7 +46,7 @@ const SETTINGS = [
     type: new foundry.data.fields.BooleanField({ initial: false }),
     requiresReload: false
   },
-    {
+  {
     key: SETTING_KEYS.LOS_CHECK,
     name: "SIMPLE_COVER_5E.Settings.losCheck.Name",
     hint: "SIMPLE_COVER_5E.Settings.losCheck.Hint",
@@ -228,7 +229,9 @@ const SETTINGS = [
 ];
 
 /**
- * Register module settings.
+ * Register all module settings and configuration menus.
+ *
+ * @returns {void}
  */
 export function registerSettings() {
   for (const { key, name, hint, scope = "world", type, requiresReload, config = true, onChange } of SETTINGS) {

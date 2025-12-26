@@ -1,4 +1,9 @@
 /**
+ * @typedef {"none"|"half"|"threeQuarters"|"total"} CoverLevel
+ * @typedef {"square"|"gridless"|"hex"} GridMode
+ */
+
+/**
  * Simple Cover 5e module id.
  * @type {string}
  */
@@ -9,7 +14,8 @@ export const MODULE_ID = "simplecover5e";
  *
  * - IDS: maps cover levels ("none"|"half"|"threeQuarters"|"total") to system effect ids (or null for none).
  * - BONUS: maps cover levels ("none"|"half"|"threeQuarters"|"total") to AC/DEX bonus (null for total cover).
- *
+ * 
+ * @readonly
  * @type {{
  *   IDS: { none: null, half: string, threeQuarters: string, total: string },
  *   BONUS: { none: number, half: number, threeQuarters: number, total: (number|null) }
@@ -32,8 +38,9 @@ export const COVER = Object.freeze({
 
 /**
  * Setting keys used by this module.
- *
  * All settings are registered under {@link MODULE_ID} using these keys.
+ *
+ * @readonly
  * @enum {string}
  */
 export const SETTING_KEYS = {
@@ -59,9 +66,9 @@ export const SETTING_KEYS = {
 };
 
 /**
- * Default creature heights in grid units by size category.
- * 
- * @type {Object<string, number>} 
+ * Default creature heights in feet by size category.
+ *
+ * @type {Record<string, number>}
  */
 export const DEFAULT_SIZE_FT = {
   tiny: 1,
@@ -81,7 +88,8 @@ export const BASE_KEYS = Object.keys(DEFAULT_SIZE_FT);
 /**
  * Simplified grid modes used by this module.
  *
- * @enum {string}
+ * @readonly
+ * @enum {GridMode}
  */
 export const GRID_MODES = {
   SQUARE: "square",
@@ -90,10 +98,10 @@ export const GRID_MODES = {
 };
 
 /**
- * Normalize a scene's grid configuration into one of the supported GRID_MODES.
+ * Normalize a scene's grid configuration into a supported grid mode.
  *
- * @param {GridLayer["grid"]} grid   The scene grid configuration.
- * @returns {GRID_MODES}             The simplified grid mode.
+ * @param {Scene["grid"]} grid        The scene grid configuration.
+ * @returns {GridMode}               The simplified grid mode.
  */
 export function getGridMode(grid) {
   const t = grid?.type;
@@ -114,7 +122,9 @@ export function getGridMode(grid) {
 
 /**
  * Constants related to hover labels and icons used by this module.
- * 
+ *
+ * @readonly
+ * @type {{DISTANCE_LABEL_PROP:string, DISTANCE_LABEL_NAME:string, COVER_ICON_PROP:string, COVER_ICON_NAME:string}}
  */
 export const HOVER = {
   DISTANCE_LABEL_PROP: `_${MODULE_ID}HoverDistanceLabel`,

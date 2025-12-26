@@ -1,20 +1,46 @@
-import { MODULE_ID, DEFAULT_SIZE_FT, BASE_KEYS, SETTING_KEYS, GRID_MODES, getGridMode } from "../config/constants.config.mjs";
+import { MODULE_ID, DEFAULT_SIZE_FT, COVER, BASE_KEYS, SETTING_KEYS, GRID_MODES, getGridMode } from "../config/constants.config.mjs";
+
+/**
+ * @typedef {"none"|"half"|"threeQuarters"|"total"} CoverLevel
+ *
+ * @typedef {object} CoverContext
+ * @property {Scene} scene
+ * @property {Grid} grid
+ * @property {string} gridMode
+ * @property {"square"|"circle"} gridlessTokenShape
+ * @property {number} half
+ * @property {number} pxPerFt
+ * @property {number} insetPx
+ * @property {number} aabbErodePx
+ * @property {Record<string, number>} sizeFt
+ * @property {Map<string, Array<{minX:number,minY:number,maxX:number,maxY:number,minZ:number,maxZ:number}>>} [creaturePrisms]
+ *
+ * @typedef {object} LosPoint
+ * @property {number} x
+ * @property {number} y
+ * @property {boolean} blocked
+ *
+ * @typedef {object} LosResult
+ * @property {boolean} hasLOS
+ * @property {LosPoint[]} targetLosPoints
+ */
+
 
 /**
  * Check whether the wall-height module is active.
  *
- * @returns {boolean} True if the wall-height module is currently active.
+ * @returns {boolean}                              True if the wall-height module is currently active.
  */
 function isWallHeightModuleActive() {
     return game.modules?.get?.("wall-height")?.active === true;
 }
 
 /**
- * Build an immutable context object for a single cover evaluation pass.
- * The context precomputes grid and setting values so they do not need to be recomputed for every ray.
+ * Build a cover evaluation context for a single pass.
+ * The context caches grid measurements and module settings used by the cover and LoS evaluators.
  *
- * @param {Scene} scene - Scene for which cover should be evaluated.
- * @returns {object} Cover evaluation context containing grid, sizing and settings.
+ * @param {Scene} scene                           The scene to evaluate.
+ * @returns {CoverContext}                        The cover evaluation context.
  */
 export function buildCoverContext(scene) {
     const grid = scene.grid;
@@ -46,20 +72,20 @@ export function buildCoverContext(scene) {
 /**
  * Get the size key for a token's actor as a normalized string.
  *
- * @param {TokenDocument} td - Token document whose actor size should be inspected.
- * @returns {string} The size key ("tiny", "sm", "med", "lg", "huge", "grg").
+ * @param {TokenDocument} td                    Token document whose actor size should be inspected.
+ * @returns {string}                            The size key ("tiny", "sm", "med", "lg", "huge", "grg").
  */
 function getSizeKey(td) {
     return (td.actor?.system?.traits?.size ?? "med").toLowerCase();
 }
 
 /**
- * Get the creature height in gridSize for a token document.
- * If wall-height is active, LOS height is used when available.
+ * Get the creature height in feet for a token document.
+ * If wall-height is active, the token's LoS height is used when available.
  *
- * @param {TokenDocument} td - Token document to read height for.
- * @param {object} ctx - Cover evaluation context returned by {@link buildCoverContext}.
- * @returns {number} The creature height in gridSize.
+ * @param {TokenDocument} td                      The token document to read height for.
+ * @param {CoverContext} ctx                      The cover evaluation context.
+ * @returns {number}                              The creature height in feet.
  */
 function getCreatureHeightFt(td, ctx) {
     if (isWallHeightModuleActive()) {
@@ -84,9 +110,9 @@ function getCreatureHeightFt(td, ctx) {
 /**
  * Compute pixel dimensions and center point for a token relative to the scene grid.
  *
- * @param {TokenDocument} td - Token document to measure.
- * @param {Grid} grid - Scene grid instance.
- * @returns {{width:number,height:number,centerX:number,centerY:number}} Token dimensions in pixels.
+ * @param {TokenDocument} td                     Token document to measure.
+ * @param {Grid} grid                            Scene grid instance.
+ * @returns {{width:number,height:number,centerX:number,centerY:number}}    Token dimensions in pixels.
  */
 function getTokenDimensions(td, grid) {
     const width = (td.width ?? 1) * grid.size;
@@ -97,12 +123,12 @@ function getTokenDimensions(td, grid) {
 }
 
 /**
- * Compute one or more 3D prisms for a creature token (used as occluders).
- * In gridless circle mode, a shrunken AABB is used that fits into the largest inscribed circle inside the token's bounding box.
+ * Build one or more 3D occluder prisms for a creature token.
+ * The prism shape depends on grid mode and token-shape settings (e.g., gridless circle uses an inscribed AABB).
  *
- * @param {TokenDocument} td - Token document to build occlusion prisms for.
- * @param {object} ctx - Cover evaluation context returned by {@link buildCoverContext}.
- * @returns {Array<{minX:number,minY:number,maxX:number,maxY:number,minZ:number,maxZ:number}>} One or more axis-aligned bounding boxes in 3D.        
+ * @param {TokenDocument} td                     The token document to build prisms for.
+ * @param {CoverContext} ctx                     The cover evaluation context.
+ * @returns {Array<{minX:number,minY:number,maxX:number,maxY:number,minZ:number,maxZ:number}>} The occluder prisms (AABBs) in canvas pixel space.
  */
 export function buildCreaturePrism(td, ctx) {
     const { grid, half, aabbErodePx: er, pxPerFt } = ctx;
@@ -240,16 +266,16 @@ export function buildCreaturePrism(td, ctx) {
 
 
 /**
- * Test if sight-blocking walls obstruct the segment from one corner to another.
- * If wall-height is active, the ray is tested against wall top/bottom values.
+ * Test whether sight-blocking walls obstruct the segment between two inset corners.
+ * If wall-height is active, the intersection is additionally filtered by wall top/bottom values.
  *
- * @param {{raw:{x:number,y:number}, inset:{x:number,y:number}}} aCorner - Attacker corner (raw & inset).
- * @param {{raw:{x:number,y:number}, inset:{x:number,y:number}}} bCorner - Target corner (raw & inset).
- * @param {PointSource|null} sightSource - Foundry sight source for collision tests.
- * @param {TokenDocument} attackerDoc - Attacker token document.
- * @param {TokenDocument} targetDoc - Target token document.
- * @param {object} ctx - Cover evaluation context.
- * @returns {{blocked:boolean, A:{x:number,y:number}, B:{x:number,y:number}}} Block information and the inset segment actually tested.
+ * @param {{raw:{x:number,y:number}|null, inset:{x:number,y:number}}} aCorner   The attacker corner (raw and inset).
+ * @param {{raw:{x:number,y:number}|null, inset:{x:number,y:number}}} bCorner   The target corner (raw and inset).
+ * @param {PointSource|null} sightSource                                     The sight source used for collision tests.
+ * @param {TokenDocument} attackerDoc                                        The attacker token document.
+ * @param {TokenDocument} targetDoc                                          The target token document.
+ * @param {CoverContext} ctx                                                 The cover evaluation context.
+ * @returns {{blocked:boolean, A:{x:number,y:number}, B:{x:number,y:number}}} Whether the segment is blocked and the tested inset segment.
  */
 function wallsBlock(aCorner, bCorner, sightSource, attackerDoc, targetDoc, ctx) {
     const A = aCorner.inset;
@@ -341,16 +367,16 @@ function wallsBlock(aCorner, bCorner, sightSource, attackerDoc, targetDoc, ctx) 
 }
 
 /**
- * Get the line height at the given vertex along the segment A->B.
- * Used to compare ray height against wall-height top/bottom values.
+ * Compute the ray height at a wall-intersection vertex along segment A→B.
+ * The result is used to compare line height against wall-height top/bottom values.
  *
- * @param {{x:number,y:number}} A - Start point of the inset segment (attacker corner).
- * @param {{x:number,y:number}} B - End point of the inset segment (target corner).
- * @param {{x:number,y:number}} vertex - Intersection vertex on the wall.
- * @param {TokenDocument} attackerDoc - Attacker token document.
- * @param {TokenDocument} targetDoc - Target token document.
- * @param {object} ctx - Cover evaluation context.
- * @returns {{lineZ:number, attZ:number, tgtZ:number}} Heights for the line and creatures.
+ * @param {{x:number,y:number}} A                The segment start point (inset).
+ * @param {{x:number,y:number}} B                The segment end point (inset).
+ * @param {{x:number,y:number}} vertex           The intersection vertex on the wall.
+ * @param {TokenDocument} attackerDoc            The attacker token document.
+ * @param {TokenDocument} targetDoc              The target token document.
+ * @param {CoverContext} ctx                     The cover evaluation context.
+ * @returns {{lineZ:number, attZ:number, tgtZ:number}} The interpolated line height and the attacker/target sampling heights (feet).
  */
 function getLineHeightAtVertex(A, B, vertex, attackerDoc, targetDoc, ctx) {
     const dx = B.x - A.x;
@@ -381,13 +407,13 @@ function getLineHeightAtVertex(A, B, vertex, attackerDoc, targetDoc, ctx) {
 }
 
 /**
- * Test if a 3D segment intersects a 3D axis-aligned bounding box (AABB).
- * Uses a Liang–Barsky style clipping algorithm.
+ * Test whether a 3D segment intersects a 3D axis-aligned bounding box (AABB).
+ * This uses Liang–Barsky style clipping and rejects near-zero intersections using a small epsilon.
  *
- * @param {{x:number,y:number,z:number}} p - Start point of the 3D segment.
- * @param {{x:number,y:number,z:number}} q - End point of the 3D segment.
- * @param {{minX:number,minY:number,maxX:number,maxY:number,minZ:number,maxZ:number}} b - AABB to test against.
- * @returns {boolean} True if the segment intersects the AABB.
+ * @param {{x:number,y:number,z:number}} p        The segment start point.
+ * @param {{x:number,y:number,z:number}} q        The segment end point.
+ * @param {{minX:number,minY:number,maxX:number,maxY:number,minZ:number,maxZ:number}} b The AABB.
+ * @returns {boolean}                             True if the segment intersects the AABB.
  */
 function segIntersectsAABB3D(p, q, b) {
     let t0 = 0;
@@ -420,12 +446,12 @@ function segIntersectsAABB3D(p, q, b) {
 }
 
 /**
- * Compute grid-space center sample points used for cover evaluation.
- * The sampling pattern depends on grid mode and token size.
+ * Compute target/attacker sample centers used for cover evaluation.
+ * The sampling pattern depends on grid mode, token shape settings, and creature size.
  *
- * @param {TokenDocument} td - Token document whose occupied space is sampled.
- * @param {object} ctx - Cover evaluation context returned by {@link buildCoverContext}.
- * @returns {Array<{x:number,y:number}>} List of sample centers in canvas pixels.
+ * @param {TokenDocument} td                      The token document to sample.
+ * @param {CoverContext} ctx                      The cover evaluation context.
+ * @returns {Array<{x:number,y:number}>}          The sample centers in canvas pixels.
  */
 function getTokenSampleCenters(td, ctx) {
     const { grid, gridMode, half, gridlessTokenShape } = ctx;
@@ -527,12 +553,12 @@ function getTokenSampleCenters(td, ctx) {
 }
 
 /**
- * Build a set of inset box corners around a center point.
+ * Build inset box corners around a center point.
  *
- * @param {{x:number,y:number}} center - Box center in canvas pixels.
- * @param {number} radius - Half of the box edge length in pixels.
- * @param {number} insetPx - Inset distance in pixels from each raw corner.
- * @returns {Array<{raw:{x:number,y:number}, inset:{x:number,y:number}}>}
+ * @param {{x:number,y:number}} center            The box center in canvas pixels.
+ * @param {number} radius                         Half of the box edge length in pixels.
+ * @param {number} insetPx                        The inset distance (pixels) towards the center.
+ * @returns {Array<{raw:{x:number,y:number}, inset:{x:number,y:number}}>} The raw and inset corners.
  */
 function buildBoxCorners(center, radius, insetPx) {
     const raws = [
@@ -555,13 +581,14 @@ function buildBoxCorners(center, radius, insetPx) {
 }
 
 /**
-   * Build inset corners for a hex cell at a given center.
-   *
-   * @param {{x:number,y:number}} center - Center in canvas pixels.
-   * @param {number} insetPx - Inset distance in pixels from each vertex.
-   * @param {object} ctx - Cover evaluation context containing the grid.
-   * @returns {Array<{raw:{x:number,y:number}, inset:{x:number,y:number}}>|null}
-   */
+ * Build inset corners for a hex cell at a given center.
+ *
+ * @param {{x:number,y:number}} center            The hex cell center in canvas pixels.
+ * @param {number} insetPx                        The inset distance (pixels) towards the center.
+ * @param {CoverContext} ctx                      The cover evaluation context containing the grid.
+ * @param {number} [scale=1]                      Scale factor for shrinking the hex (e.g., tiny tokens).
+ * @returns {Array<{raw:{x:number,y:number}, inset:{x:number,y:number}}>|null} The inset corners, or null if unavailable.
+ */
 function buildHexCorners(center, insetPx, ctx, scale = 1) {
     const { grid } = ctx;
 
@@ -603,10 +630,10 @@ function buildHexCorners(center, insetPx, ctx, scale = 1) {
 /**
  * Build a set of inset "corners" on the circumference of a circle.
  *
- * @param {{x:number,y:number}} center - Center of the circle in canvas pixels.
- * @param {number} radius - Radius of the circle in pixels.
- * @param {number} insetPx - Inset distance in pixels towards the center.
- * @returns {Array<{raw:{x:number,y:number}, inset:{x:number,y:number}}>}
+ * @param {{x:number,y:number}} center                   Center of the circle in canvas pixels.
+ * @param {number} radius                                Radius of the circle in pixels.
+ * @param {number} insetPx                               Inset distance in pixels towards the center.
+ * @returns {Array<{raw:{x:number,y:number}, inset:{x:number,y:number}}>} The inset corners.
  */
 function buildCircleCorners(center, radius, insetPx) {
     const { x, y } = center;
@@ -647,9 +674,9 @@ function buildCircleCorners(center, radius, insetPx) {
 /**
  * Compute an axis-aligned rectangle which fits well *inside* a single hex cell.
  *
- * @param {{x:number,y:number}} center - Approximate center point of the hex cell in canvas pixels.
- * @param {object} ctx - Cover evaluation context.
- * @returns {{cx:number,cy:number,halfW:number,halfH:number}|null}
+ * @param {{x:number,y:number}} center                  Approximate center point of the hex cell in canvas pixels.
+ * @param {object} ctx                                  Cover evaluation context.
+ * @returns {{cx:number,cy:number,halfW:number,halfH:number}|null} The inner rectangle parameters, or null if unavailable.
  */
 function getHexCellInnerRect(center, ctx) {
     const { grid } = ctx;
@@ -702,15 +729,16 @@ function getHexCellInnerRect(center, ctx) {
 
 
 /**
- * Build inset token corners for a given sample center based on grid mode and shape.
+ * Build inset token corners for a sample center based on grid mode and token shape.
  *
- * @param {{x:number,y:number}} center - Center point in canvas pixels.
- * @param {number} radius - Radius used for square/circle corner generation.
- * @param {number} insetPx - Inset distance in pixels from each corner.
- * @param {string} gridMode - Active grid mode constant.
- * @param {boolean} useCircleShape - Whether tokens are treated as circles in gridless mode.
- * @param {object} ctx - Cover evaluation context.
- * @returns {Array<{raw:{x:number,y:number}, inset:{x:number,y:number}}>|null}
+ * @param {{x:number,y:number}} center            The sample center in canvas pixels.
+ * @param {number} radius                         The radius used for square/circle sampling.
+ * @param {number} insetPx                        The inset distance (pixels) towards the center.
+ * @param {string} gridMode                       The active grid mode.
+ * @param {boolean} useCircleShape                Whether gridless tokens are treated as circles.
+ * @param {CoverContext} ctx                      The cover evaluation context.
+ * @param {string} sizeKey                        The normalized size key for the token.
+ * @returns {Array<{raw:{x:number,y:number}, inset:{x:number,y:number}}>|null} The inset corners for this center.
  */
 function buildTokenCornersForCenter(center, radius, insetPx, gridMode, useCircleShape, ctx, sizeKey) {
     if (gridMode === GRID_MODES.HEX) {
@@ -724,13 +752,14 @@ function buildTokenCornersForCenter(center, radius, insetPx, gridMode, useCircle
 }
 
 /**
- * Flatten the creature prism map into a list of AABB boxes used as occluders.
+ * Flatten a creature-prism map into a list of 3D occluder boxes, excluding attacker and target tokens.
+ * When debug output is enabled, this also appends 2D outlines for the occluders.
  *
- * @param {Map<string,object|object[]>|undefined} creaturePrisms - Map of token id to prism(s).
- * @param {string|undefined} attackerId - Canvas object id of the attacking token.
- * @param {string|undefined} targetId - Canvas object id of the target token.
- * @param {{occluders:Array<Array<{x:number,y:number}>>}|null} debugTokenShapes - Optional debug accumulator.
- * @returns {Array<{minX:number,minY:number,maxX:number,maxY:number,minZ:number,maxZ:number}>}
+ * @param {Map<string, object|object[]>|undefined} creaturePrisms             The map of token id to prism(s).
+ * @param {string|undefined} attackerId                                      The attacker canvas object id.
+ * @param {string|undefined} targetId                                        The target canvas object id.
+ * @param {{occluders:Array<Array<{x:number,y:number}>>}|null} debugTokenShapes Optional debug accumulator.
+ * @returns {Array<{minX:number,minY:number,maxX:number,maxY:number,minZ:number,maxZ:number}>} The occluder boxes.
  */
 function collectOccluderBoxes(creaturePrisms, attackerId, targetId, debugTokenShapes) {
     const boxes = [];
@@ -761,11 +790,13 @@ function collectOccluderBoxes(creaturePrisms, attackerId, targetId, debugTokenSh
 
 /**
  * Add debug circle outlines for large circular tokens in gridless mode.
+ * This is used to visualize the circle sampling boundary for lg/huge/grg sizes.
  *
- * @param {TokenDocument} td - Token document to visualize.
- * @param {string} sizeKey - Normalized creature size key.
- * @param {Array<Array<{x:number,y:number}>>} bucket - Debug bucket to push shapes into.
- * @param {object} ctx - Cover evaluation context containing the grid.
+ * @param {TokenDocument} td                      The token document to visualize.
+ * @param {string} sizeKey                        The normalized size key.
+ * @param {Array<Array<{x:number,y:number}>>} bucket The debug bucket to append shapes to.
+ * @param {CoverContext} ctx                      The cover evaluation context.
+ * @returns {void}
  */
 function addBigCircleDebug(td, sizeKey, bucket, ctx) {
     if (sizeKey !== "lg" && sizeKey !== "huge" && sizeKey !== "grg") return;
@@ -779,16 +810,16 @@ function addBigCircleDebug(td, sizeKey, bucket, ctx) {
 }
 
 /**
- * Evaluate DMG cover for attacker -> target.
- * Draws lines from one best attacker corner to all corners of one best target cell (4 on square/gridless, 6 on hex). Walls (sight) and other creatures (AABBs) block.
- * 
- * toDO: in V14 use new Core Functions: https://github.com/foundryvtt/foundryvtt/issues/13683
- * 
- * @param {TokenDocument} attackerDoc - Token document of the attacking creature.
- * @param {TokenDocument} targetDoc - Token document of the target creature.
- * @param {object} ctx - Cover evaluation context created by {@link buildCoverContext}.
- * @param {{debug?:boolean}} [options] - Optional flags (e.g. debug shape output).
- * @returns {{cover: "none"|"half"|"threeQuarters", debugSegments?:Array, debugTokenShapes?:object}}   Cover result and optional debug information.
+ * Evaluate DMG-style cover for an attacker against a target.
+ * The evaluator tests rays against sight-blocking walls and creature occluder prisms and returns the best (least blocked) sampling outcome.
+ *
+ * @param {TokenDocument} attackerDoc             The attacking token document.
+ * @param {TokenDocument} targetDoc               The target token document.
+ * @param {CoverContext} ctx                      The cover evaluation context.
+ * @param {{debug?:boolean}} [options]            Optional flags (e.g. debug shape output).
+ * @returns {{cover: "none"|"half"|"threeQuarters", bonus: 0|2|5|null, debugSegments?:Array, debugTokenShapes?:object}} The cover result and optional debug data.
+ *
+ * // TODO (Foundry v14+): consider core LoS/occlusion helpers once available.
  */
 export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options = {}) {
     const debug = !!options.debug;
@@ -909,7 +940,8 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
                     best = { reachable, coverLevel, segs };
                     if (reachable === totalLinesForThisTarget && coverLevel === 0) {
                         const cover = "none";
-                        return debug ? { cover, debugSegments: best.segs, debugTokenShapes } : { cover };
+                        const bonus = COVER.BONUS[cover] || 0;
+                        return debug ? { cover, bonus, debugSegments: best.segs, debugTokenShapes } : { cover, bonus };
                     }
                 }
             }
@@ -917,29 +949,24 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
     }
 
     const cover = best.coverLevel === 2 ? "threeQuarters" : (best.coverLevel === 1 ? "half" : "none");
-    return debug ? { cover, debugSegments: best.segs, debugTokenShapes } : { cover };
+    const bonus = COVER.BONUS[cover] || 0;
+    return debug ? { cover, bonus, debugSegments: best.segs, debugTokenShapes } : { cover, bonus };
 }
 
 /**
- * Evaluate whether an attacker has line of sight (LOS) to a target, considering *walls only*.
- * The test samples a 3x3 grid of points around the target center using a tolerance radius
- * equivalent to Foundry's token visibility sampling: tolerance = min(tokenWidthPx, tokenHeightPx) / 4.
+ * Evaluate whether an attacker has line of sight (LoS) to a target, considering walls only.
+ * The test samples a 3×3 grid around the target center using Foundry-like tolerance and reports which points are blocked.
  *
- * The attacker origin is a single point: the vision source position when available, otherwise
- * the attacker's token center.
- *
- * The function returns early as soon as any sampled ray is NOT blocked by sight walls.
- *
- * @param {TokenDocument} attackerDoc - Token document of the attacking creature.
- * @param {TokenDocument} targetDoc - Token document of the target creature.
- * @param {object} ctx - Cover evaluation context created by {@link buildCoverContext}.
- * @returns {{ hasLOS: boolean, targetLosPoints: Array<{ x: number, y: number, blocked: boolean }> }} 
+ * @param {TokenDocument} attackerDoc             The attacking token document.
+ * @param {TokenDocument} targetDoc               The target token document.
+ * @param {CoverContext} ctx                      The cover evaluation context.
+ * @returns {LosResult}                           The LoS result and sampled target points.
  */
 export function evaluateLOS(attackerDoc, targetDoc, ctx) {
     const attackerToken = attackerDoc?.object;
     const targetToken = targetDoc?.object;
 
-    if (!attackerToken || !targetToken) return { hasLOS: true, targetTests: [] };
+    if (!attackerToken || !targetToken) return { hasLOS: true, targetLosPoints: [] };
 
     const sightSource = attackerToken.vision?.source ?? null;
 
