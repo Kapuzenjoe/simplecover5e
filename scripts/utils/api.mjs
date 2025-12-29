@@ -8,6 +8,7 @@ import {
 import { isBlockingCreatureToken } from "../services/cover.service.mjs";
 import { ignoresCover } from "../utils/rules.cover.mjs";
 import { drawCoverDebug, clearCoverDebug } from "../services/cover.debug.mjs";
+import { measureTokenDistance } from "../utils/distance.mjs";
 
 /**
  * @typedef {"none"|"half"|"threeQuarters"|"total"} CoverLevel
@@ -50,7 +51,7 @@ function registerLibraryModeSetting() {
  * @returns {{ CoverLevel, bonus: (number|null) }} The effective cover level and its corresponding bonus.
  *
  */
-function getIgnoreCover(activity, cover) {
+export function getIgnoreCover(activity, cover) {
     return ignoresCover(activity, cover);
 }
 
@@ -62,8 +63,29 @@ function getIgnoreCover(activity, cover) {
  * @param {object} ctx                  The cover evaluation context.
  * @returns {LosResult}                 The LoS result and sampled target points.
  */
-function getLOS(attackerDoc, targetDoc, ctx) {
+function getLOS(attackerDoc, targetDoc, ctx = null) {
+    const s = canvas?.scene;
+    if (!s) return null;
+
+    ctx ??= buildCoverContext(s);
+
     return evaluateLOS(attackerDoc, targetDoc, ctx);
+}
+
+/**
+ * Measure the minimal 3D distance between two tokens in scene grid units.
+ *
+ * Gridless distance modes:
+ *  - "edgeEdge":      edge-to-edge
+ *  - "centerCenter":  center-to-center
+ *  - "edgeToCenter":  source edge to target center
+ *
+ * @param {Token|TokenDocument} sourceToken      The source token or document.
+ * @param {Token|TokenDocument} targetToken      The target token or document.
+ * @returns {number}                             The minimal distance in grid units (clamped to 0+).
+ */
+function getTokenTokenDistance(sourceToken, targetToken) {
+    return measureTokenDistance(sourceToken, targetToken);
 }
 
 /**
@@ -246,7 +268,8 @@ export function initApi() {
         getLibraryMode,
         setLibraryMode,
         getIgnoreCover,
-        getLOS
+        getLOS,
+        getTokenTokenDistance,
     };
 
     const mod = game.modules.get(MODULE_ID);

@@ -36,11 +36,13 @@ export function ignoresCover(activity, cover = "none") {
   }
 
   if ((actionType === "rsak" || actionType === "msak") && cover === "half") {
-    const wand = items?.find?.(i => /wand of the war mage/i.test(i?.name ?? ""));
-    if (wand) {
-      if (wand?.system?.equipped === true && wand?.system?.attuned === true) {
-        return { cover: "none", bonus: 0 };
-      }
+    const wandIdentifier = new Set(["1-wand-of-the-war-mage", "wand-of-the-war-mage"]);
+    const wand = items?.find(i =>
+      /wand of the war mage/i.test(i?.name ?? "") ||
+      wandIdentifier.has(i?.system?.identifier)
+    );
+    if (wand?.system?.equipped === true && wand?.system?.attuned === true) {
+      return { cover: "none", bonus: 0 };
     }
   }
 

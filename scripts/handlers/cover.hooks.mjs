@@ -1,6 +1,6 @@
 import { MODULE_ID, COVER, SETTING_KEYS } from "../config/constants.config.mjs";
 import { clearCoverStatusEffect } from "../services/cover.service.mjs";
-import { getCover, getCoverForTargets } from "../utils/api.mjs";
+import { getCover, getCoverForTargets, getIgnoreCover } from "../utils/api.mjs";
 import { clearCoverDebug } from "../services/cover.debug.mjs";
 import { toggleCoverEffectViaGM } from "../services/queries.service.mjs";
 
@@ -52,8 +52,8 @@ export function onPreRollAttack(config, dialog, message) {
     if (!targetActor) continue;
     if (targetActor.statuses?.has?.(COVER.IDS.total) && !losCheck) continue;
 
-    const desiredCover = out.result?.cover
-    const desiredBonus = out.result?.bonus
+    let desiredCover = out.result?.cover
+    let desiredBonus = out.result?.bonus
 
     const currentStatus =
       targetActor.statuses?.has?.(COVER.IDS.total) ? "total"
@@ -61,7 +61,24 @@ export function onPreRollAttack(config, dialog, message) {
           : targetActor.statuses?.has?.(COVER.IDS.half) ? "half"
             : "none";
 
-    const currentBonus = getCurrentACCoverBonus(targetActor);
+    // const { currentStatus, systemStatus, conflict } = getCurrentStatus(targetActor);    
+
+    // if (conflict) {
+    //   desiredCover = (COVER.ORDER[currentStatus] > COVER.ORDER[desiredCover]) ? currentStatus : desiredCover;
+    //   ; ({ cover: desiredCover, bonus: desiredBonus } = getIgnoreCover(activity, desiredCover));
+
+    //   if (COVER.ORDER[desiredCover] > COVER.ORDER[currentStatus]) {
+    //     if (desiredCover !== systemStatus) {
+    //       toggleCoverEffectViaGM(targetActor.uuid, COVER.IDS[desiredCover], true);
+    //     }
+    //   } else {
+    //     if (systemStatus !== "none") {
+    //       toggleCoverEffectViaGM(targetActor.uuid, COVER.IDS[systemStatus], false);
+    //     }
+    //   }
+    // }  
+
+    const currentBonus = getCurrentACCoverBonus(targetActor); 
 
     if (desiredBonus !== null) {
       const baseAC = targetActor?.system?.attributes?.ac?.value;
@@ -288,4 +305,49 @@ function getCurrentACCoverBonus(actor) {
   const v = actor?.system?.attributes?.ac?.cover;
   const n = Number(v);
   return Number.isFinite(n) ? n : 0;
+}
+
+/**
+ * Get the current valid cover status on the actor or false if none.
+ * @param {Actor5e} actor The current actor.
+ * @returns  {"none"|"half"|"threeQuarters"|"total"|false}   The current valid cover status or false if none.
+ */
+export function getCurrentStatus(actor) {
+  const statuses = actor?.statuses;
+
+  const currentStatus =
+    statuses?.has?.(COVER.IDS.total) ? "total"
+      : statuses?.has?.(COVER.IDS.threeQuarters) ? "threeQuarters"
+        : statuses?.has?.(COVER.IDS.half) ? "half"
+          : "none";
+
+  const effects = actor?.appliedEffects ?? [];
+
+  let systemStatus = "none";
+  for (const [level, id] of COVER.EFFECT_IDS) {
+    if (effects.some(e => e?.id === id)) { systemStatus = level; break; }
+  }
+
+  let conflict = (currentStatus !== systemStatus);
+
+  if (canToggle && currentStatus !== "none") {
+    const statusId = COVER.IDS[currentStatus];
+    if (statusId) {
+      let totalAllStatus = 0;
+      let totalSystemStatus = 0;
+
+      for (const e of effects) {
+        if (e?.statuses?.has?.(statusId)) {
+          totalAllStatus++;
+          if (e?.id === "dnd5ecoverHalf00" || e?.id === "dnd5ecoverThreeQ" || e?.id === "dnd5ecoverTotal0") totalSystemStatus++;
+        }
+      }
+
+      if (totalAllStatus > totalSystemStatus) {
+        conflict = true;
+      }
+    }
+  }
+
+  return { currentStatus, systemStatus, conflict };
 }

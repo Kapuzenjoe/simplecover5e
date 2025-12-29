@@ -1,5 +1,14 @@
 # Changelog
 
+## Version 1.3.1
+
+This update primarily includes fixes and optimizations following the last [1.3.0](<https://github.com/Kapuzenjoe/simplecover5e/releases/tag/1.3.0>) release.
+
+- Updated and corrected the German localization.
+- Improved item detection by also searching for the identifier **"wand-of-the-war-mage"** (#14).
+- Updated `getLOS()` so the evaluation context (`ctx`) is now optional. If `getLOS()` is called without a `ctx`, the function automatically builds a default context from the current scene.
+- Added `api.getTokenTokenDistance(sourceToken, targetToken)` to retrieve the distance between two tokens in grid units. Gridless distance mode settings are respected.
+
 ## Version 1.3.0
 
 Big Holiday Update: optional wall-based LoS checks (Total Cover), actor flags and a more capable Library Mode API.

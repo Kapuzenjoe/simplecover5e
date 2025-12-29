@@ -13,11 +13,13 @@ export const MODULE_ID = "simplecover5e";
  * Central cover constants.
  *
  * - IDS: maps cover levels ("none"|"half"|"threeQuarters"|"total") to system effect ids (or null for none).
+ * - EFFECT_IDS: list of system effect ids used for cover.
  * - BONUS: maps cover levels ("none"|"half"|"threeQuarters"|"total") to AC/DEX bonus (null for total cover).
  * 
  * @readonly
  * @type {{
  *   IDS: { none: null, half: string, threeQuarters: string, total: string },
+ *   EFFECT_IDS: string[],
  *   BONUS: { none: number, half: number, threeQuarters: number, total: (number|null) }
  * }}
  */
@@ -28,11 +30,22 @@ export const COVER = Object.freeze({
     threeQuarters: "coverThreeQuarters",
     total: "coverTotal"
   }),
+  EFFECT_IDS: Object.freeze([
+    ["total", "dnd5ecoverTotal0"],
+    ["threeQuarters", "dnd5ecoverThreeQ"],
+    ["half", "dnd5ecoverHalf00"]
+  ]),
   BONUS: Object.freeze({
     none: 0,
     half: 2,
     threeQuarters: 5,
     total: null
+  }),
+  ORDER: Object.freeze({
+    none: 0,
+    half: 1,
+    threeQuarters: 2,
+    total: 3
   })
 });
 

@@ -9,7 +9,7 @@ import { MODULE_ID, DEFAULT_SIZE_FT, COVER, BASE_KEYS, SETTING_KEYS, GRID_MODES,
  * @property {string} gridMode
  * @property {"square"|"circle"} gridlessTokenShape
  * @property {number} half
- * @property {number} pxPerFt
+ * @property {number} pxPerGridSize
  * @property {number} insetPx
  * @property {number} aabbErodePx
  * @property {Record<string, number>} sizeFt
@@ -46,7 +46,7 @@ export function buildCoverContext(scene) {
     const grid = scene.grid;
     const gridMode = getGridMode(grid);
     const half = grid.size / 2;
-    const pxPerFt = grid.size / grid.distance;
+    const pxPerGridSize = grid.size / grid.distance;
 
     const saved = game.settings.get(MODULE_ID, SETTING_KEYS.CREATURE_HEIGHTS) ?? {};
     const sizeFt = foundry.utils.mergeObject(
@@ -62,7 +62,7 @@ export function buildCoverContext(scene) {
         gridMode,
         gridlessTokenShape,
         half,
-        pxPerFt,
+        pxPerGridSize,
         insetPx: Math.min(grid.size * 0.20, 2.5),
         aabbErodePx: Math.min(grid.size * 0.10, 2.5),
         sizeFt
@@ -131,8 +131,8 @@ function getTokenDimensions(td, grid) {
  * @returns {Array<{minX:number,minY:number,maxX:number,maxY:number,minZ:number,maxZ:number}>} The occluder prisms (AABBs) in canvas pixel space.
  */
 export function buildCreaturePrism(td, ctx) {
-    const { grid, half, aabbErodePx: er, pxPerFt } = ctx;
-    const zMin = (td.elevation ?? 0) * pxPerFt;
+    const { grid, half, aabbErodePx: er, pxPerGridSize } = ctx;
+    const zMin = (td.elevation ?? 0) * pxPerGridSize;
     let heightFt = getCreatureHeightFt(td, ctx);
 
     const actor = td.actor;
@@ -156,7 +156,7 @@ export function buildCreaturePrism(td, ctx) {
         }
     }
 
-    const zMax = zMin + heightFt * pxPerFt;
+    const zMax = zMin + heightFt * pxPerGridSize;
 
     const prisms = [];
     const gridMode = ctx.gridMode;
@@ -837,12 +837,12 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
     const debugTokenShapes = debug ? { attacker: [], target: [], occluders: [] } : null;
 
     const creaturePrisms = ctx.creaturePrisms;
-    const attackerId = attackerDoc?.object?.id;
+    const attackerId = attackerDoc?.object?.id ?? null;
     const targetId = targetDoc?.object?.id;
     const boxes = collectOccluderBoxes(creaturePrisms, attackerId, targetId, debugTokenShapes);
 
-    const attackerZ = (attackerDoc.elevation ?? 0) * ctx.pxPerFt + 0.1;
-    const targetZ = (targetDoc.elevation ?? 0) * ctx.pxPerFt + 0.1;
+    const attackerZ = (attackerDoc.elevation ?? 0) * ctx.pxPerGridSize + 0.1;
+    const targetZ = (targetDoc.elevation ?? 0) * ctx.pxPerGridSize + 0.1;
 
     const attackerSizeKey = getSizeKey(attackerDoc);
     const targetSizeKey = getSizeKey(targetDoc);

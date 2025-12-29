@@ -2,58 +2,62 @@
     "SIMPLE_COVER_5E": {
         "Settings": {
             "CoverScope": {
-                "Name": "Geltungsbereich für das Entfernen von Cover",
-                "Hint": "Wähle, welche Token betroffen sind, wenn Cover entfernt wird: alle Token in der Szene, nur Kämpfer im Kampf oder nur spielereigene Token.",
+                "Name": "Geltungsbereich für das Entfernen von Deckung",
+                "Hint": "Wähle, welche Figuren betroffen sind, wenn Deckung entfernt wird: alle Figur in der Szene, nur Teilnehmer im Kampf oder nur spielereigene Figur.",
                 "Options": {
-                    "All": "Alle Token in der Szene",
-                    "Combatants": "Nur Kämpfer",
-                    "Player": "Nur spielereigene Token"
+                    "All": "Alle Figuren in der Szene",
+                    "Combatants": "Nur Teilnehmer im Kampf",
+                    "Player": "Nur spielereigene Figur"
                 }
             },
             "OnlyInCombat": {
-                "Name": "Cover nur im Kampf anwenden",
-                "Hint": "Wenn aktiviert, wird die automatische Cover-Berechnung nur durchgeführt, solange eine Kampfbegegnung aktiv ist."
+                "Name": "Deckung nur im Kampf berechnen",
+                "Hint": "Wenn aktiviert, wird die automatische Deckung-Berechnung nur durchgeführt, solange eine Kampfbegegnung aktiv ist."
             },
             "RemoveOnCombat": {
-                "Name": "Cover bei Kampfaktualisierungen entfernen",
-                "Hint": "Entfernt die Cover-Bedingung automatisch bei Änderungen im Kampf (Zug/Runde/Initiative) unter Berücksichtigung des ausgewählten Geltungsbereichs für das Entfernen von Cover."
+                "Name": "Deckung bei Kampfaktualisierungen entfernen",
+                "Hint": "Entfernt den Deckungsstatus automatisch bei Änderungen im Kampf (Zug/Runde/Initiative) unter Berücksichtigung des ausgewählten Geltungsbereichs für das Entfernen von Deckung."
             },
             "RemoveOnMove": {
-                "Name": "Cover bei Token-Bewegung entfernen",
-                "Hint": "Entfernt die Cover-Bedingung automatisch, wenn sich ein Token während eines aktiven Kampfes bewegt, unter Berücksichtigung des ausgewählten Geltungsbereichs für das Entfernen von Cover."
+                "Name": "Deckung bei Figur-Bewegung entfernen",
+                "Hint": "Entfernt den Deckungsstatus automatisch, wenn sich ein Figur während eines aktiven Kampfes bewegt, unter Berücksichtigung des ausgewählten Geltungsbereichs für das Entfernen von Deckung."
+            },
+            "losCheck": {
+                "Name": "Wand Sichtlinen Prüfung",
+                "Hint": "Wenn aktiviert, prüft das Modul auch die Sichtlinie gegen sichtlichen blockierenden Wänden. Dies kann genutzt werden, um Fälle zu erkennen, in denen das Ziel vollständig von Wänden blockiert ist."
             },
             "CreaturesHalfOnly": {
-                "Name": "Cover durch Kreaturen auf 1/2 Cover begrenzen",
-                "Hint": "Wenn aktiviert, können Kreaturen maximal Half Cover gewähren. Sobald mindestens eine Linie ausschließlich durch Kreaturen blockiert wird, erhält das Ziel Half Cover, aber niemals Three-Quarters Cover allein durch Kreaturen. Wände folgen weiterhin den normalen DMG-Regeln."
+                "Name": "Deckung durch Kreaturen auf Halbe Deckung begrenzen",
+                "Hint": "Wenn aktiviert, können Kreaturen maximal Halbe Deckung gewähren. Sobald mindestens eine Linie ausschließlich durch Kreaturen blockiert wird, erhält das Ziel Halbe Deckung, aber niemals Dreiviertel Deckung allein durch Kreaturen. Wände folgen weiterhin den normalen DMG-Regeln."
             },
             "IgnoreAllAOE": {
                 "Name": "Deckung bei allen Flächeneffekten ignorieren",
                 "Hint": "Überspringt Deckungsprüfungen, sobald die Aktivität irgendeine Flächen-Schablone definiert. Wenn eine Schablone vorhanden ist, wird für diesen Wurf keine Deckung berechnet."
             },
             "IgnoreDistanceAOE": {
-                "Name": "Deckung bei AoE-Schablonen auf Distanz ignorieren",
-                "Hint": "Überspringt Deckungsprüfungen für Aktivitäten, die einen Wirkbereich auf Distanz erzeugen (z. B. Feuerball). Dies gilt, wenn die Aktivität eine Reichweite größer als 1 hat und eine AoE-Schablone mit Reichweiteneinheiten ungleich self/touch/special verwendet."
+                "Name": "Deckung bei Flächeneffekten auf Distanz ignorieren",
+                "Hint": "Überspringt Deckungsprüfungen für Aktivitäten, die einen Wirkbereich auf Distanz erzeugen (z. B. Feuerball). Dies gilt, wenn die Aktivität eine Bereich-Schablone und eine Reichweite größer als 1 sowie mit Reichweiteneinheiten ungleich Selbst/Berührung/Spezial verwendet."
             },
             "IgnoreDistanceSpace": {
-                "Name": "Deckung bei Zielwahl auf Distanz (Space) ignorieren",
-                "Hint": "Überspringt Deckungsprüfungen, wenn die Aktivität einen Punkt im Raum auf Distanz anvisiert (Reichweite > 1 und affects-Typ ist \"space\"). Das wird häufig bei Beschwörungs-Features/-Zaubern verwendet, bei denen der eigentliche Angriff/Effekt von der beschworenen Kreatur ausgeht. Deckung sollte dann von der Beschwörung aus berechnet werden, nicht vom ursprünglichen Feature/Zauber."
+                "Name": "Deckung bei Zielwahl 'Space' auf Distanz ignorieren",
+                "Hint": "Überspringt Deckungsprüfungen, wenn die Aktivität einen Punkt im Raum auf Distanz anvisiert (Reichweite > 1 und Ziel-Typ ist \"space\"). Das wird häufig bei Beschwörungs-Features/-Zaubern verwendet, bei denen der eigentliche Angriff/Effekt von der beschworenen Kreatur ausgeht. Deckung sollte dann von der Beschwörung aus berechnet werden, nicht vom ursprünglichen Feature/Zauber."
             },
             "Hover": {
-                "Name": "Hover-Cover-Anzeige",
-                "Hint": "Steuert, ob und wie Cover-Informationen und Entfernungen beim Hovern eines Tokens angezeigt werden.",
+                "Name": "Hover-Deckung-Anzeige",
+                "Hint": "Steuert, ob und wie Deckung-Informationen und Entfernungen beim Hovern einer Figur angezeigt werden.",
                 "Options": {
                     "Off": "Deaktiviert",
-                    "CoverOnly": "Nur Cover-Icons",
-                    "CoverAndDistance": "Cover-Icons und Entfernung"
+                    "CoverOnly": "Nur Deckung-Icons",
+                    "CoverAndDistance": "Deckung-Icons und Entfernung"
                 }
             },
             "HoverLabelPosition": {
                 "Name": "Position des Hover-Labels",
-                "Hint": "Wähle, wo das Hover-Label relativ zum Ziel-Token verankert wird.",
+                "Hint": "Wähle, wo das Hover-Label relativ zum Ziel-Figur verankert wird.",
                 "Options": {
-                    "Above": "Über dem Token",
-                    "On": "Zentriert auf dem Token",
-                    "Below": "Unter dem Token"
+                    "Above": "Über der Figur",
+                    "On": "Zentriert auf der Figur",
+                    "Below": "Unter der Figur"
                 }
             },
             "HoverLabelYOffset": {
@@ -65,8 +69,8 @@
                 "Hint": "Zusätzlicher horizontaler Versatz (in Pixeln), der auf die Position des Hover-Labels angewendet wird. Positive Werte bewegen das Label nach rechts, negative nach links."
             },
             "GridlessDistanceMode": {
-                "Name": "Entfernungsmodus ohne Raster",
-                "Hint": "Wähle, wie Entfernungen in rasterlosen Szenen gemessen werden: von Zentrum zu Zentrum oder von Kante zu Kante.",
+                "Name": "Entfernungsmodus auf gitterlosen Szenen",
+                "Hint": "Wähle, wie Entfernungen in gitterlosen Szenen gemessen werden: von Zentrum zu Zentrum oder von Kante zu Kante.",
                 "Options": {
                     "CenterCenter": "Zentrum zu Zentrum",
                     "EdgeEdge": "Kante zu Kante",
@@ -74,8 +78,8 @@
                 }
             },
             "GridlessTokenShape": {
-                "Name": "Tokenform in gridlosen Szenen",
-                "Hint": "Legt fest, ob Tokens in gridlosen Szenen als Quadrate oder als Kreise (mit mehreren Kreisen für größere Kreaturen) für Distanz- und Deckungsberechnungen behandelt werden.",
+                "Name": "Figurform in gitterlosen Szenen",
+                "Hint": "Legt fest, ob Figuren in gitterlosen Szenen als Quadrate oder als Kreise (mit mehreren Kreisen für größere Kreaturen) für Distanz- und Deckungsberechnungen behandelt werden.",
                 "Options": {
                     "Square": "Quadrate",
                     "Circle": "Kreise"
@@ -91,8 +95,8 @@
                 }
             },
             "Debug": {
-                "Name": "Cover-Debug-Linien anzeigen",
-                "Hint": "Zeichnet Hilfslinien während der Cover-Berechnung zwischen Tokens (zum Debugging/Fehlerbeheben)."
+                "Name": "Deckung-Debug-Linien anzeigen",
+                "Hint": "Zeichnet Hilfslinien während der Deckung-Berechnung zwischen Figuren (zum Debugging/Fehlerbeheben)."
             },
             "CreatureHeights": {
                 "Name": "Standard-Kreaturenhöhen",
@@ -103,7 +107,7 @@
                 "Label": "Kreaturenhöhen konfigurieren",
                 "Hint": "Passe die Standardhöhen (in Rastereinheiten) für jede Kreaturengröße an, die bei der Deckungsberechnung verwendet werden. Wenn das Modul \"Wall Height\" aktiv ist, werden diese Vorgaben ignoriert und stattdessen die Höhen aus diesem Modul übernommen.",
                 "Legend": "Kreaturenhöhen",
-                "BodyHint": "Lege die Standardhöhe (in Rastereinheiten) für jede Kreaturengröße fest. Diese Werte werden verwendet, wenn Tokens für Deckung als 3D-Prismen behandelt werden. Wenn das Modul \"Wall Height\" aktiv ist, werden diese Vorgaben ignoriert und stattdessen die Höhen aus diesem Modul übernommen.",
+                "BodyHint": "Lege die Standardhöhe (in Rastereinheiten) für jede Kreaturengröße fest. Diese Werte werden verwendet, wenn Figuren für Deckung als 3D-Prismen behandelt werden. Wenn das Modul \"Wall Height\" aktiv ist, werden diese Vorgaben ignoriert und stattdessen die Höhen aus diesem Modul übernommen.",
                 "Buttons": {
                     "Save": "Speichern",
                     "Reset": "Zurücksetzen"
@@ -124,7 +128,7 @@
         },
         "Controls": {
             "ClearCover": {
-                "Title": "Cover-Effekte entfernen"
+                "Title": "Deckung-Effekte entfernen"
             }
         }
     }
