@@ -217,6 +217,54 @@ const SETTINGS = [
     }
   },
   {
+    key: SETTING_KEYS.INSET_ATTACKER,
+    name: "SIMPLE_COVER_5E.Settings.insetAttacker.Name",
+    hint: "SIMPLE_COVER_5E.Settings.insetAttacker.Hint",
+    scope: "user",
+    config: false,
+    type: new foundry.data.fields.NumberField({
+      initial: 1,
+      required: true,
+      nullable: false,
+      min: 0,
+      integer: true
+    }),
+    default: 1,
+    requiresReload: false
+  },
+  {
+    key: SETTING_KEYS.INSET_TARGET,
+    name: "SIMPLE_COVER_5E.Settings.insetTarget.Name",
+    hint: "SIMPLE_COVER_5E.Settings.insetTarget.Hint",
+    scope: "user",
+    config: false,
+    type: new foundry.data.fields.NumberField({
+      initial: 3,
+      required: true,
+      nullable: false,
+      min: 0,
+      integer: true
+    }),
+    default: 3,
+    requiresReload: false
+  },
+  {
+    key: SETTING_KEYS.INSET_OCCLUDER,
+    name: "SIMPLE_COVER_5E.Settings.insetOccluder.Name",
+    hint: "SIMPLE_COVER_5E.Settings.insetOccluder.Hint",
+    scope: "user",
+    config: false,
+    type: new foundry.data.fields.NumberField({
+      initial: 3,
+      required: true,
+      nullable: false,
+      min: 0,
+      integer: true
+    }),
+    default: 3,
+    requiresReload: false
+  },
+  {
     key: SETTING_KEYS.CREATURE_HEIGHTS,
     name: "SIMPLE_COVER_5E.Settings.CreatureHeights.Name",
     hint: "SIMPLE_COVER_5E.Settings.CreatureHeights.Hint",

@@ -166,6 +166,9 @@ export class SimpleCoverVariantConfig extends HandlebarsApplicationMixin(Applica
         measurement: {
             template: "modules/simplecover5e/templates/base-config.hbs"
         },
+        engine: {
+            template: "modules/simplecover5e/templates/base-config.hbs"
+        },
         footer: {
             template: "templates/generic/form-footer.hbs"
         }
@@ -186,8 +189,8 @@ export class SimpleCoverVariantConfig extends HandlebarsApplicationMixin(Applica
         switch (partId) {
             case "general":
                 context.fields = [
-                    this.#createSettingField(SETTING_KEYS.LOS_CHECK), 
-                    this.#createSettingField(SETTING_KEYS.CREATURES_HALF_ONLY), 
+                    this.#createSettingField(SETTING_KEYS.LOS_CHECK),
+                    this.#createSettingField(SETTING_KEYS.CREATURES_HALF_ONLY),
                     this.#createSettingField(SETTING_KEYS.CREATURES_PRONE),
                     this.#createSettingField(SETTING_KEYS.IGNORE_DISTANCE_AOE),
                     this.#createSettingField(SETTING_KEYS.IGNORE_ALL_AOE),
@@ -202,6 +205,15 @@ export class SimpleCoverVariantConfig extends HandlebarsApplicationMixin(Applica
                     this.#createSettingField(SETTING_KEYS.GRIDLESS_TOKEN_SHAPE),
                 ].filter(Boolean);
                 context.legend = game.i18n.localize("SIMPLE_COVER_5E.Settings.VariantMenu.Groups.Measurement");
+                break;
+
+            case "engine":
+                context.fields = [
+                    this.#createSettingField(SETTING_KEYS.INSET_ATTACKER),
+                    this.#createSettingField(SETTING_KEYS.INSET_TARGET),
+                    this.#createSettingField(SETTING_KEYS.INSET_OCCLUDER),
+                ].filter(Boolean);
+                context.legend = game.i18n.localize("SIMPLE_COVER_5E.Settings.VariantMenu.Groups.Engine");
                 break;
 
             default:

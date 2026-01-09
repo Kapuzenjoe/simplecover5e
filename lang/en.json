@@ -102,6 +102,18 @@
         "Name": "Default Creature Heights",
         "Hint": "Default creature heights (in Grid Units) per size category used for 3D cover evaluation. When the \"Wall Height\" module is active, these defaults are ignored and heights are taken from that module instead."
       },
+      "insetAttacker": {
+        "Name": "Attacker Inset (px)",
+        "Hint": "Moves the attacker's sampling points from the raw corner toward the token center (default: 1; max: 30% of the current grid size)."
+      },
+      "insetTarget": {
+        "Name": "Target Inset (px)",
+        "Hint": "Moves the target's sampling points from the raw corner toward the token center (default: 3; max: 30% of the current grid size)."
+      },
+      "insetOccluder": {
+        "Name": "Occluder Inset (px)",
+        "Hint": "Shrinks the occluder bounding box for creatures (default: 3; max: 30% of the current grid size)."
+      },
       "HeightsMenu": {
         "Name": "Configure Creature Heights",
         "Label": "Creature Heights",
@@ -122,7 +134,8 @@
         },
         "Groups": {
           "General": "Cover Rules",
-          "Measurement": "Measurement Rules"
+          "Measurement": "Measurement Rules",
+          "Engine": "Engine Rules"
         }
       }
     },

@@ -4,6 +4,7 @@
 
 - Fixed an issue where custom cover granted by an Active Effect (e.g., “Swallow” applying Total Cover) could be ignored or overwritten. Cover resolution for attack rolls and saving throws now applies the highest active cover level across both the calculated cover result and any custom cover statuses on the target (#16).
 - Added support for using a generic position object `{ x, y, elevation? }` as the `attacker` parameter in `getCover()` and `getCoverForTargets()`, and as the `attackerDoc` parameter in `getLOS()` (#17).
+- Added new settings to configure pixel-based inset values for cover sampling points (attacker/target) and creature occluder bounds. These insets shift sampling points toward token centers and slightly shrink creature occluder bounding boxes (previously hardcoded to 2 px; now defaults to 1 px for the attacker token and 3 px each for the target token and blocking creature occluders, as this yields better results in my testing).
 - General code cleanup and optimizations. When the wall-height module is active, wall-blocking checks should be more performant.
 
 ## Version 1.3.1

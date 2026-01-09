@@ -75,7 +75,10 @@ export const SETTING_KEYS = {
   HOVER_LABEL_X_OFFSET: "hoverLabelXOffset",
   GRIDLESS_DISTANCE_MODE: "gridlessDistanceMode",
   GRIDLESS_TOKEN_SHAPE: "gridlessTokenShape",
-  CREATURES_PRONE: "proneCreatures"
+  CREATURES_PRONE: "proneCreatures",
+  INSET_ATTACKER: "insetAttacker",
+  INSET_TARGET: "insetTarget",
+  INSET_OCCLUDER: "insetOccluder"
 };
 
 /**

@@ -10,8 +10,9 @@ import { MODULE_ID, DEFAULT_SIZE, COVER, BASE_KEYS, SETTING_KEYS, GRID_MODES, ge
  * @property {"square"|"circle"} gridlessTokenShape
  * @property {number} half
  * @property {number} pxPerGridSize
- * @property {number} insetPx
- * @property {number} aabbErodePx
+ * @property {number} insetAttackerPx
+ * @property {number} insetTargetPx
+ * @property {number} insetOccluderPx
  * @property {Record<string, number>} size
  * @property {Map<string, Array<{minX:number,minY:number,maxX:number,maxY:number,minZ:number,maxZ:number}>>} [creaturePrisms]
  *
@@ -58,6 +59,10 @@ export function buildCoverContext(scene) {
     );
     const gridlessTokenShape = game.settings.get(MODULE_ID, SETTING_KEYS.GRIDLESS_TOKEN_SHAPE) ?? "square";
 
+    const insetAttacker = Number(game.settings.get(MODULE_ID, SETTING_KEYS.INSET_ATTACKER) ?? 0);
+    const insetTarget = Number(game.settings.get(MODULE_ID, SETTING_KEYS.INSET_TARGET) ?? 0);
+    const insetOccluder = Number(game.settings.get(MODULE_ID, SETTING_KEYS.INSET_OCCLUDER) ?? 0);
+
     return {
         scene,
         grid,
@@ -65,8 +70,9 @@ export function buildCoverContext(scene) {
         gridlessTokenShape,
         half,
         pxPerGridSize,
-        insetPx: Math.min(grid.size * 0.20, 2.5),
-        aabbErodePx: Math.min(grid.size * 0.10, 2.5),
+        insetAttackerPx: Math.min(grid.size * 0.3, insetAttacker),
+        insetTargetPx: Math.min(grid.size * 0.3, insetTarget),
+        insetOccluderPx: Math.min(grid.size * 0.3, insetOccluder),
         size
     };
 }
@@ -96,7 +102,7 @@ function getCreatureHeight(td, ctx) {
     if (isWallHeightModuleActive()) {
         const token = td?.object;
         if (!token) return 0;
-        
+
         const elevation = Number(td.elevation ?? 0);
         const losHeight = token ? Number(token.losHeight) : NaN;
 
@@ -140,7 +146,7 @@ function getTokenDimensions(td, grid) {
  * @returns {Array<{minX:number,minY:number,maxX:number,maxY:number,minZ:number,maxZ:number}>} The occluder prisms (AABBs) in canvas pixel space.
  */
 export function buildCreaturePrism(td, ctx) {
-    const { grid, half, aabbErodePx: er, pxPerGridSize } = ctx;
+    const { grid, half, insetOccluderPx, pxPerGridSize } = ctx;
     const zMin = (td.elevation ?? 0) * pxPerGridSize;
     let height = getCreatureHeight(td, ctx);
 
@@ -193,10 +199,10 @@ export function buildCreaturePrism(td, ctx) {
 
     if (gridMode === GRID_MODES.GRIDLESS || gridMode === GRID_MODES.SQUARE) {
         prisms.push({
-            minX: td.x + er,
-            minY: td.y + er,
-            maxX: td.x + wPx - er,
-            maxY: td.y + hPx - er,
+            minX: td.x + insetOccluderPx,
+            minY: td.y + insetOccluderPx,
+            maxX: td.x + wPx - insetOccluderPx,
+            maxY: td.y + hPx - insetOccluderPx,
             minZ: zMin + 0.1,
             maxZ: zMax - 0.1
         });
@@ -219,8 +225,8 @@ export function buildCreaturePrism(td, ctx) {
             const cellCx = innerRect?.cx ?? c.x;
             const cellCy = innerRect?.cy ?? c.y;
 
-            cellHalfW = Math.max(((innerRect?.halfW) * scale) - er, 0);
-            cellHalfH = Math.max(((innerRect?.halfH) * scale) - er, 0);
+            cellHalfW = Math.max(((innerRect?.halfW) * scale) - insetOccluderPx, 0);
+            cellHalfH = Math.max(((innerRect?.halfH) * scale) - insetOccluderPx, 0);
 
             prisms.push({
                 minX: cellCx - cellHalfW,
@@ -236,7 +242,7 @@ export function buildCreaturePrism(td, ctx) {
 
         if (centers.length > 1 || centerScale > 1) {
             const baseHalf = Math.max(cellHalfW, cellHalfH);
-            const fillHalf = Math.max((baseHalf * centerScale) - er, 0);
+            const fillHalf = Math.max((baseHalf * centerScale) - insetOccluderPx, 0);
 
             prisms.push({
                 minX: cx - fillHalf,
@@ -263,10 +269,10 @@ export function buildCreaturePrism(td, ctx) {
     const ys = centers.map(c => [c.y - r, c.y + r]).flat();
 
     prisms.push({
-        minX: Math.min(...xs) + er,
-        minY: Math.min(...ys) + er,
-        maxX: Math.max(...xs) - er,
-        maxY: Math.max(...ys) - er,
+        minX: Math.min(...xs) + insetOccluderPx,
+        minY: Math.min(...ys) + insetOccluderPx,
+        maxX: Math.max(...xs) - insetOccluderPx,
+        maxY: Math.max(...ys) - insetOccluderPx,
         minZ: zMin + 0.1,
         maxZ: zMax - 0.1
     });
@@ -339,6 +345,8 @@ function wallsBlock(aCorner, bCorner, attackerDoc, targetDoc, ctx, losCheck = fa
             if (!Number.isFinite(wallBottom)) wallBottom = -Infinity;
 
             if (debugOn && activeGM) {
+                const losBlock = losLineZ >= wallBottom && losLineZ <= wallTop
+                const wallBlock = coverLineZ >= wallBottom && coverLineZ <= wallTop
                 console.log(
                     `[${MODULE_ID}] wall-height line check:`,
                     {
@@ -346,7 +354,9 @@ function wallsBlock(aCorner, bCorner, attackerDoc, targetDoc, ctx, losCheck = fa
                         target: { id: targetDoc.id, z: tgtZ },
                         wall: { id: edge?.object?.document.id, bottom: wallBottom, top: wallTop },
                         coverLineZ,
+                        wallBlock,
                         losLineZ,
+                        losBlock,
                         tVertex: {
                             x: vertex.x,
                             y: vertex.y
@@ -512,7 +522,7 @@ function getTokenSampleCenters(td, ctx) {
         if (sizeKey === "grg") {
             const rOuter = bigRadius - mediumRadius;
             const diag = rOuter / Math.SQRT2;
-            const inner = mediumRadius;
+            // const inner = mediumRadius;
 
             // centers.push({ x: cx + inner, y: cy + inner });
             // centers.push({ x: cx + inner, y: cy - inner });
@@ -834,7 +844,6 @@ function addBigCircleDebug(td, sizeKey, bucket, ctx) {
 export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options = {}) {
     const debug = !!options.debug;
     const { gridMode, half } = ctx;
-    const insetPx = ctx.insetPx;
 
     const debugTokenShapes = debug ? { attacker: [], target: [], occluders: [] } : null;
 
@@ -870,7 +879,7 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
     }
 
     for (const tCenter of targetSamples) {
-        const tgtCorners = buildTokenCornersForCenter(tCenter, targetRadius, insetPx, gridMode, useCircleShape, ctx, targetSizeKey);
+        const tgtCorners = buildTokenCornersForCenter(tCenter, targetRadius, ctx.insetTargetPx, gridMode, useCircleShape, ctx, targetSizeKey);
         if (!tgtCorners || !tgtCorners.length) continue;
 
         if (debugTokenShapes) {
@@ -884,7 +893,7 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
         const totalLinesForThisTarget = tgtCorners.length;
 
         for (const aCenter of attackerSamples) {
-            const atkCorners = buildTokenCornersForCenter(aCenter, attackerRadius, insetPx, gridMode, useCircleShape, ctx, attackerSizeKey);
+            const atkCorners = buildTokenCornersForCenter(aCenter, attackerRadius, ctx.insetAttackerPx, gridMode, useCircleShape, ctx, attackerSizeKey);
             if (!atkCorners || !atkCorners.length) continue;
 
             if (debugTokenShapes) {

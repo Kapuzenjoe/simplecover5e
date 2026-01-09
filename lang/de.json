@@ -102,6 +102,18 @@
                 "Name": "Standard-Kreaturenhöhen",
                 "Hint": "Standard-Kreaturenhöhen (in Rastereinheiten) je Größenkategorie, die für die 3D-Deckungsberechnung verwendet werden. Wenn das Modul \"Wall Height\" aktiv ist, werden diese Vorgaben ignoriert und stattdessen die Höhen aus diesem Modul übernommen."
             },
+            "insetAttacker": {
+                "Name": "Angreifer-Einrückung (px)",
+                "Hint": "Verschiebt die Messpunkte des Angreifers von der Roh-Ecke in Richtung Figur-Zentrum (Standard: 1; Max: 30% der aktuellen Rastergröße)."
+            },
+            "insetTarget": {
+                "Name": "Ziel-Einrückung (px)",
+                "Hint": "Verschiebt die Messpunkte des Ziels von der Roh-Ecke in Richtung Figur-Zentrum (Standard: 3; Max: 30% der aktuellen Rastergröße)."
+            },
+            "insetOccluder": {
+                "Name": "Verdeckung-Einrückung (px)",
+                "Hint": "Verkleinert die Verdeckungsbegrenzungsbox für Kreaturen (Standard: 3; Max: 30% der aktuellen Rastergröße)."
+            },
             "HeightsMenu": {
                 "Name": "Kreaturenhöhen",
                 "Label": "Kreaturenhöhen konfigurieren",
@@ -122,7 +134,8 @@
                 },
                 "Groups": {
                     "General": "Deckungsregeln",
-                    "Measurement": "Messregeln"
+                    "Measurement": "Messregeln",
+                    "Engine": "Engine Regeln"
                 }
             }
         },
