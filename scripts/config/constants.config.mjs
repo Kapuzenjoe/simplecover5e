@@ -79,11 +79,11 @@ export const SETTING_KEYS = {
 };
 
 /**
- * Default creature heights in feet by size category.
+ * Default creature heights in gridSize by size category.
  *
  * @type {Record<string, number>}
  */
-export const DEFAULT_SIZE_FT = {
+export const DEFAULT_SIZE = {
   tiny: 1,
   sm: 3,
   med: 6,
@@ -96,7 +96,7 @@ export const DEFAULT_SIZE_FT = {
  * Base size keys used for iteration and configuration UIs.
  * @type {string[]}
  */
-export const BASE_KEYS = Object.keys(DEFAULT_SIZE_FT);
+export const BASE_KEYS = Object.keys(DEFAULT_SIZE);
 
 /**
  * Simplified grid modes used by this module.

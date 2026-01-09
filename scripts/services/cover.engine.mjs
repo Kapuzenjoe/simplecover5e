@@ -1,4 +1,4 @@
-import { MODULE_ID, DEFAULT_SIZE_FT, COVER, BASE_KEYS, SETTING_KEYS, GRID_MODES, getGridMode } from "../config/constants.config.mjs";
+import { MODULE_ID, DEFAULT_SIZE, COVER, BASE_KEYS, SETTING_KEYS, GRID_MODES, getGridMode } from "../config/constants.config.mjs";
 
 /**
  * @typedef {"none"|"half"|"threeQuarters"|"total"} CoverLevel
@@ -12,7 +12,7 @@ import { MODULE_ID, DEFAULT_SIZE_FT, COVER, BASE_KEYS, SETTING_KEYS, GRID_MODES,
  * @property {number} pxPerGridSize
  * @property {number} insetPx
  * @property {number} aabbErodePx
- * @property {Record<string, number>} sizeFt
+ * @property {Record<string, number>} size
  * @property {Map<string, Array<{minX:number,minY:number,maxX:number,maxY:number,minZ:number,maxZ:number}>>} [creaturePrisms]
  *
  * @typedef {object} LosPoint
@@ -23,6 +23,8 @@ import { MODULE_ID, DEFAULT_SIZE_FT, COVER, BASE_KEYS, SETTING_KEYS, GRID_MODES,
  * @typedef {object} LosResult
  * @property {boolean} hasLOS
  * @property {LosPoint[]} targetLosPoints
+ * 
+ * @typedef {{x:number, y:number, elevation?:number}} Position
  */
 
 
@@ -49,8 +51,8 @@ export function buildCoverContext(scene) {
     const pxPerGridSize = grid.size / grid.distance;
 
     const saved = game.settings.get(MODULE_ID, SETTING_KEYS.CREATURE_HEIGHTS) ?? {};
-    const sizeFt = foundry.utils.mergeObject(
-        DEFAULT_SIZE_FT,
+    const size = foundry.utils.mergeObject(
+        DEFAULT_SIZE,
         saved,
         { inplace: false }
     );
@@ -65,31 +67,36 @@ export function buildCoverContext(scene) {
         pxPerGridSize,
         insetPx: Math.min(grid.size * 0.20, 2.5),
         aabbErodePx: Math.min(grid.size * 0.10, 2.5),
-        sizeFt
+        size
     };
 }
 
 /**
  * Get the size key for a token's actor as a normalized string.
  *
- * @param {TokenDocument} td                    Token document whose actor size should be inspected.
- * @returns {string}                            The size key ("tiny", "sm", "med", "lg", "huge", "grg").
+ * @param {TokenDocument|Position} td           The token document OR a generic position {x,y,elevation?}..
+ * @returns {string|null}                       The size key ("tiny", "sm", "med", "lg", "huge", "grg") or null.
  */
 function getSizeKey(td) {
-    return (td.actor?.system?.traits?.size ?? "med").toLowerCase();
+    const size = td?.actor?.system?.traits?.size;
+    return size ? String(size).toLowerCase() : null;
 }
 
 /**
- * Get the creature height in feet for a token document.
+ * Get the creature height in gridSize for a token document.
  * If wall-height is active, the token's LoS height is used when available.
  *
- * @param {TokenDocument} td                      The token document to read height for.
+ * @param {TokenDocument|Position} td             The token document OR a generic position {x,y,elevation?}.
  * @param {CoverContext} ctx                      The cover evaluation context.
- * @returns {number}                              The creature height in feet.
+ * @returns {number}                              The creature height in gridSize or 0.
  */
-function getCreatureHeightFt(td, ctx) {
+function getCreatureHeight(td, ctx) {
+    if (!td?.actor) return 0;
+
     if (isWallHeightModuleActive()) {
-        const token = td.object;
+        const token = td?.object;
+        if (!token) return 0;
+        
         const elevation = Number(td.elevation ?? 0);
         const losHeight = token ? Number(token.losHeight) : NaN;
 
@@ -104,7 +111,9 @@ function getCreatureHeightFt(td, ctx) {
         }
     }
     const key = getSizeKey(td);
-    return ctx.sizeFt[key] ?? 6;
+    if (!key) return 0;
+
+    return ctx.size?.[key] ?? 0;
 }
 
 /**
@@ -133,7 +142,7 @@ function getTokenDimensions(td, grid) {
 export function buildCreaturePrism(td, ctx) {
     const { grid, half, aabbErodePx: er, pxPerGridSize } = ctx;
     const zMin = (td.elevation ?? 0) * pxPerGridSize;
-    let heightFt = getCreatureHeightFt(td, ctx);
+    let height = getCreatureHeight(td, ctx);
 
     const actor = td.actor;
     const proneMode = game.settings.get(MODULE_ID, SETTING_KEYS.CREATURES_PRONE);
@@ -141,22 +150,22 @@ export function buildCreaturePrism(td, ctx) {
 
     if (actor?.statuses?.has?.("prone") && proneMode !== "none") {
         if (proneMode === "half") {
-            heightFt *= 0.5;
+            height *= 0.5;
         } else if (proneMode === "lowerSize") {
             if (!wallHeightActive) {
                 const sizeKey = getSizeKey(td);
                 const idx = BASE_KEYS.indexOf(sizeKey);
                 const smallerKey = idx > 0 ? BASE_KEYS[idx - 1] : sizeKey;
 
-                const heights = ctx.sizeFt ?? DEFAULT_SIZE_FT;
-                heightFt = heights[smallerKey] ?? heightFt;
+                const heights = ctx.size ?? DEFAULT_SIZE;
+                height = heights[smallerKey] ?? height;
             } else {
-                heightFt *= 0.5;
+                height *= 0.5;
             }
         }
     }
 
-    const zMax = zMin + heightFt * pxPerGridSize;
+    const zMax = zMin + height * pxPerGridSize;
 
     const prisms = [];
     const gridMode = ctx.gridMode;
@@ -264,20 +273,18 @@ export function buildCreaturePrism(td, ctx) {
     return prisms;
 }
 
-
 /**
  * Test whether sight-blocking walls obstruct the segment between two inset corners.
  * If wall-height is active, the intersection is additionally filtered by wall top/bottom values.
  *
  * @param {{raw:{x:number,y:number}|null, inset:{x:number,y:number}}} aCorner   The attacker corner (raw and inset).
  * @param {{raw:{x:number,y:number}|null, inset:{x:number,y:number}}} bCorner   The target corner (raw and inset).
- * @param {PointSource|null} sightSource                                     The sight source used for collision tests.
- * @param {TokenDocument} attackerDoc                                        The attacker token document.
- * @param {TokenDocument} targetDoc                                          The target token document.
- * @param {CoverContext} ctx                                                 The cover evaluation context.
+ * @param {TokenDocument|Position} attackerDoc                                  The attacking token document OR a generic position {x,y,elevation?}.
+ * @param {TokenDocument} targetDoc                                             The target token document.
+ * @param {CoverContext} ctx                                                    The cover evaluation context.
  * @returns {{blocked:boolean, A:{x:number,y:number}, B:{x:number,y:number}}} Whether the segment is blocked and the tested inset segment.
  */
-function wallsBlock(aCorner, bCorner, sightSource, attackerDoc, targetDoc, ctx, losCheck = false) {
+function wallsBlock(aCorner, bCorner, attackerDoc, targetDoc, ctx, losCheck = false) {
     const A = aCorner.inset;
     const B = bCorner.inset;
     const backend = CONFIG.Canvas.polygonBackends.sight;
@@ -285,38 +292,26 @@ function wallsBlock(aCorner, bCorner, sightSource, attackerDoc, targetDoc, ctx, 
     const debugOn = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.DEBUG);
     const activeGM = game.users?.activeGM;
 
-    const collideAny = (P, Q) =>
-        backend.testCollision(P, Q, {
-            type: "sight",
-            mode: "any",
-            source: sightSource,
-            useThreshold: true,
-            priority: sightSource?.priority
-        })
-
-    const collideAll = (P, Q) =>
+    const collide = (P, Q) =>
         backend.testCollision(P, Q, {
             type: "sight",
             mode: "all",
-            source: sightSource,
-            useThreshold: true,
-            priority: sightSource?.priority
+            useThreshold: true
         }) || [];
 
-    let collisions = collideAny(A, B);
+    let collisions = collide(A, B);
 
-    if (!collisions && aCorner.raw) collisions = collideAny(aCorner.raw, A);
-    if (!collisions && bCorner.raw) collisions = collideAny(bCorner.raw, B);
-    if (!collisions) {
+    if (!collisions.length && aCorner.raw) collisions = collide(aCorner.raw, A);
+    if (!collisions.length && bCorner.raw) collisions = collide(bCorner.raw, B);
+    if (!collisions.length) {
         return { blocked: false, A, B };
     }
 
     if (!wallHeightActive) {
         return { blocked: true, A, B };
     }
-    const collisionsAll = collideAll(A, B);
 
-    for (const vertex of collisionsAll) {
+    for (const vertex of collisions) {
         if (!vertex) continue;
 
         const edgeSet = vertex.edges ?? vertex.cwEdges ?? vertex.ccwEdges;
@@ -347,10 +342,11 @@ function wallsBlock(aCorner, bCorner, sightSource, attackerDoc, targetDoc, ctx, 
                 console.log(
                     `[${MODULE_ID}] wall-height line check:`,
                     {
-                        attacker: { id: attackerDoc.id, zFt: attZ },
+                        attacker: { id: attackerDoc?.id, z: attZ },
                         target: { id: targetDoc.id, z: tgtZ },
                         wall: { id: edge?.object?.document.id, bottom: wallBottom, top: wallTop },
                         coverLineZ,
+                        losLineZ,
                         tVertex: {
                             x: vertex.x,
                             y: vertex.y
@@ -378,10 +374,10 @@ function wallsBlock(aCorner, bCorner, sightSource, attackerDoc, targetDoc, ctx, 
  * @param {{x:number,y:number}} A                The segment start point (inset).
  * @param {{x:number,y:number}} B                The segment end point (inset).
  * @param {{x:number,y:number}} vertex           The intersection vertex on the wall.
- * @param {TokenDocument} attackerDoc            The attacker token document.
+ * @param {TokenDocument|Position} attackerDoc   The attacking token document OR a generic position {x,y,elevation?}.
  * @param {TokenDocument} targetDoc              The target token document.
  * @param {CoverContext} ctx                     The cover evaluation context.
- * @returns {{lineZ:number, attZ:number, tgtZ:number}} The interpolated line height and the attacker/target sampling heights (feet).
+ * @returns {{lineZ:number, attZ:number, tgtZ:number}} The interpolated line height and the attacker/target sampling heights.
  */
 function getLineHeightAtVertex(A, B, vertex, attackerDoc, targetDoc, ctx) {
     const dx = B.x - A.x;
@@ -397,16 +393,16 @@ function getLineHeightAtVertex(A, B, vertex, attackerDoc, targetDoc, ctx) {
     }
     t = Math.min(Math.max(t, 0), 1);
 
-    const attBottomFt = Number(attackerDoc.elevation ?? 0);
-    const tgtBottomFt = Number(targetDoc.elevation ?? 0);
+    const attBottom = Number(attackerDoc.elevation ?? 0);
+    const tgtBottom = Number(targetDoc.elevation ?? 0);
 
-    const attHeightFt = getCreatureHeightFt(attackerDoc, ctx);
-    const tgtHeightFt = getCreatureHeightFt(targetDoc, ctx);
+    const attHeight = getCreatureHeight(attackerDoc, ctx);
+    const tgtHeight = getCreatureHeight(targetDoc, ctx);
 
-    const attZ = attBottomFt + (Number.isFinite(attHeightFt) ? attHeightFt * 0.7 : 0);
-    const losAttZ = attBottomFt + (Number.isFinite(attHeightFt) ? attHeightFt  : 0);
-    const tgtZ = tgtBottomFt + (Number.isFinite(tgtHeightFt) ? tgtHeightFt * 0.5 : 0);
-    const losTgtZ = tgtBottomFt + (Number.isFinite(tgtHeightFt) ? tgtHeightFt : 0);
+    const attZ = attBottom + (Number.isFinite(attHeight) ? attHeight * 0.7 : 0);
+    const losAttZ = attBottom + (Number.isFinite(attHeight) ? attHeight : 0);
+    const tgtZ = tgtBottom + (Number.isFinite(tgtHeight) ? tgtHeight * 0.5 : 0);
+    const losTgtZ = tgtBottom + (Number.isFinite(tgtHeight) ? tgtHeight : 0);
 
     const coverLineZ = attZ + t * (tgtZ - attZ);
     const losLineZ = Math.min(losAttZ, attZ + t * (losTgtZ - attZ));
@@ -468,6 +464,10 @@ function getTokenSampleCenters(td, ctx) {
     const useCircleShape = isGridless && gridlessTokenShape === "circle";
 
     const centers = [];
+
+    if (!td?.actor && typeof td.x === "number" && typeof td.y === "number") {
+        return [{ x: td.x, y: td.y }];
+    }
 
     if (useCircleShape) {
         const { width: wPx, height: hPx, centerX: cx, centerY: cy } = getTokenDimensions(td, grid);
@@ -749,6 +749,8 @@ function getHexCellInnerRect(center, ctx) {
  * @returns {Array<{raw:{x:number,y:number}, inset:{x:number,y:number}}>|null} The inset corners for this center.
  */
 function buildTokenCornersForCenter(center, radius, insetPx, gridMode, useCircleShape, ctx, sizeKey) {
+    if (sizeKey === null) return [{ raw: null, inset: { x: center?.x, y: center?.y } }];
+
     if (gridMode === GRID_MODES.HEX) {
         const scale = (sizeKey === "tiny") ? 0.5 : 1;
         return buildHexCorners(center, insetPx, ctx, scale);
@@ -821,7 +823,7 @@ function addBigCircleDebug(td, sizeKey, bucket, ctx) {
  * Evaluate DMG-style cover for an attacker against a target.
  * The evaluator tests rays against sight-blocking walls and creature occluder prisms and returns the best (least blocked) sampling outcome.
  *
- * @param {TokenDocument} attackerDoc             The attacking token document.
+ * @param {TokenDocument|Position} attackerDoc    The attacking token document OR a generic position {x,y,elevation?}.
  * @param {TokenDocument} targetDoc               The target token document.
  * @param {CoverContext} ctx                      The cover evaluation context.
  * @param {{debug?:boolean}} [options]            Optional flags (e.g. debug shape output).
@@ -841,7 +843,7 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
     const targetId = targetDoc?.object?.id;
     const boxes = collectOccluderBoxes(creaturePrisms, attackerId, targetId, debugTokenShapes);
 
-    const attackerZ = (attackerDoc.elevation ?? 0) * ctx.pxPerGridSize + 0.1;
+    const attackerZ = (attackerDoc?.elevation ?? 0) * ctx.pxPerGridSize + 0.1;
     const targetZ = (targetDoc.elevation ?? 0) * ctx.pxPerGridSize + 0.1;
 
     const attackerSizeKey = getSizeKey(attackerDoc);
@@ -853,7 +855,6 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
     const attackerRadius = attackerSizeKey === "tiny" ? half * 0.5 : half;
     const targetRadius = targetSizeKey === "tiny" ? half * 0.5 : half;
 
-    const sightSource = attackerDoc?.object?.vision?.source ?? null;
     const creaturesHalfOnly = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.CREATURES_HALF_ONLY);
 
     let best = { reachable: -1, coverLevel: 2, segs: [] };
@@ -873,7 +874,11 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
         if (!tgtCorners || !tgtCorners.length) continue;
 
         if (debugTokenShapes) {
-            debugTokenShapes.target.push(tgtCorners.map(c => c.raw));
+            debugTokenShapes.target.push(
+                tgtCorners
+                    .map(c => c?.raw)
+                    .filter(p => p != null)
+            );
         }
 
         const totalLinesForThisTarget = tgtCorners.length;
@@ -883,7 +888,11 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
             if (!atkCorners || !atkCorners.length) continue;
 
             if (debugTokenShapes) {
-                debugTokenShapes.attacker.push(atkCorners.map(c => c.raw));
+                debugTokenShapes.attacker.push(
+                    atkCorners
+                        .map(c => c.raw)
+                        .filter(p => p != null)
+                );
             }
 
             for (const aCorner of atkCorners) {
@@ -892,7 +901,7 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
                 const segs = [];
 
                 for (const tCorner of tgtCorners) {
-                    const wallResult = wallsBlock(aCorner, tCorner, sightSource, attackerDoc, targetDoc, ctx);
+                    const wallResult = wallsBlock(aCorner, tCorner, attackerDoc, targetDoc, ctx);
                     const wBlocked = wallResult.blocked;
 
                     const a3 = { x: aCorner.inset.x, y: aCorner.inset.y, z: attackerZ };
@@ -965,24 +974,19 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
  * Evaluate whether an attacker has line of sight (LoS) to a target, considering walls only.
  * The test samples a 3×3 grid around the target center using Foundry-like tolerance and reports which points are blocked.
  *
- * @param {TokenDocument} attackerDoc             The attacking token document.
+ * @param {TokenDocument|Position} attackerDoc    The attacking token document OR a generic position {x,y,elevation?}.
  * @param {TokenDocument} targetDoc               The target token document.
  * @param {CoverContext} ctx                      The cover evaluation context.
  * @returns {LosResult}                           The LoS result and sampled target points.
  */
 export function evaluateLOS(attackerDoc, targetDoc, ctx) {
-    const attackerToken = attackerDoc?.object;
     const targetToken = targetDoc?.object;
+    const attackerToken = attackerDoc?.object;
 
-    if (!attackerToken || !targetToken) return { hasLOS: true, targetLosPoints: [] };
-
-    const sightSource = attackerToken.vision?.source ?? null;
-
-    const origin = sightSource
-        ? { x: sightSource.x, y: sightSource.y }
-        : { x: attackerToken.center.x, y: attackerToken.center.y };
+    if (!attackerDoc || !targetToken) return { hasLOS: true, targetLosPoints: [] };
 
     const targetCenter = { x: targetToken.center.x, y: targetToken.center.y };
+    const origin = attackerToken ? { x: attackerToken.center.x, y: attackerToken.center.y } : { x: attackerDoc.x, y: attackerDoc.y };
 
     const gridSize = ctx?.grid?.size ?? 0;
     const wPx = (Number(targetDoc.width ?? 1) || 1) * gridSize;
@@ -1012,7 +1016,7 @@ export function evaluateLOS(attackerDoc, targetDoc, ctx) {
     for (const p of targetPoints) {
         const originPoint = { raw: null, inset: origin };
         const targetPoint = { raw: null, inset: p };
-        const wallResult = wallsBlock(originPoint, targetPoint, sightSource, attackerDoc, targetDoc, ctx, losCheck);
+        const wallResult = wallsBlock(originPoint, targetPoint, attackerDoc, targetDoc, ctx, losCheck);
         targetLosPoints.push({ x: p.x, y: p.y, blocked: wallResult.blocked });
         if (!wallResult.blocked) hasLOS = true;
     }

@@ -165,9 +165,9 @@ export function drawCoverDebug({ segments = [], tokenShapes, targetLosPoints = [
 
   if (!tokenShapes) return;
 
-  const attackerPolys = tokenShapes.attacker ?? [];
-  const targetPolys = tokenShapes.target ?? [];
-  const occluderPolys = tokenShapes.occluders ?? [];
+  const attackerPolys = tokenShapes?.attacker ?? [];
+  const targetPolys = tokenShapes?.target ?? [];
+  const occluderPolys = tokenShapes?.occluders ?? [];
 
   drawPolygonSet(
     g,

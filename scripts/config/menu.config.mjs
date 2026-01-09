@@ -1,4 +1,4 @@
-import { MODULE_ID, DEFAULT_SIZE_FT, SETTING_KEYS, BASE_KEYS } from "./constants.config.mjs";
+import { MODULE_ID, DEFAULT_SIZE, SETTING_KEYS, BASE_KEYS } from "./constants.config.mjs";
 
 const { HandlebarsApplicationMixin, ApplicationV2 } = foundry.applications.api;
 
@@ -44,7 +44,7 @@ export class SimpleCoverCreatureHeightsConfig extends HandlebarsApplicationMixin
     async _prepareContext(options) {
         const current = game.settings.get(MODULE_ID, SETTING_KEYS.CREATURE_HEIGHTS) ?? {};
         const base = foundry.utils.mergeObject(
-            DEFAULT_SIZE_FT,
+            DEFAULT_SIZE,
             current,
             { inplace: false }
         );
@@ -62,7 +62,7 @@ export class SimpleCoverCreatureHeightsConfig extends HandlebarsApplicationMixin
                 key,
                 value: base[key],
                 label,
-                default: DEFAULT_SIZE_FT[key]
+                default: DEFAULT_SIZE[key]
             };
         });
 
@@ -97,7 +97,7 @@ export class SimpleCoverCreatureHeightsConfig extends HandlebarsApplicationMixin
         const cleaned = {};
         const obj = formData.object ?? {};
         for (const key of BASE_KEYS) {
-            const fallback = DEFAULT_SIZE_FT[key] ?? 0;
+            const fallback = DEFAULT_SIZE[key] ?? 0;
             let raw = obj[key];
             raw = raw === undefined || raw === null ? "" : String(raw).trim();
             if (raw === "") {
@@ -124,7 +124,7 @@ export class SimpleCoverCreatureHeightsConfig extends HandlebarsApplicationMixin
         await game.settings.set(
             MODULE_ID,
             SETTING_KEYS.CREATURE_HEIGHTS,
-            foundry.utils.duplicate(DEFAULT_SIZE_FT)
+            foundry.utils.duplicate(DEFAULT_SIZE)
         );
 
         ui.notifications.info("SimpleCover5e: Creature heights reset to defaults.");

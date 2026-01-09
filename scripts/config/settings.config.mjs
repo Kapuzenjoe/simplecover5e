@@ -1,4 +1,4 @@
-import { MODULE_ID, DEFAULT_SIZE_FT, SETTING_KEYS } from "./constants.config.mjs";
+import { MODULE_ID, DEFAULT_SIZE, SETTING_KEYS } from "./constants.config.mjs";
 import { SimpleCoverCreatureHeightsConfig, SimpleCoverVariantConfig } from "./menu.config.mjs";
 import { clearCoverDebug } from "../services/cover.debug.mjs";
 import { clearCoverStatusEffect } from "../services/cover.service.mjs";
@@ -221,7 +221,7 @@ const SETTINGS = [
     name: "SIMPLE_COVER_5E.Settings.CreatureHeights.Name",
     hint: "SIMPLE_COVER_5E.Settings.CreatureHeights.Hint",
     type: new foundry.data.fields.ObjectField({
-      initial: DEFAULT_SIZE_FT
+      initial: DEFAULT_SIZE
     }),
     requiresReload: false,
     config: false

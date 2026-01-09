@@ -27,6 +27,8 @@ import { measureTokenDistance } from "../utils/distance.mjs";
  * @property {0|2|5|null} bonus
  * @property {any[]} [debugSegments]
  * @property {any[]} [debugTokenShapes]
+ * 
+ * @typedef {{x:number, y:number, elevation?:number}} Position
  */
 
 /**
@@ -58,10 +60,10 @@ export function getIgnoreCover(activity, cover) {
 /**
  * Evaluate line of sight (LoS) from an attacker to a target.
  *
- * @param {TokenDocument} attackerDoc   The attacking TokenDocument.
- * @param {TokenDocument} targetDoc     The target TokenDocument.
- * @param {object} ctx                  The cover evaluation context.
- * @returns {LosResult}                 The LoS result and sampled target points.
+ * @param {TokenDocument|Position} attackerDoc     The attacking token document or a generic position {x,y,elevation?}.
+ * @param {TokenDocument} targetDoc                The target TokenDocument.
+ * @param {object} ctx                             The cover evaluation context.
+ * @returns {LosResult}                            The LoS result and sampled target points.
  */
 function getLOS(attackerDoc, targetDoc, ctx = null) {
     const s = canvas?.scene;
@@ -111,8 +113,8 @@ function buildContextWithPrisms(scene = canvas?.scene) {
 /**
  * Compute cover between a single attacker and a single target, optionally including a wall LoS check.
  *
- * @param {object} [options={}]                             Options controlling the cover evaluation.
- * @param {Token|TokenDocument} options.attacker            The attacking Token or TokenDocument.
+ * @param {object} [options={}]                             Options controlling the cover evaluation. 
+ * @param {Token|TokenDocument|Position} options.attacker   The attacking Token or TokenDocument or a generic position {x,y,elevation?}.
  * @param {Token|TokenDocument} options.target              The target Token or TokenDocument.
  * @param {Scene} [options.scene=canvas.scene]              The scene on which to evaluate cover.
  * @param {boolean|null} [options.debug=null]               Whether to force debug output. Null uses the module Debug setting.
@@ -166,7 +168,7 @@ export function getCover({ attacker, target, scene = canvas?.scene, debug = null
  * Compute cover between a single attacker and multiple targets, optionally including a wall LoS check.
  *
  * @param {object} [options={}]                             Options controlling the cover evaluation.
- * @param {Token|TokenDocument} options.attacker            The attacking Token or TokenDocument.
+ * @param {Token|TokenDocument|Position} options.attacker   The attacking Token or TokenDocument or a generic position {x,y,elevation?}.
  * @param {Token[]|TokenDocument[]|null} [options.targets]  Explicit targets; defaults to the user's current targets.
  * @param {Scene} [options.scene=canvas.scene]              The scene on which to evaluate cover.
  * @param {boolean|null} [options.debug=null]               Whether to force debug output. Null uses the module Debug setting.

@@ -1,5 +1,11 @@
 # Changelog
 
+## Version 1.3.2
+
+- Fixed an issue where custom cover granted by an Active Effect (e.g., “Swallow” applying Total Cover) could be ignored or overwritten. Cover resolution for attack rolls and saving throws now applies the highest active cover level across both the calculated cover result and any custom cover statuses on the target (#16).
+- Added support for using a generic position object `{ x, y, elevation? }` as the `attacker` parameter in `getCover()` and `getCoverForTargets()`, and as the `attackerDoc` parameter in `getLOS()` (#17).
+- General code cleanup and optimizations. When the wall-height module is active, wall-blocking checks should be more performant.
+
 ## Version 1.3.1
 
 This update primarily includes fixes and optimizations following the last [1.3.0](<https://github.com/Kapuzenjoe/simplecover5e/releases/tag/1.3.0>) release.
