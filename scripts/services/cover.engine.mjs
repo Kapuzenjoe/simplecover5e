@@ -913,13 +913,13 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
                     const wallResult = wallsBlock(aCorner, tCorner, attackerDoc, targetDoc, ctx);
                     const wBlocked = wallResult.blocked;
 
-                    const a3 = { x: aCorner.inset.x, y: aCorner.inset.y, z: attackerZ };
-                    const b3 = { x: tCorner.inset.x, y: tCorner.inset.y, z: targetZ };
+                    const attacker = { x: aCorner.inset.x, y: aCorner.inset.y, z: attackerZ };
+                    const target = { x: tCorner.inset.x, y: tCorner.inset.y, z: targetZ };
 
                     let cBlocked = false;
                     if (!wBlocked) {
                         for (let i = 0; i < boxes.length; i++) {
-                            if (segIntersectsAABB3D(a3, b3, boxes[i])) {
+                            if (segIntersectsAABB3D(attacker, target, boxes[i])) {
                                 cBlocked = true;
                                 break;
                             }

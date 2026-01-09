@@ -220,7 +220,6 @@ const SETTINGS = [
     key: SETTING_KEYS.INSET_ATTACKER,
     name: "SIMPLE_COVER_5E.Settings.insetAttacker.Name",
     hint: "SIMPLE_COVER_5E.Settings.insetAttacker.Hint",
-    scope: "user",
     config: false,
     type: new foundry.data.fields.NumberField({
       initial: 1,
@@ -236,7 +235,6 @@ const SETTINGS = [
     key: SETTING_KEYS.INSET_TARGET,
     name: "SIMPLE_COVER_5E.Settings.insetTarget.Name",
     hint: "SIMPLE_COVER_5E.Settings.insetTarget.Hint",
-    scope: "user",
     config: false,
     type: new foundry.data.fields.NumberField({
       initial: 3,
@@ -252,7 +250,6 @@ const SETTINGS = [
     key: SETTING_KEYS.INSET_OCCLUDER,
     name: "SIMPLE_COVER_5E.Settings.insetOccluder.Name",
     hint: "SIMPLE_COVER_5E.Settings.insetOccluder.Hint",
-    scope: "user",
     config: false,
     type: new foundry.data.fields.NumberField({
       initial: 3,
