@@ -1,5 +1,12 @@
 # Changelog
 
+## Version 1.4.0
+
+This may be the last larger update before FoundryVtt V14. For V14, I plan to drop support for the Wall Height module in favor of core Scene Levels, and I may further optimize the occluder algorithm (e.g., via pseudo walls).
+
+- Added an optional setting to show cover hints in attack and saving throw roll dialogs (#18).
+- Added `api.setDialogNote()` for injecting custom notes into roll configuration dialogs (see Wiki: [API-(Library-Mode)](https://github.com/Kapuzenjoe/simplecover5e/wiki/API-(Library-Mode))).
+
 ## Version 1.3.2
 
 - Fixed an issue where custom cover granted by an Active Effect (e.g., “Swallow” applying Total Cover) could be ignored or overwritten. Cover resolution for attack rolls and saving throws now applies the highest active cover level across both the calculated cover result and any custom cover statuses on the target (#16).

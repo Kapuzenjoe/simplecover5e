@@ -13,14 +13,26 @@ export const MODULE_ID = "simplecover5e";
  * Central cover constants.
  *
  * - IDS: maps cover levels ("none"|"half"|"threeQuarters"|"total") to system effect ids (or null for none).
- * - EFFECT_IDS: list of system effect ids used for cover.
+ * - EFFECT_IDS: list of system effect ids used for cover automation.
  * - BONUS: maps cover levels ("none"|"half"|"threeQuarters"|"total") to AC/DEX bonus (null for total cover).
- * 
+ * - ORDER: numeric ordering for comparing cover levels.
+ * - FA_ICONS: Font Awesome class strings per cover level.
+ * - I18N: localization keys used for cover labels and roll dialog hints.
+ *
  * @readonly
  * @type {{
  *   IDS: { none: null, half: string, threeQuarters: string, total: string },
- *   EFFECT_IDS: string[],
- *   BONUS: { none: number, half: number, threeQuarters: number, total: (number|null) }
+ *   EFFECT_IDS: Array<[("half"|"threeQuarters"|"total"), string]>,
+ *   BONUS: { none: number, half: number, threeQuarters: number, total: (number|null) },
+ *   ORDER: { none: number, half: number, threeQuarters: number, total: number },
+ *   FA_ICONS: { none: string, half: string, threeQuarters: string, total: string },
+ *   I18N: {
+ *     LABEL_PREFIX_KEY: string,
+ *     HINT_KEYS: {
+ *       Attack: { half: string, threeQuarters: string, total: string },
+ *       Save: { half: string, threeQuarters: string, total: string }
+ *     }
+ *   }
  * }}
  */
 export const COVER = Object.freeze({
@@ -46,7 +58,28 @@ export const COVER = Object.freeze({
     half: 1,
     threeQuarters: 2,
     total: 3
-  })
+  }),
+  FA_ICONS: Object.freeze({
+    none: "",
+    half: "fa-solid fa-shield-halved",
+    threeQuarters: "fa-solid fa-shield-quartered",
+    total: "fa-solid fa-shield"
+  }),
+  I18N: Object.freeze({
+    LABEL_PREFIX_KEY: "DND5E.Cover",
+    HINT_KEYS: Object.freeze({
+      Attack: Object.freeze({
+        half: "SIMPLE_COVER_5E.CoverHint.Attack.half",
+        threeQuarters: "SIMPLE_COVER_5E.CoverHint.Attack.threeQuarters",
+        total: "SIMPLE_COVER_5E.CoverHint.Attack.total"
+      }),
+      Save: Object.freeze({
+        half: "SIMPLE_COVER_5E.CoverHint.Save.half",
+        threeQuarters: "SIMPLE_COVER_5E.CoverHint.Save.threeQuarters",
+        total: "SIMPLE_COVER_5E.CoverHint.Save.total"
+      })
+    })
+  }),
 });
 
 /**
@@ -78,7 +111,8 @@ export const SETTING_KEYS = {
   CREATURES_PRONE: "proneCreatures",
   INSET_ATTACKER: "insetAttacker",
   INSET_TARGET: "insetTarget",
-  INSET_OCCLUDER: "insetOccluder"
+  INSET_OCCLUDER: "insetOccluder",
+  COVER_HINTS: "coverHints"
 };
 
 /**
@@ -147,4 +181,13 @@ export const HOVER = {
   DISTANCE_LABEL_NAME: `${MODULE_ID}-hover-distance-label`,
   COVER_ICON_PROP: `_${MODULE_ID}HoverCoverIcon`,
   COVER_ICON_NAME: `${MODULE_ID}-hover-cover-icon`
+};
+
+/**
+ * Icon paths for DnD5e cover status indicators used by the hover label.
+ */
+export const COVER_ICON_PATHS = {
+  half: "systems/dnd5e/icons/svg/statuses/cover-half.svg",
+  threeQuarters: "systems/dnd5e/icons/svg/statuses/cover-three-quarters.svg",
+  total: "systems/dnd5e/icons/svg/statuses/cover-total.svg"
 };

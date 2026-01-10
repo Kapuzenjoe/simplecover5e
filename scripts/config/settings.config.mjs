@@ -47,6 +47,14 @@ const SETTINGS = [
     requiresReload: false
   },
   {
+    key: SETTING_KEYS.COVER_HINTS,
+    name: "SIMPLE_COVER_5E.Settings.coverHints.Name",
+    hint: "SIMPLE_COVER_5E.Settings.coverHints.Hint",
+    type: new foundry.data.fields.BooleanField({ initial: false }),
+    requiresReload: false,
+    config: true
+  },
+  {
     key: SETTING_KEYS.LOS_CHECK,
     name: "SIMPLE_COVER_5E.Settings.losCheck.Name",
     hint: "SIMPLE_COVER_5E.Settings.losCheck.Hint",

@@ -9,6 +9,7 @@ import { isBlockingCreatureToken } from "../services/cover.service.mjs";
 import { ignoresCover } from "../utils/rules.cover.mjs";
 import { drawCoverDebug, clearCoverDebug } from "../services/cover.debug.mjs";
 import { measureTokenDistance } from "../utils/distance.mjs";
+import { onRenderRollConfigurationDialog } from "../services/dialog.service.mjs";
 
 /**
  * @typedef {"none"|"half"|"threeQuarters"|"total"} CoverLevel
@@ -233,6 +234,32 @@ export function getCoverForTargets({ attacker, targets = null, scene = canvas?.s
 }
 
 /**
+ * Add a note (icon + label + hint) to the next Roll Configuration Dialog for this roll workflow.
+ *
+ * @param {object} dialogConfig                 The dialog configuration object provided by DnD5e pre-roll V2 hooks.
+ * @param {object} [note={}]                    The note definition.
+ * @param {string} [note.icon=""]               A Font Awesome class string, e.g. `"fa-solid fa-circle-info"`.
+ * @param {string} [note.label=""]              The note label text, e.g. `"Half Cover"`.
+ * @param {string} [note.hint=""]               The hint HTML/text, e.g. `"+2 to save rolls."`.
+ * @returns {void}
+ */
+export function setDialogNote(dialogConfig, { icon = "", label = "", hint = "" } = {}) {
+    if (!dialogConfig) return;
+
+    dialogConfig.options ??= {};
+    const data = (dialogConfig.options[MODULE_ID] ??= {});
+    data.notes ??= [];
+
+    data.notes.push({
+        icon: String(icon ?? ""),
+        label: String(label ?? ""),
+        hint: String(hint ?? "")
+    });
+
+    data.rendered = false;
+}
+
+/**
  * Get whether the module is currently operating in library mode.
  *
  * @returns {boolean} True if library mode is enabled.
@@ -272,6 +299,7 @@ export function initApi() {
         getIgnoreCover,
         getLOS,
         getTokenTokenDistance,
+        setDialogNote,
     };
 
     const mod = game.modules.get(MODULE_ID);
