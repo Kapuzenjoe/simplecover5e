@@ -14,7 +14,10 @@ import { MODULE_ID, SETTING_KEYS, GRID_MODES, getGridMode } from "../config/cons
  * @returns {number}                             The minimal distance in grid units (clamped to 0+).
  */
 export function measureTokenDistance(sourceToken, targetToken) {
-  const scene = sourceToken.parent;
+  const sourceDoc = sourceToken.document ?? sourceToken;
+  const targetDoc = targetToken.document ?? targetToken;
+
+  const scene = sourceDoc.parent;
   const { grid } = scene;
 
   const gridMode = getGridMode(grid);
@@ -45,23 +48,20 @@ export function measureTokenDistance(sourceToken, targetToken) {
     return centers;
   };
 
-  const sourceDoc = sourceToken.document ?? sourceToken;
-  const targetDoc = targetToken.document ?? targetToken;
-
   const sourceOffsets = isGridless
     ? (useSquareShape
       ? getGridlessPseudoSquareOffsets(sourceDoc)
-      : [sourceToken.getCenterPoint()])
-    : sourceToken.getOccupiedGridSpaceOffsets();
+      : [sourceDoc.getCenterPoint()])
+    : sourceDoc.getOccupiedGridSpaceOffsets();
 
   const targetOffsets = isGridless
     ? (useSquareShape
       ? getGridlessPseudoSquareOffsets(targetDoc)
-      : [targetToken.getCenterPoint()])
-    : targetToken.getOccupiedGridSpaceOffsets();
+      : [targetDoc.getCenterPoint()])
+    : targetDoc.getOccupiedGridSpaceOffsets();
 
-  const sourceElevation = sourceToken.elevation ?? 0;
-  const targetElevation = targetToken.elevation ?? 0;
+  const sourceElevation = sourceDoc.elevation ?? 0;
+  const targetElevation = targetDoc.elevation ?? 0;
 
   let minDistance = Infinity;
 
@@ -99,8 +99,8 @@ export function measureTokenDistance(sourceToken, targetToken) {
 
     if (mode === "edgeEdge" || mode === "edgeToCenter") {
       const unitsPerPixel = grid.distance / grid.size;
-      const sourceRadiusPx = sourceToken.object?.externalRadius ?? 0;
-      const targetRadiusPx = targetToken.object?.externalRadius ?? 0;
+      const sourceRadiusPx = sourceDoc.object?.externalRadius ?? 0;
+      const targetRadiusPx = targetDoc.object?.externalRadius ?? 0;
 
       if (mode === "edgeEdge") {
         const externalAdjust = unitsPerPixel * (sourceRadiusPx + targetRadiusPx);

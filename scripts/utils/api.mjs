@@ -9,7 +9,6 @@ import { isBlockingCreatureToken } from "../services/cover.service.mjs";
 import { ignoresCover } from "../utils/rules.cover.mjs";
 import { drawCoverDebug, clearCoverDebug } from "../services/cover.debug.mjs";
 import { measureTokenDistance } from "../utils/distance.mjs";
-import { onRenderRollConfigurationDialog } from "../services/dialog.service.mjs";
 
 /**
  * @typedef {"none"|"half"|"threeQuarters"|"total"} CoverLevel
@@ -67,7 +66,7 @@ export function getIgnoreCover(activity, cover) {
  * @returns {LosResult}                            The LoS result and sampled target points.
  */
 function getLOS(attackerDoc, targetDoc, ctx = null) {
-    const s = canvas?.scene;
+    const s = targetDoc?.parent ?? canvas?.scene;
     if (!s) return null;
 
     ctx ??= buildCoverContext(s);

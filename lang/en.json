@@ -27,7 +27,7 @@
         "Hint": "When enabled, the module also checks line of sight against sight-blocking walls. This can be used to detect cases where the target is fully blocked by walls."
       },
       "coverHints": {
-        "Name": "Cover Hints in Roll Dialogs",
+        "Name": "Cover Notes in Roll Dialogs",
         "Hint": "When enabled, the module shows the current cover status in attack and saving throw roll dialogs."
       },
       "CreaturesHalfOnly": {

@@ -1,4 +1,4 @@
-import { MODULE_ID, COVER, SETTING_KEYS, COVER_ICON_PATHS } from "../config/constants.config.mjs";
+import { MODULE_ID, COVER, SETTING_KEYS } from "../config/constants.config.mjs";
 import { clearCoverStatusEffect } from "../services/cover.service.mjs";
 import { getCover, getCoverForTargets, getIgnoreCover, setDialogNote } from "../utils/api.mjs";
 import { clearCoverDebug } from "../services/cover.debug.mjs";

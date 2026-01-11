@@ -4,8 +4,9 @@
 
 This may be the last larger update before FoundryVtt V14. For V14, I plan to drop support for the Wall Height module in favor of core Scene Levels, and I may further optimize the occluder algorithm (e.g., via pseudo walls).
 
-- Added an optional setting to show cover hints in attack and saving throw roll dialogs (#18).
+- Added an optional setting to show cover notes in attack and saving throw roll dialogs (#18).
 - Added `api.setDialogNote()` for injecting custom notes into roll configuration dialogs (see Wiki: [API-(Library-Mode)](https://github.com/Kapuzenjoe/simplecover5e/wiki/API-(Library-Mode))).
+- Fixed `getTokenTokenDistance()` to correctly accept either a `Token` or a `TokenDocument` as the parameter type.
 
 ## Version 1.3.2
 
