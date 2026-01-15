@@ -48,13 +48,14 @@ function registerLibraryModeSetting() {
 /**
  * Resolve the effective cover level for an activity, including ignore-cover rules.
  *
- * @param {Activity5e} activity                      The activity being evaluated.
+ * @param {Activity5e} activity                         The activity being evaluated.
  * @param {"none"|"half"|"threeQuarters"|"total"} cover The computed/requested cover level.
+ * @param {TokenDocument} targetDoc                     The target TokenDocument.
  * @returns {{ CoverLevel, bonus: (number|null) }} The effective cover level and its corresponding bonus.
  *
  */
-export function getIgnoreCover(activity, cover) {
-    return ignoresCover(activity, cover);
+export function getIgnoreCover(activity, cover, targetDoc = null ) {
+    return ignoresCover(activity, cover, targetDoc);
 }
 
 /**
@@ -149,7 +150,7 @@ export function getCover({ attacker, target, scene = canvas?.scene, debug = null
     }
 
     if (activity) {
-        const { cover: desiredCover, bonus: desiredBonus } = getIgnoreCover(activity, result?.cover ?? "none");
+        const { cover: desiredCover, bonus: desiredBonus } = getIgnoreCover(activity, result?.cover ?? "none", targetDoc?.actor);
         result.cover = desiredCover;
         result.bonus = desiredBonus;
     }
@@ -211,7 +212,7 @@ export function getCoverForTargets({ attacker, targets = null, scene = canvas?.s
         }
 
         if (activity) {
-            const { cover: desiredCover, bonus: desiredBonus } = getIgnoreCover(activity, result?.cover ?? "none");
+            const { cover: desiredCover, bonus: desiredBonus } = getIgnoreCover(activity, result?.cover ?? "none", targetDoc?.actor);
             result.cover = desiredCover;
             result.bonus = desiredBonus;
         }

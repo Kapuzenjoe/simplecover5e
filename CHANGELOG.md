@@ -2,11 +2,15 @@
 
 ## Version 1.4.0
 
-This may be the last larger update before FoundryVtt V14. For V14, I plan to drop support for the Wall Height module in favor of core Scene Levels, and I may further optimize the occluder algorithm (e.g., via pseudo walls).
+This may be the last major update before Foundry VTT v14. For v14, I plan to drop support for the Wall-Height module in favor of Foundry’s core Scene Levels, and I may further optimize the occluder algorithm (for example by using pseudo-walls).
 
-- Added an optional setting to show cover notes in attack and saving throw roll dialogs (#18).
+- Added an optional setting to display cover notes in attack and saving throw roll dialogs (#18).
 - Added `api.setDialogNote()` for injecting custom notes into roll configuration dialogs (see Wiki: [API-(Library-Mode)](https://github.com/Kapuzenjoe/simplecover5e/wiki/API-(Library-Mode))).
 - Fixed `getTokenTokenDistance()` to correctly accept either a `Token` or a `TokenDocument` as the parameter type.
+- Fixed an issue where actor flags were incorrectly read from the attacker during saving throw rolls (they are now only applied to attack rolls) (#20).
+- Added new `upgradeCover` flags to increase the current cover level for a target actor. For example, `flags.simplecover5e.upgradeCover.all` upgrades half cover to three-quarters cover and three-quarters cover to total cover (#19).
+- Added an Automation setting menu to sort and manage all automation configs. These automations are disabled when Library Mode is active.
+- Refactored and harmonized the Settings menu classes and their corresponding .hbs templates.
 
 ## Version 1.3.2
 

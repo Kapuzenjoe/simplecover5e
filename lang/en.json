@@ -141,6 +141,15 @@
           "Measurement": "Measurement Rules",
           "Engine": "Engine Rules"
         }
+      },
+      "AutomationMenu": {
+        "Name": "Configure Cover Automation",
+        "Label": "Cover Automation",
+        "Hint": "Configure cover automation and what information is shown in roll dialogs. If Library Mode is enabled, all automation is disabled and this menu is locked.",
+        "Groups": {
+          "General": "Automation"
+        },
+        "LibraryModeWarning": "Library Mode is active. Automation features are disabled. See the wiki: https://github.com/Kapuzenjoe/simplecover5e/wiki/API-(Library-Mode). Some modules may enable Library Mode automatically (e.g. Midi-QOL)."
       }
     },
     "Controls": {

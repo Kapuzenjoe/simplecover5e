@@ -97,7 +97,7 @@ export function onPreRollAttack(config, dialog, message) {
     }
 
     const coverHints = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.COVER_HINTS);
-    
+
     if (desiredCover !== "none" && coverHints) {
       const coverPrefix = `${game.i18n.localize(COVER.I18N.LABEL_PREFIX_KEY)}`;
       const hint = game.i18n.localize(COVER.I18N.HINT_KEYS.Attack[desiredCover]);
@@ -205,6 +205,7 @@ export function onPreRollSavingThrow(config, dialog, message) {
  */
 export async function clearCoverOnUpdateCombat(combat, update) {
   try {
+    if (game.settings.get(MODULE_ID, SETTING_KEYS.LIBRARY_MODE)) return;
     if (!game.users.activeGM?.isSelf) return;
     if (!game.settings.get(MODULE_ID, SETTING_KEYS.RMV_ON_COMBAT)) return;
 
@@ -229,6 +230,7 @@ export async function clearCoverOnUpdateCombat(combat, update) {
  */
 export async function clearCoverOnMovement(token, movement, operation, user) {
   try {
+    if (game.settings.get(MODULE_ID, SETTING_KEYS.LIBRARY_MODE)) return;
     if (!game.users.activeGM?.isSelf) return;
     if (!game.settings.get(MODULE_ID, SETTING_KEYS.RMV_ON_MOVE)) return;
 
@@ -253,6 +255,7 @@ export async function clearCoverOnMovement(token, movement, operation, user) {
  */
 export async function clearCoverOnDeleteCombat(combat) {
   try {
+    if (game.settings.get(MODULE_ID, SETTING_KEYS.LIBRARY_MODE)) return;
     if (!game.users.activeGM?.isSelf) return;
     if (!game.settings.get(MODULE_ID, SETTING_KEYS.RMV_ON_COMBAT)) return;
 
