@@ -1,5 +1,5 @@
 import { MODULE_ID, DEFAULT_SIZE, SETTING_KEYS } from "./constants.config.mjs";
-import { SimpleCoverCreatureHeightsConfig, SimpleCoverVariantConfig } from "./menu.config.mjs";
+import { SimpleCoverCreatureHeightsConfig, SimpleCoverVariantConfig, SimpleCoverAutomationConfig } from "./menu.config.mjs";
 import { clearCoverDebug } from "../services/cover.debug.mjs";
 import { clearCoverStatusEffect } from "../services/cover.service.mjs";
 
@@ -23,28 +23,40 @@ const SETTINGS = [
       blank: false,
       trim: true
     }),
-    requiresReload: false
+    requiresReload: false,
+    config: false
   },
   {
     key: SETTING_KEYS.ONLY_IN_COMBAT,
     name: "SIMPLE_COVER_5E.Settings.OnlyInCombat.Name",
     hint: "SIMPLE_COVER_5E.Settings.OnlyInCombat.Hint",
     type: new foundry.data.fields.BooleanField({ initial: false }),
-    requiresReload: false
+    requiresReload: false,
+    config: false
   },
   {
     key: SETTING_KEYS.RMV_ON_COMBAT,
     name: "SIMPLE_COVER_5E.Settings.RemoveOnCombat.Name",
     hint: "SIMPLE_COVER_5E.Settings.RemoveOnCombat.Hint",
     type: new foundry.data.fields.BooleanField({ initial: true }),
-    requiresReload: false
+    requiresReload: false,
+    config: false
   },
   {
     key: SETTING_KEYS.RMV_ON_MOVE,
     name: "SIMPLE_COVER_5E.Settings.RemoveOnMove.Name",
     hint: "SIMPLE_COVER_5E.Settings.RemoveOnMove.Hint",
     type: new foundry.data.fields.BooleanField({ initial: false }),
-    requiresReload: false
+    requiresReload: false,
+    config: false
+  },
+  {
+    key: SETTING_KEYS.COVER_HINTS,
+    name: "SIMPLE_COVER_5E.Settings.coverHints.Name",
+    hint: "SIMPLE_COVER_5E.Settings.coverHints.Hint",
+    type: new foundry.data.fields.BooleanField({ initial: false }),
+    requiresReload: false,
+    config: false
   },
   {
     key: SETTING_KEYS.LOS_CHECK,
@@ -265,8 +277,13 @@ const SETTINGS = [
     key: SETTING_KEYS.CREATURE_HEIGHTS,
     name: "SIMPLE_COVER_5E.Settings.CreatureHeights.Name",
     hint: "SIMPLE_COVER_5E.Settings.CreatureHeights.Hint",
-    type: new foundry.data.fields.ObjectField({
-      initial: DEFAULT_SIZE
+    type: new foundry.data.fields.SchemaField({
+      tiny: new foundry.data.fields.NumberField({ initial: DEFAULT_SIZE.tiny, required: true, nullable: false, min: 0 }),
+      sm: new foundry.data.fields.NumberField({ initial: DEFAULT_SIZE.sm, required: true, nullable: false, min: 0 }),
+      med: new foundry.data.fields.NumberField({ initial: DEFAULT_SIZE.med, required: true, nullable: false, min: 0 }),
+      lg: new foundry.data.fields.NumberField({ initial: DEFAULT_SIZE.lg, required: true, nullable: false, min: 0 }),
+      huge: new foundry.data.fields.NumberField({ initial: DEFAULT_SIZE.huge, required: true, nullable: false, min: 0 }),
+      grg: new foundry.data.fields.NumberField({ initial: DEFAULT_SIZE.grg, required: true, nullable: false, min: 0 })
     }),
     requiresReload: false,
     config: false
@@ -306,6 +323,15 @@ export function registerSettings() {
     hint: "SIMPLE_COVER_5E.Settings.VariantMenu.Hint",
     icon: "fas fa-list-check",
     type: SimpleCoverVariantConfig,
+    restricted: true
+  });
+
+  game.settings.registerMenu(MODULE_ID, "AutomationMenu", {
+    name: "SIMPLE_COVER_5E.Settings.AutomationMenu.Name",
+    label: "SIMPLE_COVER_5E.Settings.AutomationMenu.Label",
+    hint: "SIMPLE_COVER_5E.Settings.AutomationMenu.Hint",
+    icon: "fa fa-cogs",
+    type: SimpleCoverAutomationConfig,
     restricted: true
   });
 }

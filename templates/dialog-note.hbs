@@ -1,0 +1,18 @@
+<fieldset data-simplecover5e="dialog-notes">
+  <legend>{{localize "SIMPLE_COVER_5E.Dialog.Legend"}}</legend>
+
+  {{#each notes}}
+    <div class="form-group stacked">
+      <label>
+        {{#if this.icon}}
+          <i class="{{this.icon}}" title="{{this.label}}"></i>
+        {{/if}}
+        {{this.label}}
+      </label>
+
+      <div class="form-fields">
+        <p class="hint">{{{this.hint}}}</p>
+      </div>
+    </div>
+  {{/each}}
+</fieldset>

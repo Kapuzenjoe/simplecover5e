@@ -1,5 +1,17 @@
-<fieldset {{ disabled disabled }}>
-    <legend>{{ ifThen legend legend (localize "SETUP.Configuration") }}</legend>
-    {{#if message}}<p class="note {{ message.level }}">{{ message.text }}</p>{{/if}}
+<fieldset {{disabled disabled}}>
+    <legend>{{ifThen legend legend (localize "SETUP.Configuration")}}</legend>
+    {{#if message}}<p class="note {{message.level}}">{{message.text}}</p>{{/if}}
+
+    {{#if sizes}}
+    {{#each sizes as |s|}}
+    <div class="form-group">
+        <label>{{s.label}} ({{../gridUnits}})</label>
+        <input type="number" data-dtype="Number" name="{{../settingKey}}.{{s.key}}" min="0" step="0.5"
+            value="{{s.value}}" placeholder="{{s.default}}" />
+    </div>
+    {{/each}}
+    <p class="hint">{{localize "SIMPLE_COVER_5E.Settings.HeightsMenu.BodyHint"}}</p>
+    {{else}}
     {{> "dnd5e.fieldlist" fields}}
+    {{/if}}
 </fieldset>

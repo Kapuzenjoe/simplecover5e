@@ -26,6 +26,10 @@
         "Name": "Wall Line of Sight Check",
         "Hint": "When enabled, the module also checks line of sight against sight-blocking walls. This can be used to detect cases where the target is fully blocked by walls."
       },
+      "coverHints": {
+        "Name": "Cover Notes in Roll Dialogs",
+        "Hint": "When enabled, the module shows the current cover status in attack and saving throw roll dialogs."
+      },
       "CreaturesHalfOnly": {
         "Name": "Limit Cover from Creatures to 1/2 Cover",
         "Hint": "When enabled, creatures can grant at most Half Cover. As soon as at least one line is blocked purely by creatures, the target gains Half Cover, but never Three-Quarters Cover from creatures alone. Walls continue to follow the standard DMG rules."
@@ -137,11 +141,35 @@
           "Measurement": "Measurement Rules",
           "Engine": "Engine Rules"
         }
+      },
+      "AutomationMenu": {
+        "Name": "Configure Cover Automation",
+        "Label": "Cover Automation",
+        "Hint": "Configure cover automation and what information is shown in roll dialogs. If Library Mode is enabled, all automation is disabled and this menu is locked.",
+        "Groups": {
+          "General": "Automation"
+        },
+        "LibraryModeWarning": "Library Mode is active. Automation features are disabled. See the wiki: https://github.com/Kapuzenjoe/simplecover5e/wiki/API-(Library-Mode). Some modules may enable Library Mode automatically (e.g. Midi-QOL)."
       }
     },
     "Controls": {
       "ClearCover": {
         "Title": "Remove Cover Effects"
+      }
+    },
+    "Dialog": {
+      "Legend": "Notes"
+    },
+    "CoverHint": {
+      "Attack": {
+        "half": "The target gains a <strong>+2</strong> bonus to AC from <strong>half cover</strong>.",
+        "threeQuarters": "The target gains a <strong>+5</strong> bonus to AC from <strong>three-quarters cover</strong>.",
+        "total": "The target has <strong>total cover</strong> and can't be targeted directly.."
+      },
+      "Save": {
+        "half": "You gain a <strong>+2</strong> bonus to this Dexterity saving throw from <strong>half cover</strong>.",
+        "threeQuarters": "You gain a <strong>+5</strong> bonus to this Dexterity saving throw from <strong>three-quarters cover</strong>.",
+        "total": "With <strong>total cover</strong>, you can't be targeted directly."
       }
     }
   }

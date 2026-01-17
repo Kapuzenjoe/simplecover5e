@@ -1,15 +1,6 @@
-import { MODULE_ID, SETTING_KEYS, HOVER } from "../config/constants.config.mjs";
+import { MODULE_ID, SETTING_KEYS, HOVER, COVER_ICON_PATHS } from "../config/constants.config.mjs";
 import { measureTokenDistance } from "../utils/distance.mjs";
 import { getCover } from "../utils/api.mjs";
-
-/**
- * Icon paths for DnD5e cover status indicators used by the hover label.
- */
-const COVER_ICON_PATHS = {
-  half: "systems/dnd5e/icons/svg/statuses/cover-half.svg",
-  threeQuarters: "systems/dnd5e/icons/svg/statuses/cover-three-quarters.svg",
-  total: "systems/dnd5e/icons/svg/statuses/cover-total.svg"
-};
 
 /**
  * Remove any hover label elements previously attached to a token.

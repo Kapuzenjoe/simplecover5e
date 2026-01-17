@@ -48,13 +48,14 @@ function registerLibraryModeSetting() {
 /**
  * Resolve the effective cover level for an activity, including ignore-cover rules.
  *
- * @param {Activity5e} activity                      The activity being evaluated.
+ * @param {Activity5e} activity                         The activity being evaluated.
  * @param {"none"|"half"|"threeQuarters"|"total"} cover The computed/requested cover level.
+ * @param {TokenDocument} targetDoc                     The target TokenDocument.
  * @returns {{ CoverLevel, bonus: (number|null) }} The effective cover level and its corresponding bonus.
  *
  */
-export function getIgnoreCover(activity, cover) {
-    return ignoresCover(activity, cover);
+export function getIgnoreCover(activity, cover, targetDoc = null ) {
+    return ignoresCover(activity, cover, targetDoc);
 }
 
 /**
@@ -66,7 +67,7 @@ export function getIgnoreCover(activity, cover) {
  * @returns {LosResult}                            The LoS result and sampled target points.
  */
 function getLOS(attackerDoc, targetDoc, ctx = null) {
-    const s = canvas?.scene;
+    const s = targetDoc?.parent ?? canvas?.scene;
     if (!s) return null;
 
     ctx ??= buildCoverContext(s);
@@ -149,7 +150,7 @@ export function getCover({ attacker, target, scene = canvas?.scene, debug = null
     }
 
     if (activity) {
-        const { cover: desiredCover, bonus: desiredBonus } = getIgnoreCover(activity, result?.cover ?? "none");
+        const { cover: desiredCover, bonus: desiredBonus } = getIgnoreCover(activity, result?.cover ?? "none", targetDoc?.actor);
         result.cover = desiredCover;
         result.bonus = desiredBonus;
     }
@@ -211,7 +212,7 @@ export function getCoverForTargets({ attacker, targets = null, scene = canvas?.s
         }
 
         if (activity) {
-            const { cover: desiredCover, bonus: desiredBonus } = getIgnoreCover(activity, result?.cover ?? "none");
+            const { cover: desiredCover, bonus: desiredBonus } = getIgnoreCover(activity, result?.cover ?? "none", targetDoc?.actor);
             result.cover = desiredCover;
             result.bonus = desiredBonus;
         }
@@ -230,6 +231,32 @@ export function getCoverForTargets({ attacker, targets = null, scene = canvas?.s
     }
 
     return out;
+}
+
+/**
+ * Add a note (icon + label + hint) to the next Roll Configuration Dialog for this roll workflow.
+ *
+ * @param {object} dialogConfig                 The dialog configuration object provided by DnD5e pre-roll V2 hooks.
+ * @param {object} [note={}]                    The note definition.
+ * @param {string} [note.icon=""]               A Font Awesome class string, e.g. `"fa-solid fa-circle-info"`.
+ * @param {string} [note.label=""]              The note label text, e.g. `"Half Cover"`.
+ * @param {string} [note.hint=""]               The hint HTML/text, e.g. `"+2 to save rolls."`.
+ * @returns {void}
+ */
+export function setDialogNote(dialogConfig, { icon = "", label = "", hint = "" } = {}) {
+    if (!dialogConfig) return;
+
+    dialogConfig.options ??= {};
+    const data = (dialogConfig.options[MODULE_ID] ??= {});
+    data.notes ??= [];
+
+    data.notes.push({
+        icon: String(icon ?? ""),
+        label: String(label ?? ""),
+        hint: String(hint ?? "")
+    });
+
+    data.rendered = false;
 }
 
 /**
@@ -272,6 +299,7 @@ export function initApi() {
         getIgnoreCover,
         getLOS,
         getTokenTokenDistance,
+        setDialogNote,
     };
 
     const mod = game.modules.get(MODULE_ID);

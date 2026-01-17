@@ -1,6 +1,6 @@
 import { MODULE_ID, COVER, SETTING_KEYS } from "../config/constants.config.mjs";
 import { clearCoverStatusEffect } from "../services/cover.service.mjs";
-import { getCover, getCoverForTargets, getIgnoreCover } from "../utils/api.mjs";
+import { getCover, getCoverForTargets, getIgnoreCover, setDialogNote } from "../utils/api.mjs";
 import { clearCoverDebug } from "../services/cover.debug.mjs";
 import { toggleCoverEffectViaGM } from "../services/queries.service.mjs";
 
@@ -95,6 +95,18 @@ export function onPreRollAttack(config, dialog, message) {
       adjustMessageTargetAC(message, targetActor.uuid, null);
       if (targets.length === 1) config.target = null;
     }
+
+    const coverHints = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.COVER_HINTS);
+
+    if (desiredCover !== "none" && coverHints) {
+      const coverPrefix = `${game.i18n.localize(COVER.I18N.LABEL_PREFIX_KEY)}`;
+      const hint = game.i18n.localize(COVER.I18N.HINT_KEYS.Attack[desiredCover]);
+      setDialogNote(dialog, {
+        icon: COVER.FA_ICONS[desiredCover],
+        label: coverPrefix,
+        hint: hint
+      });
+    }
   }
 };
 
@@ -170,6 +182,18 @@ export function onPreRollSavingThrow(config, dialog, message) {
   else if (typeof desiredBonus === "number" && Number.isFinite(desiredBonus)) {
     addSaveBonus(desiredBonus);
   }
+
+  const coverHints = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.COVER_HINTS);
+
+  if (desiredCover !== "none" && coverHints && isDex) {
+    const coverPrefix = `${game.i18n.localize(COVER.I18N.LABEL_PREFIX_KEY)}`;
+    const hint = game.i18n.localize(COVER.I18N.HINT_KEYS.Save[desiredCover]);
+    setDialogNote(dialog, {
+      icon: COVER.FA_ICONS[desiredCover],
+      label: coverPrefix,
+      hint: hint
+    });
+  }
 }
 
 /**
@@ -181,6 +205,7 @@ export function onPreRollSavingThrow(config, dialog, message) {
  */
 export async function clearCoverOnUpdateCombat(combat, update) {
   try {
+    if (game.settings.get(MODULE_ID, SETTING_KEYS.LIBRARY_MODE)) return;
     if (!game.users.activeGM?.isSelf) return;
     if (!game.settings.get(MODULE_ID, SETTING_KEYS.RMV_ON_COMBAT)) return;
 
@@ -205,6 +230,7 @@ export async function clearCoverOnUpdateCombat(combat, update) {
  */
 export async function clearCoverOnMovement(token, movement, operation, user) {
   try {
+    if (game.settings.get(MODULE_ID, SETTING_KEYS.LIBRARY_MODE)) return;
     if (!game.users.activeGM?.isSelf) return;
     if (!game.settings.get(MODULE_ID, SETTING_KEYS.RMV_ON_MOVE)) return;
 
@@ -229,6 +255,7 @@ export async function clearCoverOnMovement(token, movement, operation, user) {
  */
 export async function clearCoverOnDeleteCombat(combat) {
   try {
+    if (game.settings.get(MODULE_ID, SETTING_KEYS.LIBRARY_MODE)) return;
     if (!game.users.activeGM?.isSelf) return;
     if (!game.settings.get(MODULE_ID, SETTING_KEYS.RMV_ON_COMBAT)) return;
 

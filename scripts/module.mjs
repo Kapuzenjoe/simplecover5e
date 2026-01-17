@@ -11,6 +11,7 @@ import { initQueries } from "./services/queries.service.mjs";
 import { clearCoverDebug } from "./services/cover.debug.mjs";
 import { onHoverToken } from "./services/hover.service.mjs";
 import { initApi } from "./utils/api.mjs";
+import { onRenderRollConfigurationDialog } from "./services/dialog.service.mjs"
 
 // === Init Phase ===
 Hooks.once("init", () => {
@@ -31,6 +32,7 @@ for (const [hook, fn] of [
   ["dnd5e.preRollAttack", onPreRollAttack],
   ["dnd5e.preRollSavingThrow", onPreRollSavingThrow],
   ["hoverToken", onHoverToken],
+  ["renderRollConfigurationDialog", onRenderRollConfigurationDialog],
 ]) {
   Hooks.on(hook, fn);
 }
@@ -41,7 +43,10 @@ Hooks.once("dae.setupComplete", () => {
   const fields = [
     "flags.simplecover5e.ignoreAllCover",
     "flags.simplecover5e.ignoreHalfCover",
-    "flags.simplecover5e.ignoreThreeQuartersCover"
+    "flags.simplecover5e.ignoreThreeQuartersCover",
+    "flags.simplecover5e.upgradeCover.all",
+    "flags.simplecover5e.upgradeCover.attack",
+    "flags.simplecover5e.upgradeCover.save"
   ];
 
   window.DAE?.addAutoFields?.(fields);

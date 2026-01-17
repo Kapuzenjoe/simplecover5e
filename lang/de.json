@@ -137,11 +137,35 @@
                     "Measurement": "Messregeln",
                     "Engine": "Engine Regeln"
                 }
+            },
+            "automationMenu": {
+                "Name": "Deckungsautomation",
+                "Label": "Deckungsautomation konfigurieren",
+                "Hint": "Lege fest, wie Simple Cover 5e Automationen durchführt und welche Informationen in Wurf-Dialogen angezeigt werden. Wenn der Library Mode aktiv ist, sind alle Automationen deaktiviert und dieses Menü ist gesperrt.",
+                "Groups": {
+                    "General": "Automation"
+                },
+                "LibraryModeWarning": "Library Mode ist aktiv. Automationen sind deaktiviert. Siehe Wiki: https://github.com/Kapuzenjoe/simplecover5e/wiki/API-(Library-Mode). Einige Module können den Library Mode automatisch aktivieren (z. B. Midi-QOL)."
             }
         },
         "Controls": {
             "ClearCover": {
                 "Title": "Deckung-Effekte entfernen"
+            }
+        },
+        "Dialog": {
+            "Legend": "Hinweise"
+        },
+        "CoverHint": {
+            "Attack": {
+                "half": "Das Ziel erhält durch <strong>halbe Deckung</strong> einen <strong>+2</strong>-Bonus auf die RK.",
+                "threeQuarters": "Das Ziel erhält durch <strong>dreiviertel Deckung</strong> einen <strong>+5</strong>-Bonus auf die RK.",
+                "total": "Das Ziel hat <strong>vollständige Deckung</strong> und kann nicht direkt als Ziel gewählt werden."
+            },
+            "Save": {
+                "half": "Du erhältst durch <strong>halbe Deckung</strong> einen <strong>+2</strong>-Bonus auf diesen Geschicklichkeitsrettungswurf.",
+                "threeQuarters": "Du erhältst durch <strong>dreiviertel Deckung</strong> einen <strong>+5</strong>-Bonus auf diesen Geschicklichkeitsrettungswurf.",
+                "total": "Mit <strong>vollständiger Deckung</strong> kannst du nicht direkt als Ziel gewählt werden."
             }
         }
     }
