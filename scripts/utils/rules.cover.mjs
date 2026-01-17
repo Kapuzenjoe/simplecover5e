@@ -29,6 +29,11 @@ export function ignoresCover(activity, cover = "none", targetActor = null) {
     return c;
   };
 
+  const upgradeTwice = (c) => {
+    if (c === "half") return "total";
+    return c;
+  };
+
   const hasFeat = (name, identifier) => {
     return Boolean(
       items?.getName?.(name) ||
@@ -42,14 +47,14 @@ export function ignoresCover(activity, cover = "none", targetActor = null) {
   if (targetActor) {
     const upgradeFlags = targetActor.flags?.simplecover5e?.upgradeCover;
 
-    const upgrade =
-      upgradeFlags?.all ||
-      (upgradeFlags?.attack && activity?.type === "attack") ||
-      (upgradeFlags?.save && activity?.type === "save");
+    const upgrade = Math.max(
+      Number(upgradeFlags?.all ?? 0),
+      activity?.type === "attack" ? Number(upgradeFlags?.attack ?? 0) : 0,
+      activity?.type === "save" ? Number(upgradeFlags?.save ?? 0) : 0
+    );
 
-    if (upgrade) {
-      effectiveCover = upgradeOnce(effectiveCover);
-    }
+    if (upgrade === 1) effectiveCover = upgradeOnce(effectiveCover);
+    else if (upgrade === 2) effectiveCover = upgradeTwice(effectiveCover);
   }
 
   // ------------------------------------------------------------
@@ -87,6 +92,13 @@ export function ignoresCover(activity, cover = "none", targetActor = null) {
       if (wand?.system?.equipped === true && wand?.system?.attuned === true) {
         effectiveCover = "none";
       }
+    }
+  }
+
+  if (activity?.type === "save" && effectiveCover !== "none") {
+    const sacredFlame = item?.name === "Sacred Flame" || item?.system?.identifier === "sacred-flame"
+    if (effectiveCover !== "total" && sacredFlame) {
+      effectiveCover = "none";
     }
   }
 

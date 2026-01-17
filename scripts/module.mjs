@@ -43,7 +43,10 @@ Hooks.once("dae.setupComplete", () => {
   const fields = [
     "flags.simplecover5e.ignoreAllCover",
     "flags.simplecover5e.ignoreHalfCover",
-    "flags.simplecover5e.ignoreThreeQuartersCover"
+    "flags.simplecover5e.ignoreThreeQuartersCover",
+    "flags.simplecover5e.upgradeCover.all",
+    "flags.simplecover5e.upgradeCover.attack",
+    "flags.simplecover5e.upgradeCover.save"
   ];
 
   window.DAE?.addAutoFields?.(fields);
