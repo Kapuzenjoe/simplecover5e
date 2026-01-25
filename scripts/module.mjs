@@ -9,8 +9,8 @@ import {
 } from "./handlers/cover.hooks.mjs";
 import { initQueries } from "./services/queries.service.mjs";
 import { clearCoverDebug } from "./services/cover.debug.mjs";
-import { onHoverToken } from "./services/hover.service.mjs";
-import { initApi } from "./utils/api.mjs";
+import { onHoverToken, onPreDeleteToken } from "./services/hover.service.mjs";
+import { initApi, readyApi } from "./utils/api.mjs";
 import { onRenderRollConfigurationDialog } from "./services/dialog.service.mjs"
 
 // === Init Phase ===
@@ -21,6 +21,7 @@ Hooks.once("init", () => {
   initApi();
 });
 
+Hooks.once("ready", readyApi);
 Hooks.once("canvasReady", clearCoverDebug);
 Hooks.on("getSceneControlButtons", getSceneControlButtons);
 
@@ -33,6 +34,7 @@ for (const [hook, fn] of [
   ["dnd5e.preRollSavingThrow", onPreRollSavingThrow],
   ["hoverToken", onHoverToken],
   ["renderRollConfigurationDialog", onRenderRollConfigurationDialog],
+  ["preDeleteToken", onPreDeleteToken],
 ]) {
   Hooks.on(hook, fn);
 }

@@ -10,6 +10,8 @@ export async function onRenderRollConfigurationDialog(dialog, html) {
     const notes = await prepareNotes(dialog);
     if (!notes) return;
 
+    html.querySelector('fieldset[data-simplecover5e="dialog-notes"]')?.remove();
+
     const configFieldset = html.querySelector('fieldset[data-application-part="configuration"]');
     configFieldset?.after(notes);
 

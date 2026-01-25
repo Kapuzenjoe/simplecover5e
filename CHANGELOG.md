@@ -1,5 +1,12 @@
 # Changelog
 
+## Version 1.4.1
+
+- Prevented duplicate SimpleCover5e dialog notes fieldsets by removing any existing `dialog-notes` fieldset before injecting the notes during dialog render.
+- Removed hover labels from deleted tokens (if present) (#23).
+- Added support for the **Rideable** module. Tokens on rideables are no longer blocked by the rideable itself (#24).
+- The `Hooks.on("simplecover5eReady", (api) => {}` hook is now fired during Foundry VTT’s `ready` phase instead of `init`.
+
 ## Version 1.4.0
 
 This may be the last larger update before Foundry VTT v14. In V14, I plan to directly support the core scene level. I'm keeping the future integration of the wall-height module open for now, and I may further optimize the occluder algorithm (for example by using pseudo-walls).

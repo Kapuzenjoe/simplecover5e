@@ -100,5 +100,9 @@ export function isBlockingCreatureToken(token) {
   if (statuses.has("dead")) return false;
   if (actor.system?.attributes?.hp?.max === 0) return false;
 
+  if (game.modules?.get?.("Rideable")?.active) {
+    if (doc.flags?.Rideable?.RidersFlag?.length > 0) return false
+  }
+
   return true;
 }
