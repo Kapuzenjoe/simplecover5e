@@ -54,7 +54,7 @@ function registerLibraryModeSetting() {
  * @returns {{ CoverLevel, bonus: (number|null) }} The effective cover level and its corresponding bonus.
  *
  */
-export function getIgnoreCover(activity, cover, targetDoc = null ) {
+export function getIgnoreCover(activity, cover, targetDoc = null) {
     return ignoresCover(activity, cover, targetDoc);
 }
 
@@ -306,5 +306,15 @@ export function initApi() {
     if (mod) {
         mod.api = api;
     }
+}
+
+/**
+* Fire the module-ready API hook.
+*
+* @returns {void}
+*/
+export function readyApi() {
+    const api = game.modules.get(MODULE_ID)?.api;
+    if (!api) return;
     Hooks.callAll("simplecover5eReady", api);
 }

@@ -18,6 +18,19 @@ function removeHoverDecorations(token) {
 }
 
 /**
+ * A hook that is called after a Token is deleted.
+ * 
+ * @function preDeleteToken
+ * @memberof hookEvents
+ * @param {TokenDocument5e} td      The token being deleted
+ * @param {Object} options          Additional options
+ * @param {String} userId           The initiating User's ID
+ */
+export function onPreDeleteToken(td, options, userId){
+  removeHoverDecorations(td?.object)
+}
+
+/**
  * Update hover UI for a token by showing cover and/or distance from the single controlled token.
  * The output is client-side only and controlled by the HOVER setting.
  *
