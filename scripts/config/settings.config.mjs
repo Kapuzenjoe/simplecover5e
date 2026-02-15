@@ -287,6 +287,13 @@ const SETTINGS = [
     }),
     requiresReload: false,
     config: false
+  },
+  {
+    key: SETTING_KEYS.LIBRARY_MODE,
+    name: "SIMPLE_COVER_5E.Settings.LibraryMode.Name",
+    hint: "SIMPLE_COVER_5E.Settings.LibraryMode.Hint",
+    type: new foundry.data.fields.BooleanField({ initial: false }),
+    requiresReload: true,
   }
 ];
 

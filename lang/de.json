@@ -98,6 +98,10 @@
                 "Name": "Deckung-Debug-Linien anzeigen",
                 "Hint": "Zeichnet Hilfslinien während der Deckung-Berechnung zwischen Figuren (zum Debugging/Fehlerbeheben)."
             },
+            "LibraryMode": {
+                "Name": "[VORSICHT] Bibliotheksmodus aktivieren",
+                "Hint": "Der Bibliotheksmodus deaktiviert die Deckungs-Automatisierungsfunktionen von SimpleCover5e. Aktiviere ihn nur, wenn du den Bibliotheksmodus ausdrücklich benötigst oder wenn ein anderes Modul die Automatisierung für dich übernimmt (z. B. Midi-QOL). Einige Module können den Bibliotheksmodus automatisch aktivieren. Dokumentation: https://github.com/Kapuzenjoe/simplecover5e/wiki/API-(Library-Mode)."
+            },
             "CreatureHeights": {
                 "Name": "Standard-Kreaturenhöhen",
                 "Hint": "Standard-Kreaturenhöhen (in Rastereinheiten) je Größenkategorie, die für die 3D-Deckungsberechnung verwendet werden. Wenn das Modul \"Wall Height\" aktiv ist, werden diese Vorgaben ignoriert und stattdessen die Höhen aus diesem Modul übernommen."

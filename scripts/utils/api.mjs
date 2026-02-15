@@ -32,20 +32,6 @@ import { measureTokenDistance } from "../utils/distance.mjs";
  */
 
 /**
- * Register the library mode setting for this module.
- */
-function registerLibraryModeSetting() {
-    if (game.settings.settings.has(`${MODULE_ID}.${SETTING_KEYS.LIBRARY_MODE}`)) return;
-
-    game.settings.register(MODULE_ID, SETTING_KEYS.LIBRARY_MODE, {
-        scope: "world",
-        config: false,
-        type: Boolean,
-        default: false,
-    });
-}
-
-/**
  * Resolve the effective cover level for an activity, including ignore-cover rules.
  *
  * @param {Activity5e} activity                         The activity being evaluated.
@@ -289,7 +275,6 @@ async function setLibraryMode(enabled) {
  * @returns {void}
  */
 export function initApi() {
-    registerLibraryModeSetting();
 
     const api = {
         getCover,

@@ -102,6 +102,10 @@
         "Name": "Show Cover Debug Lines",
         "Hint": "Draw helper lines while computing cover between tokens (for debugging/troubleshooting)."
       },
+      "LibraryMode": {
+        "Name": "[CAUTION] Enable Library Mode",
+        "Hint": "Library Mode disables Simple Cover 5e cover automation features. Enable this only if you explicitly need Library Mode or if another module handles automation for you (e.g., Midi-QOL). Some modules may enable Library Mode automatically. Documentation: https://github.com/Kapuzenjoe/simplecover5e/wiki/API-(Library-Mode)."
+      },
       "CreatureHeights": {
         "Name": "Default Creature Heights",
         "Hint": "Default creature heights (in Grid Units) per size category used for 3D cover evaluation. When the \"Wall Height\" module is active, these defaults are ignored and heights are taken from that module instead."
