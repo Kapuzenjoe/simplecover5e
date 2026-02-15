@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 1.4.2
+
+- Library Mode can now be enabled/disabled directly from the Settings menu. (#26)
+- Reworked wall collision detection for edge cases: a (configured inset) corner used for attacker/target cover calculation must now have LoS to the corresponding token center; corners blocked by a wall are automatically treated as blocked. These corners may still show up in debug visuals for some 3/4 cover cases (e.g., if no other corner has at least two non-blocked lines and it was the last corner checked).
+
 ## Version 1.4.1
 
 - Prevented duplicate SimpleCover5e dialog notes fieldsets by removing any existing `dialog-notes` fieldset before injecting the notes during dialog render.

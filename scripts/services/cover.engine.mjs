@@ -307,8 +307,8 @@ function wallsBlock(aCorner, bCorner, attackerDoc, targetDoc, ctx, losCheck = fa
 
     let collisions = collide(A, B);
 
-    if (!collisions.length && aCorner.raw) collisions = collide(aCorner.raw, A);
-    if (!collisions.length && bCorner.raw) collisions = collide(bCorner.raw, B);
+    if (!collisions.length) collisions = collide(A, attackerDoc.getCenterPoint());
+    if (!collisions.length) collisions = collide(B, targetDoc.getCenterPoint());
     if (!collisions.length) {
         return { blocked: false, A, B };
     }
