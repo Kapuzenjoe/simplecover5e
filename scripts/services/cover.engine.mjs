@@ -1,4 +1,5 @@
 import { MODULE_ID, DEFAULT_SIZE, COVER, BASE_KEYS, SETTING_KEYS, GRID_MODES, getGridMode } from "../config/constants.config.mjs";
+import { getSizeKey, getCreatureHeight, isWallHeightModuleActive, getTokenDimensions } from "../utils/engine.helper.mjs"
 
 /**
  * @typedef {"none"|"half"|"threeQuarters"|"total"} CoverLevel
@@ -27,16 +28,6 @@ import { MODULE_ID, DEFAULT_SIZE, COVER, BASE_KEYS, SETTING_KEYS, GRID_MODES, ge
  * 
  * @typedef {{x:number, y:number, elevation?:number}} Position
  */
-
-
-/**
- * Check whether the wall-height module is active.
- *
- * @returns {boolean}                              True if the wall-height module is currently active.
- */
-function isWallHeightModuleActive() {
-    return game.modules?.get?.("wall-height")?.active === true;
-}
 
 /**
  * Build a cover evaluation context for a single pass.
@@ -78,66 +69,6 @@ export function buildCoverContext(scene) {
 }
 
 /**
- * Get the size key for a token's actor as a normalized string.
- *
- * @param {TokenDocument|Position} td           The token document OR a generic position {x,y,elevation?}..
- * @returns {string|null}                       The size key ("tiny", "sm", "med", "lg", "huge", "grg") or null.
- */
-function getSizeKey(td) {
-    const size = td?.actor?.system?.traits?.size;
-    return size ? String(size).toLowerCase() : null;
-}
-
-/**
- * Get the creature height in gridSize for a token document.
- * If wall-height is active, the token's LoS height is used when available.
- *
- * @param {TokenDocument|Position} td             The token document OR a generic position {x,y,elevation?}.
- * @param {CoverContext} ctx                      The cover evaluation context.
- * @returns {number}                              The creature height in gridSize or 0.
- */
-function getCreatureHeight(td, ctx) {
-    if (!td?.actor) return 0;
-
-    if (isWallHeightModuleActive()) {
-        const token = td?.object;
-        if (!token) return 0;
-
-        const elevation = Number(td.elevation ?? 0);
-        const losHeight = token ? Number(token.losHeight) : NaN;
-
-        if (Number.isFinite(losHeight)) {
-            const diff = losHeight - elevation;
-            if (diff > 0) {
-                const height = Math.ceil(diff * 100) / 100;
-                if (Number.isFinite(height)) {
-                    return height;
-                }
-            }
-        }
-    }
-    const key = getSizeKey(td);
-    if (!key) return 0;
-
-    return ctx.size?.[key] ?? 0;
-}
-
-/**
- * Compute pixel dimensions and center point for a token relative to the scene grid.
- *
- * @param {TokenDocument} td                     Token document to measure.
- * @param {Grid} grid                            Scene grid instance.
- * @returns {{width:number,height:number,centerX:number,centerY:number}}    Token dimensions in pixels.
- */
-function getTokenDimensions(td, grid) {
-    const width = (td.width ?? 1) * grid.size;
-    const height = (td.height ?? 1) * grid.size;
-    const centerX = td.x + width / 2;
-    const centerY = td.y + height / 2;
-    return { width, height, centerX, centerY };
-}
-
-/**
  * Build one or more 3D occluder prisms for a creature token.
  * The prism shape depends on grid mode and token-shape settings (e.g., gridless circle uses an inscribed AABB).
  *
@@ -146,6 +77,7 @@ function getTokenDimensions(td, grid) {
  * @returns {Array<{minX:number,minY:number,maxX:number,maxY:number,minZ:number,maxZ:number}>} The occluder prisms (AABBs) in canvas pixel space.
  */
 export function buildCreaturePrism(td, ctx) {
+    // toDO: rework build process
     const { grid, half, insetOccluderPx, pxPerGridSize } = ctx;
     const zMin = (td.elevation ?? 0) * pxPerGridSize;
     let height = getCreatureHeight(td, ctx);
@@ -298,22 +230,30 @@ function wallsBlock(aCorner, bCorner, attackerDoc, targetDoc, ctx, losCheck = fa
     const debugOn = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.DEBUG);
     const activeGM = game.users?.activeGM;
 
-    const collide = (P, Q) =>
+    const levelId = attackerDoc?.level ?? targetDoc?.level ?? canvas.level?.id;
+
+    const wallCollide = (P, Q) =>
         backend.testCollision(P, Q, {
             type: "sight",
             mode: "all",
             useThreshold: true
         }) || [];
 
-    let collisions = collide(A, B);
+    const surfaceCollide = (P, Q) => {
+        if (!levelId) return false;
+        return canvas.scene.testSurfaceCollision(P, Q, { type: "sight", mode: "any", level: levelId });
+    };
 
-    if (!collisions.length && aCorner.raw) collisions = collide(aCorner.raw, A);
-    if (!collisions.length && bCorner.raw) collisions = collide(bCorner.raw, B);
-    if (!collisions.length) {
+    let collisions = wallCollide(A, B);
+    let surfaceBlocked = surfaceCollide(A, B);
+
+    if (!collisions.length && (typeof attackerDoc.getCenterPoint === "function")) collisions = wallCollide(A, attackerDoc.getCenterPoint());
+    if (!collisions.length) collisions = wallCollide(B, targetDoc.getCenterPoint()); // wait for https://github.com/foundryvtt/foundryvtt/issues/4509
+    if (!collisions.length && !surfaceBlocked) {
         return { blocked: false, A, B };
     }
 
-    if (!wallHeightActive) {
+    if (!wallHeightActive) { // wall-height obsolet in V14??
         return { blocked: true, A, B };
     }
 
@@ -592,9 +532,10 @@ function buildBoxCorners(center, radius, insetPx) {
         const L = Math.hypot(vx, vy) || 1;
         const inset = {
             x: raw.x - (vx / L) * insetPx,
-            y: raw.y - (vy / L) * insetPx
+            y: raw.y - (vy / L) * insetPx,
+            elevation: center?.elevation ?? 0
         };
-        return { raw, inset };
+        return { raw, inset }; // toDo: Remove RAW
     });
 }
 
@@ -639,7 +580,8 @@ function buildHexCorners(center, insetPx, ctx, scale = 1) {
 
         const inset = {
             x: raw.x - (vx / L) * insetPx,
-            y: raw.y - (vy / L) * insetPx
+            y: raw.y - (vy / L) * insetPx,
+            elevation: center?.elevation ?? 0
         };
         return { raw, inset };
     });
@@ -680,7 +622,8 @@ function buildCircleCorners(center, radius, insetPx) {
 
         const inset = {
             x: raw.x - (vx / L) * insetPx,
-            y: raw.y - (vy / L) * insetPx
+            y: raw.y - (vy / L) * insetPx,
+            elevation: center?.elevation ?? 0
         };
 
         corners.push({ raw, inset });
@@ -758,7 +701,8 @@ function getHexCellInnerRect(center, ctx) {
  * @param {string} sizeKey                        The normalized size key for the token.
  * @returns {Array<{raw:{x:number,y:number}, inset:{x:number,y:number}}>|null} The inset corners for this center.
  */
-function buildTokenCornersForCenter(center, radius, insetPx, gridMode, useCircleShape, ctx, sizeKey) {
+function buildTokenCornersForCenter(center, insetPx, gridMode, useCircleShape, ctx, sizeKey) {
+    const radius = (sizeKey === "tiny") ? ctx.half / 2 : ctx.half
     if (sizeKey === null) return [{ raw: null, inset: { x: center?.x, y: center?.y } }];
 
     if (gridMode === GRID_MODES.HEX) {
@@ -839,18 +783,22 @@ function addBigCircleDebug(td, sizeKey, bucket, ctx) {
  * @param {{debug?:boolean}} [options]            Optional flags (e.g. debug shape output).
  * @returns {{cover: "none"|"half"|"threeQuarters", bonus: 0|2|5|null, debugSegments?:Array, debugTokenShapes?:object}} The cover result and optional debug data.
  *
- * // TODO (Foundry v14+): consider core LoS/occlusion helpers once available.
  */
 export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options = {}) {
     const debug = !!options.debug;
-    const { gridMode, half } = ctx;
+    const { gridMode } = ctx;
+
+    const isGridless = gridMode === GRID_MODES.GRIDLESS;
+    const useCircleShape = isGridless && ctx.gridlessTokenShape === "circle";
+    const isHexGrid = gridMode === GRID_MODES.HEX;
+    const isCircleMode = useCircleShape;
 
     const debugTokenShapes = debug ? { attacker: [], target: [], occluders: [] } : null;
 
     const creaturePrisms = ctx.creaturePrisms;
     const attackerId = attackerDoc?.object?.id ?? null;
     const targetId = targetDoc?.object?.id;
-    const boxes = collectOccluderBoxes(creaturePrisms, attackerId, targetId, debugTokenShapes);
+    const boxes = collectOccluderBoxes(creaturePrisms, attackerId, targetId, debugTokenShapes); // Add Broadcast Ray to limit tokens 
 
     const attackerZ = (attackerDoc?.elevation ?? 0) * ctx.pxPerGridSize + 0.1;
     const targetZ = (targetDoc.elevation ?? 0) * ctx.pxPerGridSize + 0.1;
@@ -858,28 +806,30 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
     const attackerSizeKey = getSizeKey(attackerDoc);
     const targetSizeKey = getSizeKey(targetDoc);
 
-    const attackerSamples = getTokenSampleCenters(attackerDoc, ctx);
-    const targetSamples = getTokenSampleCenters(targetDoc, ctx);
 
-    const attackerRadius = attackerSizeKey === "tiny" ? half * 0.5 : half;
-    const targetRadius = targetSizeKey === "tiny" ? half * 0.5 : half;
+    //const attackerSamples = getTokenSampleCenters(attackerDoc, ctx); /
+    let attackerSamples = attackerDoc.getTestPoints();
+    // const targetSamples = getTokenSampleCenters(targetDoc, ctx); 
+    let targetSamples = targetDoc.getTestPoints();
+
+    if (isCircleMode) { // workaround
+        attackerSamples = pullOnlyOuterCorners(attackerDoc, attackerSamples, 0.30);
+        targetSamples = pullOnlyOuterCorners(targetDoc, targetSamples, 0.30);
+    }
+    // V14 getGridSpacePolygon() ShapePoints from snapped position (getSnappedPosition()) 
+    // https://github.com/foundryvtt/foundryvtt/issues/13736  Constrain getTestPoints() by Walls/Surfaces
+
 
     const creaturesHalfOnly = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.CREATURES_HALF_ONLY);
 
     let best = { reachable: -1, coverLevel: 2, segs: [] };
 
-    const isGridless = gridMode === GRID_MODES.GRIDLESS;
-    const useCircleShape = isGridless && ctx.gridlessTokenShape === "circle";
-    const isHexGrid = gridMode === GRID_MODES.HEX;
-    const isCircleMode = useCircleShape;
-
     if (debugTokenShapes && useCircleShape) {
         addBigCircleDebug(attackerDoc, attackerSizeKey, debugTokenShapes.attacker, ctx);
         addBigCircleDebug(targetDoc, targetSizeKey, debugTokenShapes.target, ctx);
     }
-
     for (const tCenter of targetSamples) {
-        const tgtCorners = buildTokenCornersForCenter(tCenter, targetRadius, ctx.insetTargetPx, gridMode, useCircleShape, ctx, targetSizeKey);
+        const tgtCorners = buildTokenCornersForCenter(tCenter, ctx.insetTargetPx, gridMode, useCircleShape, ctx, targetSizeKey);
         if (!tgtCorners || !tgtCorners.length) continue;
 
         if (debugTokenShapes) {
@@ -893,7 +843,7 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
         const totalLinesForThisTarget = tgtCorners.length;
 
         for (const aCenter of attackerSamples) {
-            const atkCorners = buildTokenCornersForCenter(aCenter, attackerRadius, ctx.insetAttackerPx, gridMode, useCircleShape, ctx, attackerSizeKey);
+            const atkCorners = buildTokenCornersForCenter(aCenter, ctx.insetAttackerPx, gridMode, useCircleShape, ctx, attackerSizeKey);
             if (!atkCorners || !atkCorners.length) continue;
 
             if (debugTokenShapes) {
@@ -910,6 +860,7 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
                 const segs = [];
 
                 for (const tCorner of tgtCorners) {
+                    // toDO: remove attackerZ/targetZ
                     const wallResult = wallsBlock(aCorner, tCorner, attackerDoc, targetDoc, ctx);
                     const wBlocked = wallResult.blocked;
 
@@ -981,7 +932,7 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
 
 /**
  * Evaluate whether an attacker has line of sight (LoS) to a target, considering walls only.
- * The test samples a 3×3 grid around the target center using Foundry-like tolerance and reports which points are blocked.
+ * The test samples a 3×3 grid around the targets Test points using Foundry-like tolerance and reports which points are blocked.
  *
  * @param {TokenDocument|Position} attackerDoc    The attacking token document OR a generic position {x,y,elevation?}.
  * @param {TokenDocument} targetDoc               The target token document.
@@ -989,49 +940,54 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
  * @returns {LosResult}                           The LoS result and sampled target points.
  */
 export function evaluateLOS(attackerDoc, targetDoc, ctx) {
-    const targetToken = targetDoc?.object;
-    const attackerToken = attackerDoc?.object;
+    if (!attackerDoc || !targetDoc) return { hasLOS: true, targetLosPoints: [] };
+    const debugOn = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.DEBUG);
 
-    if (!attackerDoc || !targetToken) return { hasLOS: true, targetLosPoints: [] };
+    const origin = (typeof attackerDoc.getVisionOrigin === "function") ? attackerDoc.getVisionOrigin() : { x: attackerDoc.x, y: attackerDoc.y, elevation: attackerDoc.elevation ?? 0 };
 
-    const targetCenter = { x: targetToken.center.x, y: targetToken.center.y };
-    const origin = attackerToken ? { x: attackerToken.center.x, y: attackerToken.center.y } : { x: attackerDoc.x, y: attackerDoc.y };
-
-    const gridSize = ctx?.grid?.size ?? 0;
-    const wPx = (Number(targetDoc.width ?? 1) || 1) * gridSize;
-    const hPx = (Number(targetDoc.height ?? 1) || 1) * gridSize;
-    const tol = Math.min(wPx, hPx) / 4;
-
-    const t = Number.isFinite(tol) && tol > 0 ? tol : 0;
-
-    const offsets = [
-        { x: 0, y: 0 },
-        { x: -t, y: -t },
-        { x: -t, y: t },
-        { x: t, y: t },
-        { x: t, y: -t },
-        { x: -t, y: 0 },
-        { x: t, y: 0 },
-        { x: 0, y: -t },
-        { x: 0, y: t }
-    ];
-
-    const targetPoints = offsets.map(o => ({ x: targetCenter.x + o.x, y: targetCenter.y + o.y }));
+    const tolerance = canvas.grid.size / 4;
+    const base = targetDoc.getTestPoints();
+    const cfg = canvas.visibility._createVisibilityTestConfig(base, { tolerance, object: targetDoc.object });
+    const targetPoints = cfg.tests.map(t => t.point);
+    // toDO: for better performance reduce targetPoints 
 
     const targetLosPoints = [];
     let hasLOS = false;
     const losCheck = true;
+    const originPoint = { raw: null, inset: origin };
 
     for (const p of targetPoints) {
-        const originPoint = { raw: null, inset: origin };
         const targetPoint = { raw: null, inset: p };
         const wallResult = wallsBlock(originPoint, targetPoint, attackerDoc, targetDoc, ctx, losCheck);
         targetLosPoints.push({ x: p.x, y: p.y, blocked: wallResult.blocked });
-        if (!wallResult.blocked) hasLOS = true;
+
+        if (!wallResult.blocked) {
+            hasLOS = true;
+            if (!debugOn) break;
+        }
     }
 
     return {
         hasLOS,
         targetLosPoints
     };
+}
+
+
+function pullOnlyOuterCorners(tokenDoc, points, pull = 0.30, eps = 0.5) {
+    const c = tokenDoc.getCenterPoint();
+    const xs = points.map(p => p.x), ys = points.map(p => p.y);
+    const minX = Math.min(...xs), maxX = Math.max(...xs);
+    const minY = Math.min(...ys), maxY = Math.max(...ys);
+
+    const near = (a, b) => Math.abs(a - b) <= eps;
+    const isCorner = (p) =>
+        (near(p.x, minX) || near(p.x, maxX)) &&
+        (near(p.y, minY) || near(p.y, maxY));
+
+    return points.map(p => isCorner(p) ? ({
+        ...p,
+        x: p.x + pull * (c.x - p.x),
+        y: p.y + pull * (c.y - p.y),
+    }) : p);
 }

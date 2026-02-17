@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.0.0
+
+- **LoS check** now uses the new V14 `getTestPoints()` function with `_createVisibilityTestConfig` and `tolerance = canvas.grid.size / 4`, bringing LoS closer to Foundry’s vision check and including elevation test points. To offset the higher cost, an **early break** was added (disabled when Debug Mode is enabled).
+- Extends the existing workaround for **foundryvtt/foundryvtt#4509** (originally introduced in **v1.4.2**): a clipping token is treated as **not in LoS** if any target test point lacks LoS to its own target center.
+- Use tokenDoc.shape (CONST.TOKEN_SHAPES 0=circle, ) (shapes are diffrent from grid mode) for Circle/Rect mode on gridless maps instead of a setting
+
+## Version 1.4.2
+
+- Library Mode can now be enabled/disabled directly from the Settings menu. (#26)
+- Reworked wall collision detection for edge cases: a (configured inset) corner used for attacker/target cover calculation must now have LoS to the corresponding token center; corners blocked by a wall are automatically treated as blocked. These corners may still show up in debug visuals for some 3/4 cover cases (e.g., if no other corner has at least two non-blocked lines and it was the last corner checked).
+
 ## Version 1.4.1
 
 - Prevented duplicate SimpleCover5e dialog notes fieldsets by removing any existing `dialog-notes` fieldset before injecting the notes during dialog render.
