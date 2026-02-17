@@ -32,10 +32,9 @@
     }
   ],
   "compatibility": {
-    "minimum": "13",
+    "minimum": "14",
     "maximum": "14",
-    "maximum": "14",
-    "verified": "13.351"
+    "verified": "14.354"
   },
   "esmodules": [
     "scripts/module.mjs"

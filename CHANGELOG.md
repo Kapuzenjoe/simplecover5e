@@ -2,9 +2,14 @@
 
 ## 2.0.0
 
-- **LoS check** now uses the new V14 `getTestPoints()` function with `_createVisibilityTestConfig` and `tolerance = canvas.grid.size / 4`, bringing LoS closer to Foundry’s vision check and including elevation test points. To offset the higher cost, an **early break** was added (disabled when Debug Mode is enabled).
-- Extends the existing workaround for **foundryvtt/foundryvtt#4509** (originally introduced in **v1.4.2**): a clipping token is treated as **not in LoS** if any target test point lacks LoS to its own target center.
-- Use tokenDoc.shape (CONST.TOKEN_SHAPES 0=circle, ) (shapes are diffrent from grid mode) for Circle/Rect mode on gridless maps instead of a setting
+Support Foundry V14+ only. No backwards compability since we are using a lot of the new V14 functions for the cover engine. 
+
+- **LoS checks** now use V14 `TokenDocument#getTestPoints()` together with `canvas.visibility._createVisibilityTestConfig` and `tolerance = canvas.grid.size / 4`. This aligns LoS more closely with Foundry’s vision rules and includes elevation test points. To offset the added cost, the check now **breaks early** once LoS is found (early break is disabled in Debug Mode).
+- Extended the workaround for **foundryvtt/foundryvtt#4509** (introduced in **v1.4.2**): a clipping token is treated as **not in LoS** if **any** target test point does not have LoS to the target’s center.
+- On **gridless** scenes, Circle/Rect handling now uses `tokenDoc.shape` (`CONST.TOKEN_SHAPES`) instead of a module setting.
+- Removed custom Token Height configuration and switched to V14’s built-in **token depth** (set in Token Config). Height is now calculated as `token.depth * grid.distance`.
+- Cover detection now uses the V14 **Vision Origin elevation** for attacker and target instead of the token base elevation.
+- Optimized `buildCreaturePrism` across all grid modes for better performance, and **Occluder Inset (px)** now scales consistently with the other inset values.
 
 ## Version 1.4.2
 

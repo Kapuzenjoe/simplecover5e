@@ -53,18 +53,9 @@ export function getCreatureHeight(td, ctx) {
     return ctx.size?.[key] ?? 0;
 }
 
-
-/**
- * Compute pixel dimensions and center point for a token relative to the scene grid.
- *
- * @param {TokenDocument} td                     Token document to measure.
- * @param {Grid} grid                            Scene grid instance.
- * @returns {{width:number,height:number,centerX:number,centerY:number}}    Token dimensions in pixels.
- */
-export function getTokenDimensions(td, grid) {
-    const width = (td.width ?? 1) * grid.size;
-    const height = (td.height ?? 1) * grid.size;
-    const centerX = td.x + width / 2;
-    const centerY = td.y + height / 2;
-    return { width, height, centerX, centerY };
-}
+export function isEllipse(tokenDoc) {
+    return (
+        tokenDoc.shape === CONST.TOKEN_SHAPES.ELLIPSE_1 ||
+        tokenDoc.shape === CONST.TOKEN_SHAPES.ELLIPSE_2
+    );
+};

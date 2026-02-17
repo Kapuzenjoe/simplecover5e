@@ -101,7 +101,7 @@ function buildContextWithPrisms(scene = canvas?.scene) {
  * Compute cover between a single attacker and a single target, optionally including a wall LoS check.
  *
  * @param {object} [options={}]                             Options controlling the cover evaluation. 
- * @param {Token|TokenDocument|Position} options.attacker   The attacking Token or TokenDocument or a generic position {x,y,elevation?}.
+ * @param {Token|TokenDocument|Position} options.attacker   The attacking Token or TokenDocument or a generic position {x,y,elevation?,levelID?}.
  * @param {Token|TokenDocument} options.target              The target Token or TokenDocument.
  * @param {Scene} [options.scene=canvas.scene]              The scene on which to evaluate cover.
  * @param {boolean|null} [options.debug=null]               Whether to force debug output. Null uses the module Debug setting.
