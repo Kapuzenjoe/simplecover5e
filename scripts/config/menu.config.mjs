@@ -1,4 +1,4 @@
-import { MODULE_ID, DEFAULT_SIZE, SETTING_KEYS, BASE_KEYS } from "./constants.config.mjs";
+import { MODULE_ID, SETTING_KEYS } from "./constants.config.mjs";
 
 const { HandlebarsApplicationMixin, ApplicationV2 } = foundry.applications.api;
 
@@ -125,80 +125,80 @@ export class SimpleCoverBaseConfigApp extends HandlebarsApplicationMixin(Applica
     }
 }
 
-/**
- * A configuration form for default creature heights.
- *
- * @extends {SimpleCoverBaseConfigApp}
- */
-export class SimpleCoverCreatureHeightsConfig extends SimpleCoverBaseConfigApp {
-    static DEFAULT_OPTIONS = foundry.utils.mergeObject(super.DEFAULT_OPTIONS, {
-        position: { width: 500 },
-        window: {
-            title: "SIMPLE_COVER_5E.Settings.HeightsMenu.Name",
-            icon: "fas fa-ruler-vertical",
-            contentClasses: ["standard-form"]
-        },
-        actions: {
-            reset: this._onReset
-        }
-    }, { inplace: false });
+// /**
+//  * A configuration form for default creature heights.
+//  *
+//  * @extends {SimpleCoverBaseConfigApp}
+//  */
+// export class SimpleCoverCreatureHeightsConfig extends SimpleCoverBaseConfigApp {
+//     static DEFAULT_OPTIONS = foundry.utils.mergeObject(super.DEFAULT_OPTIONS, {
+//         position: { width: 500 },
+//         window: {
+//             title: "SIMPLE_COVER_5E.Settings.HeightsMenu.Name",
+//             icon: "fas fa-ruler-vertical",
+//             contentClasses: ["standard-form"]
+//         },
+//         actions: {
+//             reset: this._onReset
+//         }
+//     }, { inplace: false });
 
-    static PARTS = {
-        inputs: { template: "modules/simplecover5e/templates/base-config.hbs" },
-        ...SimpleCoverBaseConfigApp.FOOTER_PARTS
-    };
+//     static PARTS = {
+//         inputs: { template: "modules/simplecover5e/templates/base-config.hbs" },
+//         ...SimpleCoverBaseConfigApp.FOOTER_PARTS
+//     };
 
-    /** @inheritDoc */
-    _getButtons() {
-        return [
-            {
-                type: "submit",
-                icon: "fa-solid fa-check",
-                label: game.i18n.localize("SIMPLE_COVER_5E.Settings.HeightsMenu.Buttons.Save")
-            },
-            {
-                type: "button",
-                icon: "fa-solid fa-recycle",
-                label: game.i18n.localize("SIMPLE_COVER_5E.Settings.HeightsMenu.Buttons.Reset"),
-                action: "reset"
-            }
-        ];
-    }
+//     /** @inheritDoc */
+//     _getButtons() {
+//         return [
+//             {
+//                 type: "submit",
+//                 icon: "fa-solid fa-check",
+//                 label: game.i18n.localize("SIMPLE_COVER_5E.Settings.HeightsMenu.Buttons.Save")
+//             },
+//             {
+//                 type: "button",
+//                 icon: "fa-solid fa-recycle",
+//                 label: game.i18n.localize("SIMPLE_COVER_5E.Settings.HeightsMenu.Buttons.Reset"),
+//                 action: "reset"
+//             }
+//         ];
+//     }
 
-    /** @inheritDoc */
-    async _preparePartContext(partId, context, options) {
-        context = await super._preparePartContext(partId, context, options);
-        if (partId !== "inputs") return context;
+//     /** @inheritDoc */
+//     async _preparePartContext(partId, context, options) {
+//         context = await super._preparePartContext(partId, context, options);
+//         if (partId !== "inputs") return context;
 
-        const current = game.settings.get(MODULE_ID, SETTING_KEYS.CREATURE_HEIGHTS) ?? {};
-        const base = foundry.utils.mergeObject(DEFAULT_SIZE, current, { inplace: false });
+//         const current = game.settings.get(MODULE_ID, SETTING_KEYS.CREATURE_HEIGHTS) ?? {};
+//         const base = foundry.utils.mergeObject(DEFAULT_SIZE, current, { inplace: false });
 
-        const actorSizes = CONFIG.DND5E?.actorSizes ?? {};
-        const sizes = BASE_KEYS.map((key) => {
-            const sizeData = actorSizes[key];
-            const label = sizeData?.label || key.charAt(0).toUpperCase() + key.slice(1);
-            return { key, value: base[key], label, default: DEFAULT_SIZE[key] };
-        });
+//         const actorSizes = CONFIG.DND5E?.actorSizes ?? {};
+//         const sizes = BASE_KEYS.map((key) => {
+//             const sizeData = actorSizes[key];
+//             const label = sizeData?.label || key.charAt(0).toUpperCase() + key.slice(1);
+//             return { key, value: base[key], label, default: DEFAULT_SIZE[key] };
+//         });
 
-        return {
-            ...context,
-            sizes,
-            gridUnits: canvas?.scene?.grid?.units ?? "ft",
-            legend: game.i18n.localize("SIMPLE_COVER_5E.Settings.HeightsMenu.Legend"),
-            settingKey: SETTING_KEYS.CREATURE_HEIGHTS
-        };
-    }
+//         return {
+//             ...context,
+//             sizes,
+//             gridUnits: canvas?.scene?.grid?.units ?? "ft",
+//             legend: game.i18n.localize("SIMPLE_COVER_5E.Settings.HeightsMenu.Legend"),
+//             settingKey: SETTING_KEYS.CREATURE_HEIGHTS
+//         };
+//     }
 
-    /** @inheritDoc */
-    static async _onReset(event, target) {
-        event.preventDefault();
+//     /** @inheritDoc */
+//     static async _onReset(event, target) {
+//         event.preventDefault();
 
-        await game.settings.set(MODULE_ID, SETTING_KEYS.CREATURE_HEIGHTS, foundry.utils.duplicate(DEFAULT_SIZE));
-        ui.notifications.info("SimpleCover5e: Creature heights reset to defaults.");
+//         await game.settings.set(MODULE_ID, SETTING_KEYS.CREATURE_HEIGHTS, foundry.utils.duplicate(DEFAULT_SIZE));
+//         ui.notifications.info("SimpleCover5e: Creature heights reset to defaults.");
 
-        this.render();
-    }
-}
+//         this.render();
+//     }
+// }
 
 /**
  * A configuration form for cover and measurement rule variants.

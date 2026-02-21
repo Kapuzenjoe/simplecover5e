@@ -1,5 +1,5 @@
-import { MODULE_ID, DEFAULT_SIZE, SETTING_KEYS } from "./constants.config.mjs";
-import { SimpleCoverCreatureHeightsConfig, SimpleCoverVariantConfig, SimpleCoverAutomationConfig } from "./menu.config.mjs";
+import { MODULE_ID, SETTING_KEYS } from "./constants.config.mjs";
+import { SimpleCoverVariantConfig, SimpleCoverAutomationConfig } from "./menu.config.mjs";
 import { clearCoverDebug } from "../services/cover.debug.mjs";
 import { clearCoverStatusEffect } from "../services/cover.service.mjs";
 
@@ -273,21 +273,21 @@ const SETTINGS = [
     default: 3,
     requiresReload: false
   },
-  {
-    key: SETTING_KEYS.CREATURE_HEIGHTS,
-    name: "SIMPLE_COVER_5E.Settings.CreatureHeights.Name",
-    hint: "SIMPLE_COVER_5E.Settings.CreatureHeights.Hint",
-    type: new foundry.data.fields.SchemaField({
-      tiny: new foundry.data.fields.NumberField({ initial: DEFAULT_SIZE.tiny, required: true, nullable: false, min: 0 }),
-      sm: new foundry.data.fields.NumberField({ initial: DEFAULT_SIZE.sm, required: true, nullable: false, min: 0 }),
-      med: new foundry.data.fields.NumberField({ initial: DEFAULT_SIZE.med, required: true, nullable: false, min: 0 }),
-      lg: new foundry.data.fields.NumberField({ initial: DEFAULT_SIZE.lg, required: true, nullable: false, min: 0 }),
-      huge: new foundry.data.fields.NumberField({ initial: DEFAULT_SIZE.huge, required: true, nullable: false, min: 0 }),
-      grg: new foundry.data.fields.NumberField({ initial: DEFAULT_SIZE.grg, required: true, nullable: false, min: 0 })
-    }),
-    requiresReload: false,
-    config: false
-  },
+  // {
+  //   key: SETTING_KEYS.CREATURE_HEIGHTS,
+  //   name: "SIMPLE_COVER_5E.Settings.CreatureHeights.Name",
+  //   hint: "SIMPLE_COVER_5E.Settings.CreatureHeights.Hint",
+  //   type: new foundry.data.fields.SchemaField({
+  //     tiny: new foundry.data.fields.NumberField({ initial: DEFAULT_SIZE.tiny, required: true, nullable: false, min: 0 }),
+  //     sm: new foundry.data.fields.NumberField({ initial: DEFAULT_SIZE.sm, required: true, nullable: false, min: 0 }),
+  //     med: new foundry.data.fields.NumberField({ initial: DEFAULT_SIZE.med, required: true, nullable: false, min: 0 }),
+  //     lg: new foundry.data.fields.NumberField({ initial: DEFAULT_SIZE.lg, required: true, nullable: false, min: 0 }),
+  //     huge: new foundry.data.fields.NumberField({ initial: DEFAULT_SIZE.huge, required: true, nullable: false, min: 0 }),
+  //     grg: new foundry.data.fields.NumberField({ initial: DEFAULT_SIZE.grg, required: true, nullable: false, min: 0 })
+  //   }),
+  //   requiresReload: false,
+  //   config: false
+  // },
   {
     key: SETTING_KEYS.LIBRARY_MODE,
     name: "SIMPLE_COVER_5E.Settings.LibraryMode.Name",
@@ -315,14 +315,14 @@ export function registerSettings() {
     });
   }
 
-  game.settings.registerMenu(MODULE_ID, "creatureHeightsMenu", {
-    name: "SIMPLE_COVER_5E.Settings.HeightsMenu.Name",
-    label: "SIMPLE_COVER_5E.Settings.HeightsMenu.Label",
-    hint: "SIMPLE_COVER_5E.Settings.HeightsMenu.Hint",
-    icon: "fas fa-ruler-vertical",
-    type: SimpleCoverCreatureHeightsConfig,
-    restricted: true
-  });
+  // game.settings.registerMenu(MODULE_ID, "creatureHeightsMenu", {
+  //   name: "SIMPLE_COVER_5E.Settings.HeightsMenu.Name",
+  //   label: "SIMPLE_COVER_5E.Settings.HeightsMenu.Label",
+  //   hint: "SIMPLE_COVER_5E.Settings.HeightsMenu.Hint",
+  //   icon: "fas fa-ruler-vertical",
+  //   type: SimpleCoverCreatureHeightsConfig,
+  //   restricted: true
+  // });
 
   game.settings.registerMenu(MODULE_ID, "variantRulesMenu", {
     name: "SIMPLE_COVER_5E.Settings.VariantMenu.Name",

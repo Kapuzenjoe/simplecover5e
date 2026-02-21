@@ -115,60 +115,40 @@ export const SETTING_KEYS = {
   COVER_HINTS: "coverHints"
 };
 
-/**
- * Default creature heights in gridSize by size category.
- *
- * @type {Record<string, number>}
- */
-export const DEFAULT_SIZE = {
-  tiny: 1,
-  sm: 3,
-  med: 6,
-  lg: 12,
-  huge: 24,
-  grg: 48
-};
+// /**
+//  * Simplified grid modes used by this module.
+//  *
+//  * @readonly
+//  * @enum {GridMode}
+//  */
+// export const GRID_MODES = {
+//   SQUARE: "square",
+//   GRIDLESS: "gridless",
+//   HEX: "hex"
+// };
 
-/**
- * Base size keys used for iteration and configuration UIs.
- * @type {string[]}
- */
-export const BASE_KEYS = Object.keys(DEFAULT_SIZE);
-
-/**
- * Simplified grid modes used by this module.
- *
- * @readonly
- * @enum {GridMode}
- */
-export const GRID_MODES = {
-  SQUARE: "square",
-  GRIDLESS: "gridless",
-  HEX: "hex"
-};
-
-/**
- * Normalize a scene's grid configuration into a supported grid mode.
- *
- * @param {Scene["grid"]} grid        The scene grid configuration.
- * @returns {GridMode}               The simplified grid mode.
- */
-export function getGridMode(grid) {
-  const t = grid?.type;
-  switch (t) {
-    case CONST.GRID_TYPES.GRIDLESS:
-      return GRID_MODES.GRIDLESS;
-    case CONST.GRID_TYPES.SQUARE:
-      return GRID_MODES.SQUARE;
-    case CONST.GRID_TYPES.HEXODDR:
-    case CONST.GRID_TYPES.HEXEVENR:
-    case CONST.GRID_TYPES.HEXODDQ:
-    case CONST.GRID_TYPES.HEXEVENQ:
-      return GRID_MODES.HEX;
-    default:
-      return GRID_MODES.SQUARE;
-  }
-}
+// /**
+//  * Normalize a scene's grid configuration into a supported grid mode.
+//  *
+//  * @param {Scene["grid"]} grid        The scene grid configuration.
+//  * @returns {GridMode}               The simplified grid mode.
+//  */
+// export function getGridMode(grid) {
+//   const t = grid?.type;
+//   switch (t) {
+//     case CONST.GRID_TYPES.GRIDLESS:
+//       return GRID_MODES.GRIDLESS;
+//     case CONST.GRID_TYPES.SQUARE:
+//       return GRID_MODES.SQUARE;
+//     case CONST.GRID_TYPES.HEXODDR:
+//     case CONST.GRID_TYPES.HEXEVENR:
+//     case CONST.GRID_TYPES.HEXODDQ:
+//     case CONST.GRID_TYPES.HEXEVENQ:
+//       return GRID_MODES.HEX;
+//     default:
+//       return GRID_MODES.SQUARE;
+//   }
+// }
 
 /**
  * Constants related to hover labels and icons used by this module.

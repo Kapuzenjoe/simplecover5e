@@ -2,14 +2,18 @@
 
 ## 2.0.0
 
-Support Foundry V14+ only. No backwards compability since we are using a lot of the new V14 functions for the cover engine. 
+Support Foundry V14+ only. No backwards compability since we are using a lot of the new V14 functions for the cover engine.
+Also we Remove the custom TOke Heigths and now using den nativ V14 **token depth**
 
-- **LoS checks** now use V14 `TokenDocument#getTestPoints()` together with `canvas.visibility._createVisibilityTestConfig` and `tolerance = canvas.grid.size / 4`. This aligns LoS more closely with Foundry’s vision rules and includes elevation test points. To offset the added cost, the check now **breaks early** once LoS is found (early break is disabled in Debug Mode).
-- Extended the workaround for **foundryvtt/foundryvtt#4509** (introduced in **v1.4.2**): a clipping token is treated as **not in LoS** if **any** target test point does not have LoS to the target’s center.
+- **LoS checks** now use V14 `TokenDocument#getTestPoints()` together with `canvas.visibility._createVisibilityTestConfig` and `tolerance = canvas.grid.size / 4`. This aligns LoS more closely with Foundry’s vision rules. To offset the added cost, the check now **breaks early** once LoS is found (early break is disabled in Debug Mode). If Attacker and Target are on the same scene level, the eleveation from getVisionOrigin() is used for calculation else for the target the closest elevation to the attackers vision Origin.
+- Extended the workaround for **foundryvtt/foundryvtt#4509** (introduced in **v1.4.2**): a clipping token is treated as **not in LoS** if **any** target test point does not have LoS to the target’s center. // Check API 2
 - On **gridless** scenes, Circle/Rect handling now uses `tokenDoc.shape` (`CONST.TOKEN_SHAPES`) instead of a module setting.
-- Removed custom Token Height configuration and switched to V14’s built-in **token depth** (set in Token Config). Height is now calculated as `token.depth * grid.distance`.
+- //toDO: The Module Setting for shape can now used to set the default Shape Mode for gridless Maps: Workaround for https://github.com/foundryvtt/dnd5e/issues/6739
+- Removed custom Token Height configuration and switched to V14’s built-in **token depth** (set in Token Config). Height is now calculated as `token.depth * grid.distance`. Remove Support for wall-height heights
 - Cover detection now uses the V14 **Vision Origin elevation** for attacker and target instead of the token base elevation.
 - Optimized `buildCreaturePrism` across all grid modes for better performance, and **Occluder Inset (px)** now scales consistently with the other inset values.
+- Reworked distance calculation to fix incorrect behavior. Distance is as usual measured center-to-center on hex and square grid maps. On gridless scenes, the result depends on the selected mode; the “edge” distance now uses the token’s outer radius, including for rectangular tokens (this is not 100% accurate for some rectangle edge cases, but the added complexity wasn’t worth it). If tokens are on different scene levels, the shortest path is taken between the token center’s minimum elevation and maximum elevation depends on the tokens depth.
+- General a lot code cleanup and optimizations
 
 ## Version 1.4.2
 

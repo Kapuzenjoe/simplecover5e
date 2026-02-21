@@ -1,5 +1,4 @@
-import { MODULE_ID, DEFAULT_SIZE, COVER, BASE_KEYS, SETTING_KEYS, GRID_MODES, getGridMode } from "../config/constants.config.mjs";
-import { getSizeKey, getCreatureHeight, isWallHeightModuleActive, isEllipse } from "../utils/engine.helper.mjs"
+import { MODULE_ID, COVER, SETTING_KEYS } from "../config/constants.config.mjs";
 
 /**
  * @typedef {"none"|"half"|"threeQuarters"|"total"} CoverLevel
@@ -7,10 +6,8 @@ import { getSizeKey, getCreatureHeight, isWallHeightModuleActive, isEllipse } fr
  * @typedef {object} CoverContext
  * @property {Scene} scene
  * @property {Grid} grid
- * @property {string} gridMode
- * @property {"square"|"circle"} gridlessTokenShape
- * @property {number} half
- * @property {number} pxPerGridSize
+ * @property {number} halfGridSize
+ * @property {number} distancePixels
  * @property {number} insetAttackerPx
  * @property {number} insetTargetPx
  * @property {number} insetOccluderPx
@@ -38,17 +35,8 @@ import { getSizeKey, getCreatureHeight, isWallHeightModuleActive, isEllipse } fr
  */
 export function buildCoverContext(scene) {
     const grid = scene.grid;
-    const gridMode = getGridMode(grid);
-    const half = grid.size / 2;
-    const pxPerGridSize = grid.size / grid.distance;
-
-    //const saved = game.settings.get(MODULE_ID, SETTING_KEYS.CREATURE_HEIGHTS) ?? {};
-    // const size = foundry.utils.mergeObject(
-    //     DEFAULT_SIZE,
-    //     saved,
-    //     { inplace: false }
-    // );
-    const gridlessTokenShape = game.settings.get(MODULE_ID, SETTING_KEYS.GRIDLESS_TOKEN_SHAPE) ?? "square";
+    const halfGridSize = grid.size / 2;
+    const distancePixels = scene?.dimensions?.distancePixels ?? 1;
 
     const insetAttacker = Number(game.settings.get(MODULE_ID, SETTING_KEYS.INSET_ATTACKER) ?? 0);
     const insetTarget = Number(game.settings.get(MODULE_ID, SETTING_KEYS.INSET_TARGET) ?? 0);
@@ -57,16 +45,25 @@ export function buildCoverContext(scene) {
     return {
         scene,
         grid,
-        gridMode,
-        gridlessTokenShape,
-        half,
-        pxPerGridSize,
+        halfGridSize,
+        distancePixels,
         insetAttackerPx: Math.min(grid.size * 0.3, insetAttacker),
         insetTargetPx: Math.min(grid.size * 0.3, insetTarget),
         insetOccluderPx: Math.min(grid.size * 0.3, insetOccluder),
-        // size
     };
 }
+
+/**
+ * Helper
+ * @param {TokenDocument} tokenDoc 
+ * @returns {boolean} 
+ */
+function isEllipse(tokenDoc) {
+    return (
+        tokenDoc?.shape === CONST.TOKEN_SHAPES.ELLIPSE_1 ||
+        tokenDoc?.shape === CONST.TOKEN_SHAPES.ELLIPSE_2
+    );
+};
 
 /**
  * Build one or more 3D occluder prisms for a creature token.
@@ -77,110 +74,107 @@ export function buildCoverContext(scene) {
  * @returns {Array<{minX:number,minY:number,maxX:number,maxY:number,minZ:number,maxZ:number}>} The occluder prisms (AABBs) in canvas pixel space.
  */
 export function buildCreaturePrism(td, ctx) {
-    const { grid, gridMode, half, insetOccluderPx, pxPerGridSize } = ctx;
+    const { grid, halfGridSize, insetOccluderPx, distancePixels } = ctx;
     const elevation = Number(td?.elevation) || 0;
     const depth = Number(td?.depth) || 0;
     const distance = Number(grid?.distance) || 0;
-    const zMin = elevation * pxPerGridSize;
-
+    const zMin = elevation * distancePixels;
     let height = depth * distance;
 
-    const actor = td.actor;
+    const actor = td?.actor;
     const proneMode = game.settings.get(MODULE_ID, SETTING_KEYS.CREATURES_PRONE);
-    const wallHeightActive = isWallHeightModuleActive();
 
     if (actor?.statuses?.has?.("prone") && proneMode !== "none") {
-        if (proneMode === "half" || (proneMode === "lowerSize" && wallHeightActive)) {
+        if (proneMode === "half") {
             height *= 0.5;
-        } else if (proneMode === "lowerSize") {
+        }
+        else if (proneMode === "lowerSize") {
             const depthLower = (depth > 1) ? Math.max(depth - 1, 0.5) : (depth * 0.5);
             height = depthLower * distance;
         }
     }
 
-    const zMax = zMin + (height * pxPerGridSize);
+    const zMax = zMin + (height * distancePixels);
     const prisms = [];
     const radius = td?.object?.externalRadius ?? 0;
     const { x, y } = td.getCenterPoint();
+    const insetToCenter = insetOccluderPx / Math.SQRT2;
 
-    if (gridMode === GRID_MODES.GRIDLESS && isEllipse(td)) {
+    if (grid.isGridless && isEllipse(td)) {
         const innerHalf = radius / Math.SQRT2;
         const halfEff = Math.max(innerHalf, 0);
 
         prisms.push({
-            minX: x - halfEff + insetOccluderPx,
-            minY: y - halfEff + insetOccluderPx,
-            maxX: x + halfEff - insetOccluderPx,
-            maxY: y + halfEff - insetOccluderPx,
+            minX: x - halfEff + insetToCenter,
+            minY: y - halfEff + insetToCenter,
+            maxX: x + halfEff - insetToCenter,
+            maxY: y + halfEff - insetToCenter,
             minZ: zMin + 0.1,
             maxZ: zMax - 0.1
         });
 
         return prisms;
     }
-
-    if (gridMode === GRID_MODES.GRIDLESS || gridMode === GRID_MODES.SQUARE) {
-        prisms.push({
-            minX: x - radius + insetOccluderPx,
-            minY: y - radius + insetOccluderPx,
-            maxX: x + radius - insetOccluderPx,
-            maxY: y + radius - insetOccluderPx,
-            minZ: zMin + 0.1,
-            maxZ: zMax - 0.1
-        });
-        return prisms;
-    }
-
-    if (gridMode === GRID_MODES.HEX) {
+    else if (grid.isHexagonal) {
         const centers = td.getTestPoints({ depth: 0 });
 
-        const halfNeighbor = Math.max(half * 0.80, 0);
+        const halfNeighbor = Math.max(halfGridSize * 0.80, 0);
         let halfCenter = Math.max(radius * 0.60, 0);
-        if (centers.length === 1) {
+        if (centers?.length === 1) {
             halfCenter = Math.max(radius * 0.80, 0);
         }
 
         for (const c of centers) {
             if (c.x === x && c.y === y) continue;
             prisms.push({
-                minX: c.x - halfNeighbor + insetOccluderPx,
-                minY: c.y - halfNeighbor + insetOccluderPx,
-                maxX: c.x + halfNeighbor - insetOccluderPx,
-                maxY: c.y + halfNeighbor - insetOccluderPx,
+                minX: c.x - halfNeighbor + insetToCenter,
+                minY: c.y - halfNeighbor + insetToCenter,
+                maxX: c.x + halfNeighbor - insetToCenter,
+                maxY: c.y + halfNeighbor - insetToCenter,
                 minZ: zMin + 0.1,
                 maxZ: zMax - 0.1
             });
         }
 
         prisms.push({
-            minX: x - halfCenter + insetOccluderPx,
-            minY: y - halfCenter + insetOccluderPx,
-            maxX: x + halfCenter - insetOccluderPx,
-            maxY: y + halfCenter - insetOccluderPx,
+            minX: x - halfCenter + insetToCenter,
+            minY: y - halfCenter + insetToCenter,
+            maxX: x + halfCenter - insetToCenter,
+            maxY: y + halfCenter - insetToCenter,
             minZ: zMin + 0.1,
             maxZ: zMax - 0.1
         });
         return prisms;
     }
-    return prisms;
+    else {
+        prisms.push({
+            minX: x - radius + insetToCenter,
+            minY: y - radius + insetToCenter,
+            maxX: x + radius - insetToCenter,
+            maxY: y + radius - insetToCenter,
+            minZ: zMin + 0.1,
+            maxZ: zMax - 0.1
+        });
+        return prisms;
+    }
 }
 
 /**
  * Test whether sight-blocking walls obstruct the segment between two inset corners.
  * If wall-height is active, the intersection is additionally filtered by wall top/bottom values.
  *
- * @param {{raw:{x:number,y:number}|null, inset:{x:number,y:number}}} aCorner   The attacker corner (raw and inset).
- * @param {{raw:{x:number,y:number}|null, inset:{x:number,y:number}}} bCorner   The target corner (raw and inset).
+ * @param {{x:number,y:number}} aCorner                                         The attacker corner
+ * @param {{x:number,y:number}} bCorner                                         The target corner
  * @param {TokenDocument|Position} attackerDoc                                  The attacking token document OR a generic position {x,y,elevation?}.
  * @param {TokenDocument} targetDoc                                             The target token document.
  * @param {CoverContext} ctx                                                    The cover evaluation context.
  * @returns {{blocked:boolean, A:{x:number,y:number}, B:{x:number,y:number}}} Whether the segment is blocked and the tested inset segment.
  */
 function wallsBlock(aCorner, bCorner, attackerDoc, targetDoc, ctx, losCheck = false) {
-    const A = aCorner.inset;
-    const B = bCorner.inset;
+    const A = aCorner
+    const B = bCorner
     const backend = CONFIG.Canvas.polygonBackends.sight;
-    const wallHeightActive = isWallHeightModuleActive();
+
     const debugOn = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.DEBUG);
     const activeGM = game.users?.activeGM;
 
@@ -201,13 +195,14 @@ function wallsBlock(aCorner, bCorner, attackerDoc, targetDoc, ctx, losCheck = fa
     let collisions = wallCollide(A, B);
     let surfaceBlocked = surfaceCollide(A, B);
 
+    // https://github.com/foundryvtt/foundryvtt/issues/13736  Constrain getTestPoints() by Walls/Surfaces
     if (!collisions.length && (typeof attackerDoc.getCenterPoint === "function")) collisions = wallCollide(A, attackerDoc.getCenterPoint());
     if (!collisions.length) collisions = wallCollide(B, targetDoc.getCenterPoint()); // wait for https://github.com/foundryvtt/foundryvtt/issues/4509
     if (!collisions.length && !surfaceBlocked) {
         return { blocked: false, A, B };
     }
 
-    if (!wallHeightActive) { // wall-height obsolet in V14??
+    if (!game.modules?.get?.("wall-height")?.active === true) { // wall-height obsolet in V14??
         return { blocked: true, A, B };
     }
 
@@ -275,8 +270,8 @@ function wallsBlock(aCorner, bCorner, attackerDoc, targetDoc, ctx, losCheck = fa
  * Compute the ray height at a wall-intersection vertex along segment A→B.
  * The result is used to compare line height against wall-height top/bottom values.
  *
- * @param {{x:number,y:number}} A                The segment start point (inset).
- * @param {{x:number,y:number}} B                The segment end point (inset).
+ * @param {{x:number,y:number}} A                The segment start point
+ * @param {{x:number,y:number}} B                The segment end point
  * @param {{x:number,y:number}} vertex           The intersection vertex on the wall.
  * @param {TokenDocument|Position} attackerDoc   The attacking token document OR a generic position {x,y,elevation?}.
  * @param {TokenDocument} targetDoc              The target token document.
@@ -300,8 +295,8 @@ function getLineHeightAtVertex(A, B, vertex, attackerDoc, targetDoc, ctx) {
     const attBottom = Number(attackerDoc.elevation ?? 0);
     const tgtBottom = Number(targetDoc.elevation ?? 0);
 
-    const attHeight = getCreatureHeight(attackerDoc, ctx);
-    const tgtHeight = getCreatureHeight(targetDoc, ctx);
+    const attHeight = (attackerDoc?.losHeight - attackerDoc?.elevation) || 0;
+    const tgtHeight = (targetDoc?.losHeight - targetDoc?.elevation) || 0;
 
     const attZ = attBottom + (Number.isFinite(attHeight) ? attHeight * 0.7 : 0);
     const losAttZ = attBottom + (Number.isFinite(attHeight) ? attHeight : 0);
@@ -355,151 +350,104 @@ function segIntersectsAABB3D(p, q, b) {
 
 /**
  * Build inset box corners around a center point.
- *
- * @param {{x:number,y:number}} center            The box center in canvas pixels.
- * @param {number} radius                         Half of the box edge length in pixels.
- * @param {number} insetPx                        The inset distance (pixels) towards the center.
- * @returns {Array<{raw:{x:number,y:number}, inset:{x:number,y:number}}>} The raw and inset corners.
+ * Each corner is moved by `insetPx` towards the center along the diagonal.
+ * 
+ * @param {{x:number,y:number}} center                             The box center in canvas pixels.
+ * @param {number} radius                                          Half of the box edge length in pixels.
+ * @param {number} insetPx                                         The inset distance (pixels) towards the center.
+ * @returns {Array<{x:number, y:number}>}                          The corners points.
  */
 function buildBoxCorners(center, radius, insetPx) {
-    const raws = [
-        { x: center.x - radius, y: center.y - radius },
-        { x: center.x + radius, y: center.y - radius },
-        { x: center.x + radius, y: center.y + radius },
-        { x: center.x - radius, y: center.y + radius }
-    ];
+    const { x: cx, y: cy } = center;
+    const d = insetPx / Math.SQRT2;
 
-    return raws.map(raw => {
-        const vx = raw.x - center.x;
-        const vy = raw.y - center.y;
-        const L = Math.hypot(vx, vy) || 1;
-        const inset = {
-            x: raw.x - (vx / L) * insetPx,
-            y: raw.y - (vy / L) * insetPx,
-            elevation: center?.elevation ?? 0
-        };
-        return { raw, inset }; // toDo: Remove RAW
-    });
+    return [
+        { x: cx - radius + d, y: cy - radius + d },
+        { x: cx + radius - d, y: cy - radius + d },
+        { x: cx + radius - d, y: cy + radius - d },
+        { x: cx - radius + d, y: cy + radius - d },
+    ];
 }
 
 /**
  * Build inset corners for a hex cell at a given center.
+ * Each corner is moved by `insetPx` towards the center along the diagonal.
  *
  * @param {{x:number,y:number}} center            The hex cell center in canvas pixels.
  * @param {number} insetPx                        The inset distance (pixels) towards the center.
  * @param {CoverContext} ctx                      The cover evaluation context containing the grid.
- * @param {number} [scale=1]                      Scale factor for shrinking the hex (e.g., tiny tokens).
- * @returns {Array<{raw:{x:number,y:number}, inset:{x:number,y:number}}>|null} The inset corners, or null if unavailable.
+ * @param {Grid} grid                             The current scene grid.
+ * @returns {Array<{x:number, y:number}>}         The hex corners points.
  */
-function buildHexCorners(center, insetPx, grid, scale = 1) {
-    const coords = grid.getOffset(center);
-    if (!coords) return null;
+function buildHexCorners(center, radius, insetPx, grid) {
+    const { x: cx, y: cy } = center;
+    const verts = grid.getVertices(center);
 
-    const verts = grid.getVertices(coords);
-    if (!Array.isArray(verts) || verts.length === 0) return null;
-
-    const hexCenter = verts.reduce(
-        (acc, v) => {
-            acc.x += v.x;
-            acc.y += v.y;
-            return acc;
-        },
-        { x: 0, y: 0 }
-    );
-    hexCenter.x /= verts.length;
-    hexCenter.y /= verts.length;
+    const scale = Math.min(1, (2 * radius) / grid.size);
 
     return verts.map(v => {
-        const raw = {
-            x: hexCenter.x + (v.x - hexCenter.x) * scale,
-            y: hexCenter.y + (v.y - hexCenter.y) * scale
-        };
+        const dx = v.x - cx;
+        const dy = v.y - cy;
+        const L = Math.hypot(dx, dy) || 1;
 
-        const vx = raw.x - hexCenter.x;
-        const vy = raw.y - hexCenter.y;
-        const L = Math.hypot(vx, vy) || 1;
-
-        const inset = {
-            x: raw.x - (vx / L) * insetPx,
-            y: raw.y - (vy / L) * insetPx,
-            elevation: center?.elevation ?? 0
+        return {
+            x: cx + dx * scale - (dx / L) * insetPx,
+            y: cy + dy * scale - (dy / L) * insetPx,
         };
-        return { raw, inset };
     });
 }
 
 /**
  * Build a set of inset "corners" on the circumference of a circle.
+ * Each point is moved by `insetPx` towards the center along the radius.
  *
- * @param {{x:number,y:number}} center                   Center of the circle in canvas pixels.
- * @param {number} radius                                Radius of the circle in pixels.
- * @param {number} insetPx                               Inset distance in pixels towards the center.
- * @returns {Array<{raw:{x:number,y:number}, inset:{x:number,y:number}}>} The inset corners.
+ * @param {{x:number,y:number}} center                          Center of the circle in canvas pixels.
+ * @param {number} radius                                       Radius of the circle in pixels.
+ * @param {number} insetPx                                      The inset distance (pixels) towards the center.
+ * @returns {Array<{x:number, y:number}>}                       The points (clockwise from angle 0°)
  */
 function buildCircleCorners(center, radius, insetPx) {
-    const { x, y } = center;
-    const angles = [
-        0,
-        Math.PI / 4,
-        Math.PI / 2,
-        (3 * Math.PI) / 4,
-        Math.PI,
-        (5 * Math.PI) / 4,
-        (3 * Math.PI) / 2,
-        (7 * Math.PI) / 4
+    const { x: cx, y: cy } = center;
+    const r = radius - insetPx;
+    const k = Math.SQRT1_2;
+
+    return [
+        { x: cx + r, y: cy }, //   0°
+        { x: cx + r * k, y: cy + r * k }, //  45°
+        { x: cx, y: cy + r }, //  90°
+        { x: cx - r * k, y: cy + r * k }, // 135°
+        { x: cx - r, y: cy }, // 180°
+        { x: cx - r * k, y: cy - r * k }, // 225°
+        { x: cx, y: cy - r }, // 270°
+        { x: cx + r * k, y: cy - r * k }, // 315°
     ];
-
-    const corners = [];
-
-    for (const theta of angles) {
-        const raw = {
-            x: x + radius * Math.cos(theta),
-            y: y + radius * Math.sin(theta)
-        };
-
-        const vx = raw.x - x;
-        const vy = raw.y - y;
-        const L = Math.hypot(vx, vy) || 1;
-
-        const inset = {
-            x: raw.x - (vx / L) * insetPx,
-            y: raw.y - (vy / L) * insetPx,
-            elevation: center?.elevation ?? 0
-        };
-
-        corners.push({ raw, inset });
-    }
-
-    return corners;
 }
 
 /**
- * Build inset token corners for a sample center based on grid mode and token shape.
+ * Build token test points for a sample center based on grid mode and token shape.
  *
  * @param {{x:number,y:number}} center            The sample center in canvas pixels.
- * @param {number} radius                         The radius used for square/circle sampling.
- * @param {number} insetPx                        The inset distance (pixels) towards the center.
- * @param {string} gridMode                       The active grid mode.
- * @param {boolean} useCircleShape                Whether gridless tokens are treated as circles.
  * @param {CoverContext} ctx                      The cover evaluation context.
- * @param {string} sizeKey                        The normalized size key for the token.
- * @returns {Array<{raw:{x:number,y:number}, inset:{x:number,y:number}}>|null} The inset corners for this center.
+ * @param {TokenDocument} td                      The token document.
+ * @param {number} insetPx                        The inset distance (pixels) towards the center.
+ * @returns {Array<{x:number, y:number}>}         The points for this center.
  */
-function buildTokenCornersForCenter(center, ctx, useCircleShape, sizeKey) {
-    const { insetTargetPx, gridMode, half, grid } = ctx
+function buildTokenCornersForCenter(center, ctx, td, inset) {
+    const { halfGridSize, grid } = ctx
+    const useCircleShape = grid.isGridless && isEllipse(td)
 
-    const radius = (sizeKey === "tiny") ? half / 2 : half
-    // Case Position
-    if (sizeKey === null) return [{ raw: null, inset: { x: center?.x, y: center?.y, elevation: center?.elevation } }];
+    const externalRadius = td?.object?.externalRadius ?? null
+    if (externalRadius === null) return [{ x: center?.x, y: center?.y }];
 
-    if (gridMode === GRID_MODES.HEX) {
-        const scale = (sizeKey === "tiny") ? 0.5 : 1;
-        return buildHexCorners(center, insetTargetPx, grid, scale);
+    const radius = (externalRadius < halfGridSize) ? externalRadius : halfGridSize
+
+    if (grid.isHexagonal) {
+        return buildHexCorners(center, radius, inset, grid);
     }
-    if (useCircleShape) {
-        return buildCircleCorners(center, radius, insetTargetPx);
+    else if (useCircleShape) {
+        return buildCircleCorners(center, radius, inset);
     }
-    return buildBoxCorners(center, radius, insetTargetPx);
+    else return buildBoxCorners(center, radius, inset);
 }
 
 /**
@@ -540,26 +488,6 @@ function collectOccluderBoxes(creaturePrisms, attackerId, targetId, debugTokenSh
 }
 
 /**
- * Add debug circle outlines for large circular tokens in gridless mode.
- * This is used to visualize the circle sampling boundary for lg/huge/grg sizes.
- *
- * @param {TokenDocument} td                      The token document to visualize.
- * @param {string} sizeKey                        The normalized size key.
- * @param {Array<Array<{x:number,y:number}>>} bucket The debug bucket to append shapes to.
- * @param {CoverContext} ctx                      The cover evaluation context.
- * @returns {void}
- */
-function addBigCircleDebug(td, half, bucket) {
-    const radius = td?.object?.externalRadius ?? 0;
-    if (radius <= half) return;
-
-    const { x, y } = td.getCenterPoint();
-    const bigCorners = buildCircleCorners({ x, y }, radius, 0);
-
-    bucket.push(bigCorners.map(c => c.raw));
-}
-
-/**
  * Evaluate DMG-style cover for an attacker against a target.
  * The evaluator tests rays against sight-blocking walls and creature occluder prisms and returns the best (least blocked) sampling outcome.
  *
@@ -572,70 +500,49 @@ function addBigCircleDebug(td, half, bucket) {
  */
 export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options = {}) {
     const debug = !!options.debug;
-    const { gridMode, creaturePrisms, half, pxPerGridSize } = ctx;
-
-    const isGridless = gridMode === GRID_MODES.GRIDLESS;
-    const isHexGrid = gridMode === GRID_MODES.HEX;
-
-    const isAttackerCircleShape = isGridless && isEllipse(attackerDoc)
-    const isTargetCircleShape = isGridless && isEllipse(targetDoc)
-
     const debugTokenShapes = debug ? { attacker: [], target: [], occluders: [] } : null;
+    const { grid, creaturePrisms, distancePixels, insetAttackerPx, insetTargetPx } = ctx;
+    const creaturesHalfOnly = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.CREATURES_HALF_ONLY);
+
+    // temp for workaround 
+    const isAttackerCircleShape = grid.isGridless && isEllipse(attackerDoc)
+    const isTargetCircleShape = grid.isGridless && isEllipse(targetDoc)
 
     const attackerId = attackerDoc?.object?.id ?? null;
-    const targetId = targetDoc?.object?.id;
-    const boxes = collectOccluderBoxes(creaturePrisms, attackerId, targetId, debugTokenShapes); // Add Broadcast Ray to limit tokens 
+    const targetId = targetDoc?.object?.id ?? null;
+    const boxes = collectOccluderBoxes(creaturePrisms, attackerId, targetId, debugTokenShapes); // Add Broadcast Ray to limit tokens     
 
-    const attackerZ = (attackerDoc?.elevation ?? 0) * pxPerGridSize + 0.1;
-    const targetZ = (targetDoc.elevation ?? 0) * pxPerGridSize + 0.1;
+    const attackerVisionSource = attackerDoc?.getVisionOrigin();
+    const targetVisionSource = targetDoc?.getVisionOrigin();
 
-    const attackerSizeKey = getSizeKey(attackerDoc);
-    const targetSizeKey = getSizeKey(targetDoc);
+    let attackerSamples = attackerDoc?.getTestPoints({ depth: 0, elevation: attackerVisionSource?.elevation })
+        ?? [{ x: attackerDoc.x, y: attackerDoc.y, elevation: attackerDoc?.elevation ?? 0 }];
+    let targetSamples = targetDoc?.getTestPoints({ depth: 0, elevation: targetVisionSource?.elevation })
+        ?? [{ x: targetDoc.x, y: targetDoc.y, elevation: targetDoc?.elevation ?? 0 }];
 
-    // Check for Position Option
-    const attackerVisionSource = attackerDoc.getVisionOrigin();
-    let attackerSamples = attackerDoc.getTestPoints({ depth: 0, elevation: attackerVisionSource.elevation });
-    let targetSamples = targetDoc.getTestPoints();
+    const attackerZ = (attackerVisionSource?.elevation ?? attackerDoc?.elevation ?? 0) * distancePixels + 0.1;
+    const targetZ = (targetVisionSource?.elevation ?? targetDoc?.elevation ?? 0) * distancePixels + 0.1;
 
     // workaround for https://github.com/foundryvtt/foundryvtt/issues/13830
     if (isAttackerCircleShape) attackerSamples = pullOnlyOuterCorners(attackerDoc, attackerSamples, 0.30);
     if (isTargetCircleShape) targetSamples = pullOnlyOuterCorners(targetDoc, targetSamples, 0.30);
 
-    // https://github.com/foundryvtt/foundryvtt/issues/13736  Constrain getTestPoints() by Walls/Surfaces
-
-    const creaturesHalfOnly = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.CREATURES_HALF_ONLY);
-
     let best = { reachable: -1, coverLevel: 2, segs: [] };
 
-    if (debugTokenShapes) {
-        if (isAttackerCircleShape) addBigCircleDebug(attackerDoc, half, debugTokenShapes.attacker);
-        if (isTargetCircleShape) addBigCircleDebug(targetDoc, half, debugTokenShapes.target);
-    }
+
     for (const tCenter of targetSamples) {
-        const tgtCorners = buildTokenCornersForCenter(tCenter, ctx, isTargetCircleShape, targetSizeKey);
+        const tgtCorners = buildTokenCornersForCenter(tCenter, ctx, targetDoc, insetTargetPx);
         if (!tgtCorners || !tgtCorners.length) continue;
 
-        if (debugTokenShapes) {
-            debugTokenShapes.target.push(
-                tgtCorners
-                    .map(c => c?.raw)
-                    .filter(p => p != null)
-            );
-        }
+        if (debugTokenShapes) debugTokenShapes.target.push(tgtCorners);
 
         const totalLinesForThisTarget = tgtCorners.length;
 
         for (const aCenter of attackerSamples) {
-            const atkCorners = buildTokenCornersForCenter(aCenter, ctx, isAttackerCircleShape, attackerSizeKey);
+            const atkCorners = buildTokenCornersForCenter(aCenter, ctx, attackerDoc, insetAttackerPx);
             if (!atkCorners || !atkCorners.length) continue;
 
-            if (debugTokenShapes) {
-                debugTokenShapes.attacker.push(
-                    atkCorners
-                        .map(c => c.raw)
-                        .filter(p => p != null)
-                );
-            }
+            if (debugTokenShapes) debugTokenShapes.attacker.push(atkCorners);
 
             for (const aCorner of atkCorners) {
                 let blockedWalls = 0;
@@ -646,8 +553,8 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
                     const wallResult = wallsBlock(aCorner, tCorner, attackerDoc, targetDoc, ctx);
                     const wBlocked = wallResult.blocked;
 
-                    const attacker = { x: aCorner.inset.x, y: aCorner.inset.y, z: attackerZ };
-                    const target = { x: tCorner.inset.x, y: tCorner.inset.y, z: targetZ };
+                    const attacker = { x: aCorner.x, y: aCorner.y, z: attackerZ };
+                    const target = { x: tCorner.x, y: tCorner.y, z: targetZ };
 
                     let cBlocked = false;
                     if (!wBlocked) {
@@ -666,22 +573,22 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
                     }
 
                     segs.push({
-                        a: aCorner.inset,
-                        b: tCorner.inset,
+                        a: aCorner,
+                        b: tCorner,
                         blocked: isBlocked,
                         wBlocked,
                         cBlocked,
                         _tested: { a: wallResult.A, b: wallResult.B }
                     });
 
-                    const breakAt = isHexGrid ? 4 : (isTargetCircleShape ? 6 : 3);
+                    const breakAt = grid.isHexagonal ? 4 : (isTargetCircleShape ? 6 : 3);
                     if (!creaturesHalfOnly && (blockedWalls + blockedCreatures) >= breakAt) break;
                 }
 
                 const totalBlocked = blockedWalls + blockedCreatures;
                 const reachable = totalLinesForThisTarget - totalBlocked;
 
-                const threshold = isHexGrid ? 4 : (isTargetCircleShape ? 6 : 3);
+                const threshold = grid.isHexagonal ? 4 : (isTargetCircleShape ? 6 : 3);
 
                 let coverLevel;
                 if (creaturesHalfOnly) {
@@ -747,11 +654,9 @@ export function evaluateLOS(attackerDoc, targetDoc, ctx) {
     const targetLosPoints = [];
     let hasLOS = false;
     const losCheck = true;
-    const originPoint = { raw: null, inset: origin };
 
     for (const p of targetTestPoints) {
-        const targetPoint = { raw: null, inset: p };
-        const wallResult = wallsBlock(originPoint, targetPoint, attackerDoc, targetDoc, ctx, losCheck);
+        const wallResult = wallsBlock(origin, p, attackerDoc, targetDoc, ctx, losCheck);
         targetLosPoints.push({ x: p.x, y: p.y, blocked: wallResult.blocked });
 
         if (!wallResult.blocked) {
@@ -784,7 +689,6 @@ function pullOnlyOuterCorners(tokenDoc, points, pull = 0.30, eps = 0.5) {
         y: p.y + pull * (c.y - p.y),
     }) : p);
 }
-
 
 function closestElevationPoints(points, originElevation) {
     const m = new Map();
