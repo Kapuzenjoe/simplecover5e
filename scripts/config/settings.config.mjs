@@ -98,6 +98,14 @@ const SETTINGS = [
     requiresReload: false,
     config: false
   },
+    {
+    key: SETTING_KEYS.IGNORE_FRIENDLY,
+    name: "SIMPLE_COVER_5E.Settings.IgnoreFriendly.Name",
+    hint: "SIMPLE_COVER_5E.Settings.IgnoreFriendly.Hint",
+    type: new foundry.data.fields.BooleanField({ initial: false }),
+    requiresReload: false,
+    config: false
+  },
   {
     key: SETTING_KEYS.CREATURES_PRONE,
     name: "SIMPLE_COVER_5E.Settings.CreaturesProne.Name",

@@ -231,6 +231,7 @@ export class SimpleCoverVariantConfig extends SimpleCoverBaseConfigApp {
                 SETTING_KEYS.LOS_CHECK,
                 SETTING_KEYS.CREATURES_HALF_ONLY,
                 SETTING_KEYS.CREATURES_PRONE,
+                SETTING_KEYS.IGNORE_FRIENDLY,
                 SETTING_KEYS.IGNORE_DISTANCE_AOE,
                 SETTING_KEYS.IGNORE_ALL_AOE,
                 SETTING_KEYS.IGNORE_DISTANCE_SPACE

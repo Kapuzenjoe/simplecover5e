@@ -34,6 +34,10 @@
         "Name": "Limit Cover from Creatures to 1/2 Cover",
         "Hint": "When enabled, creatures can grant at most Half Cover. As soon as at least one line is blocked purely by creatures, the target gains Half Cover, but never Three-Quarters Cover from creatures alone. Walls continue to follow the standard DMG rules."
       },
+      "IgnoreFriendly": {
+        "Name": "Ignore cover from friendly tokens",
+        "Hint": "When enabled, cover checks ignore any tokens that are friendly to the attacker."
+      },
       "IgnoreAllAOE": {
         "Name": "Ignore cover for all area effects",
         "Hint": "Skips cover checks whenever the activity defines any area template. If a template is present, no cover is calculated for that roll."

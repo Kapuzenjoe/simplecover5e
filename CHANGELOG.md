@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 1.4.3
+
+- Added an optional setting to treat friendly tokens (occluder) as non-blocking for attacker cover calculation (#27).
+
 ## Version 1.4.2
 
 - Library Mode can now be enabled/disabled directly from the Settings menu. (#26)

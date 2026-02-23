@@ -30,6 +30,10 @@
                 "Name": "Deckung durch Kreaturen auf Halbe Deckung begrenzen",
                 "Hint": "Wenn aktiviert, können Kreaturen maximal Halbe Deckung gewähren. Sobald mindestens eine Linie ausschließlich durch Kreaturen blockiert wird, erhält das Ziel Halbe Deckung, aber niemals Dreiviertel Deckung allein durch Kreaturen. Wände folgen weiterhin den normalen DMG-Regeln."
             },
+            "IgnoreFriendly": {
+                "Name": "Deckung durch befreundete Figuren ignorieren",
+                "Hint": "Wenn aktiviert, ignorieren Deckungsprüfungen alle Figuren, die dem Angreifer freundlich gesinnt sind."
+            },
             "IgnoreAllAOE": {
                 "Name": "Deckung bei allen Flächeneffekten ignorieren",
                 "Hint": "Überspringt Deckungsprüfungen, sobald die Aktivität irgendeine Flächen-Schablone definiert. Wenn eine Schablone vorhanden ist, wird für diesen Wurf keine Deckung berechnet."

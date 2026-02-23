@@ -776,17 +776,20 @@ function buildTokenCornersForCenter(center, radius, insetPx, gridMode, useCircle
  * When debug output is enabled, this also appends 2D outlines for the occluders.
  *
  * @param {Map<string, object|object[]>|undefined} creaturePrisms             The map of token id to prism(s).
- * @param {string|undefined} attackerId                                      The attacker canvas object id.
- * @param {string|undefined} targetId                                        The target canvas object id.
+ * @param {TokenDocument|undefined} attackerDoc                                      The attacker canvas object document.
+ * @param {TokenDocument|undefined} targetDoc                                        The target canvas object document.
  * @param {{occluders:Array<Array<{x:number,y:number}>>}|null} debugTokenShapes Optional debug accumulator.
  * @returns {Array<{minX:number,minY:number,maxX:number,maxY:number,minZ:number,maxZ:number}>} The occluder boxes.
  */
-function collectOccluderBoxes(creaturePrisms, attackerId, targetId, debugTokenShapes) {
+function collectOccluderBoxes(creaturePrisms, attackerDoc, targetDoc, debugTokenShapes) {
     const boxes = [];
     if (!(creaturePrisms instanceof Map)) return boxes;
+    const ignorefriendly = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.IGNORE_FRIENDLY);
 
     creaturePrisms.forEach((value, id) => {
-        if (id === attackerId || id === targetId) return;
+        const token = canvas.tokens?.get(id);
+        if (id === attackerDoc?.id || id === targetDoc?.id) return;
+        if (ignorefriendly && (attackerDoc?.disposition === token?.document?.disposition)) return;
 
         const prisms = Array.isArray(value)
             ? value
@@ -850,7 +853,7 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
     const creaturePrisms = ctx.creaturePrisms;
     const attackerId = attackerDoc?.object?.id ?? null;
     const targetId = targetDoc?.object?.id;
-    const boxes = collectOccluderBoxes(creaturePrisms, attackerId, targetId, debugTokenShapes);
+    const boxes = collectOccluderBoxes(creaturePrisms, attackerDoc, targetDoc, debugTokenShapes);
 
     const attackerZ = (attackerDoc?.elevation ?? 0) * ctx.pxPerGridSize + 0.1;
     const targetZ = (targetDoc.elevation ?? 0) * ctx.pxPerGridSize + 0.1;

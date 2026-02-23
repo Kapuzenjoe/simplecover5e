@@ -112,7 +112,8 @@ export const SETTING_KEYS = {
   INSET_ATTACKER: "insetAttacker",
   INSET_TARGET: "insetTarget",
   INSET_OCCLUDER: "insetOccluder",
-  COVER_HINTS: "coverHints"
+  COVER_HINTS: "coverHints",
+  IGNORE_FRIENDLY: "ignoreFriendly",
 };
 
 /**
