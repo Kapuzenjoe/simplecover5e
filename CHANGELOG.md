@@ -3,6 +3,7 @@
 ## Version 1.4.3
 
 - Added an optional setting to treat friendly tokens (occluder) as non-blocking for attacker cover calculation (#27).
+- Fixed an issue in the wall-height module where walls with infinite height didn’t block correctly (#28).
 
 ## Version 1.4.2
 

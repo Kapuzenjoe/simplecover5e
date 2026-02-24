@@ -338,11 +338,8 @@ function wallsBlock(aCorner, bCorner, attackerDoc, targetDoc, ctx, losCheck = fa
             const topRaw = whFlags?.top;
             const bottomRaw = whFlags?.bottom;
 
-            let wallTop = Number(topRaw);
-            let wallBottom = Number(bottomRaw);
-
-            if (!Number.isFinite(wallTop)) wallTop = Infinity;
-            if (!Number.isFinite(wallBottom)) wallBottom = -Infinity;
+            const wallTop = (topRaw !== null) ? Number(topRaw) : Infinity;
+            const wallBottom = (bottomRaw !== null) ? Number(bottomRaw) : -Infinity;
 
             if (debugOn && activeGM) {
                 const losBlock = losLineZ >= wallBottom && losLineZ <= wallTop
@@ -364,6 +361,11 @@ function wallsBlock(aCorner, bCorner, attackerDoc, targetDoc, ctx, losCheck = fa
                     }
                 );
             }
+
+            if (wallTop === Infinity && wallBottom === -Infinity) {
+                return { blocked: true, A, B };
+            }
+            
             if (losCheck) {
                 if (losLineZ >= wallBottom && losLineZ <= wallTop) {
                     return { blocked: true, A, B };
