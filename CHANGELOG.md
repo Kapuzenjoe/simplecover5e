@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 1.4.4
+
+- Minor fix to cover and line-of-sight checks when using positions instead of the actor document.
+
 ## Version 1.4.3
 
 - Added an optional setting to treat friendly tokens (occluder) as non-blocking for attacker cover calculation (#27).

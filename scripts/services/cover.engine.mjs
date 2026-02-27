@@ -307,8 +307,8 @@ function wallsBlock(aCorner, bCorner, attackerDoc, targetDoc, ctx, losCheck = fa
 
     let collisions = collide(A, B);
 
-    if (!collisions.length) collisions = collide(A, attackerDoc.getCenterPoint());
-    if (!collisions.length) collisions = collide(B, targetDoc.getCenterPoint());
+    if (!collisions.length && typeof attackerDoc?.getCenterPoint === "function") collisions = collide(A, attackerDoc.getCenterPoint());
+    if (!collisions.length && typeof targetDoc?.getCenterPoint === "function") collisions = collide(B, targetDoc.getCenterPoint());
     if (!collisions.length) {
         return { blocked: false, A, B };
     }
@@ -365,7 +365,7 @@ function wallsBlock(aCorner, bCorner, attackerDoc, targetDoc, ctx, losCheck = fa
             if (wallTop === Infinity && wallBottom === -Infinity) {
                 return { blocked: true, A, B };
             }
-            
+
             if (losCheck) {
                 if (losLineZ >= wallBottom && losLineZ <= wallTop) {
                     return { blocked: true, A, B };
