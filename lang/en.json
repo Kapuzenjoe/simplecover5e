@@ -86,11 +86,12 @@
         }
       },
       "GridlessTokenShape": {
-        "Name": "Gridless Token Shape",
-        "Hint": "Controls how tokens in gridless scenes are approximated for distance and cover: as square footprints or as circular footprints with multi-circle layouts for larger creatures.",
+        "Name": "Gridless Token Default Shape",
+        "Hint": "When enabled, all tokens on gridless scenes will be automatically set to the selected shape.",
         "Options": {
-          "Square": "Square",
-          "Circle": "Circular"
+          "None": "No change",
+          "Square": "Rectangle",
+          "Circle": "Ellipse"
         }
       },
       "CreaturesProne": {

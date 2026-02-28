@@ -12,6 +12,7 @@ import { clearCoverDebug } from "./services/cover.debug.mjs";
 import { onHoverToken, onPreDeleteToken } from "./services/hover.service.mjs";
 import { initApi, readyApi } from "./utils/api.mjs";
 import { onRenderRollConfigurationDialog } from "./services/dialog.service.mjs"
+import { onCreateToken } from "./services/cover.service.mjs";
 
 // === Init Phase ===
 Hooks.once("init", () => {
@@ -35,6 +36,7 @@ for (const [hook, fn] of [
   ["hoverToken", onHoverToken],
   ["renderRollConfigurationDialog", onRenderRollConfigurationDialog],
   ["preDeleteToken", onPreDeleteToken],
+  ["createToken", onCreateToken],
 ]) {
   Hooks.on(hook, fn);
 }

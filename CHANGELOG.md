@@ -1,5 +1,36 @@
 # Changelog
 
+## 2.0.0
+
+This release was originally planned as a **Foundry V14-only** update. However, most of the work is already possible in **V13**, so 2.0.0 now ships with **V13 compatibility** while being **V14-ready**.
+
+⚠️ **V14 is still in development.** V14 support in this release should be considered **“V14-ready / beta”** until it has been verified against the final V14 stable build.
+
+### Breaking Changes
+
+* **V14+ only:** Removed the module’s custom **Token Height** support. The module now relies on Foundry’s built-in **Token Depth** (Token Configuration). Height is calculated as `token.depth * grid.distance`.
+* **Gridless Token Default Shape:** This optional setting now defines the **default token shape on gridless scenes** and is applied to all tokens on gridless scenes as a workaround for **[dnd5e#6739](https://github.com/foundryvtt/dnd5e/issues/6739)**.
+
+### Changes
+
+* **Line of Sight (LoS):** Testing now uses Foundry’s built-in `canvas.visibility._createVisibilityTestConfig` with `tolerance = canvas.grid.size / 4`. This increases sampling points for larger tokens and aligns results more closely with Foundry’s vision rules. LoS tests now **short-circuit** on the first successful hit (**disabled in Debug Mode**).
+* Expanded the workaround for **[foundryvtt#4509](https://github.com/foundryvtt/foundryvtt/issues/4509)** (introduced in **v1.4.2**): for clipping tokens, any test points that **do not** have LoS to the token’s center are **filtered out** before evaluating LoS or Cover.
+* **Gridless scenes:** Token shape now uses `tokenDoc.shape` (`CONST.TOKEN_SHAPES`) instead of a module-specific override.
+* **3D Cover and LoS detection:**
+  * **Vision origin:**
+    * **Attacker:** Always uses **vision origin elevation** for both **Cover** and **LoS**.
+    * **Target (Cover only):** Uses **vision origin elevation** for **Cover** checks to better approximate “at least ~50% of a token should be visible” and to avoid **small creatures fully blocking larger ones**. This behavior was also already implemented for **wall-checks** when using the **wall-height** module.
+    * **V13 approximation:** Since V13 has no native vision-origin elevation, we **approximate vision origin** by using the token’s **midpoint elevation** (i.e., **half the creature height**).
+  * **LoS target sampling:** For **LoS** checks, we don’t rely on target vision origin. Instead we sample **multiple elevation test points on the target**, based on **Token Height**—this mirrors what V14’s `getTestPoint()` effectively provides, and improves hit rates especially on **3D maps** (on purely **2D maps** it has little impact since LoS is primarily blocked by walls).
+  * **Note:** These changes both (a) better support the upcoming **V14 Scene Levels**, and (b) prevent **small creatures** from unrealistically blocking **larger creatures**. There’s no clear RAW statement that lines must be computed only from “token bottom”, and RAI this approach tends to be more sensible. If there’s demand, I can add an optional setting to revert Cover checks to the classic **token-bottom-only** behavior.
+
+* Optimized `buildCreaturePrism` across all grid types for improved performance. **Occluder Inset (px)** now scales consistently with other inset values.
+* Reworked distance calculations, as the previous implementation did not behave as intended:
+  * **Square/hex grids:** Measure as usual **center-to-center**.
+  * **Gridless scenes:** Respect the selected distance mode; **Edge** mode uses the token’s **outer radius**, including rectangular tokens (not perfect for every edge case, but avoids disproportionate complexity).
+  * Distance now uses the **shortest effective range**, taking into account each token’s vertical span (bottom elevation through creature height), where applicable.
+* General cleanup, bug fixes, and performance improvements.
+
 ## Version 1.4.4
 
 - Minor fix to cover and line-of-sight checks when using positions instead of the actor document.

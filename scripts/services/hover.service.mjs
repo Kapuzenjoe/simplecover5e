@@ -95,9 +95,7 @@ export async function onHoverToken(token, hoverState) {
     }
 
     const unit = hoveredToken?.scene?.grid?.units ?? "";
-    const rounded = Math.round(Number(distance) || 0);
-
-    labelText = unit ? `${rounded} ${unit}` : `${rounded}`;
+    labelText = unit ? `${distance} ${unit}` : `${distance}`;
   }
 
   const showDistance = hoverMode === "coverAndDistance" && !!labelText;

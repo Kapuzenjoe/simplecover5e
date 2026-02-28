@@ -82,9 +82,10 @@
                 }
             },
             "GridlessTokenShape": {
-                "Name": "Figurform in gitterlosen Szenen",
-                "Hint": "Legt fest, ob Figuren in gitterlosen Szenen als Quadrate oder als Kreise (mit mehreren Kreisen für größere Kreaturen) für Distanz- und Deckungsberechnungen behandelt werden.",
+                "Name": "Standard Figurform in gitterlosen Szenen",
+                "Hint": "Wenn aktiviert, werden alle Figuren in gitterlosen Szenen automatisch auf die ausgewählte Form gesetzt.",
                 "Options": {
+                    "None": "Keine Änderung",
                     "Square": "Quadrate",
                     "Circle": "Kreise"
                 }

@@ -1,11 +1,9 @@
 import { MODULE_ID, SETTING_KEYS } from "../config/constants.config.mjs";
 import {
     buildCoverContext,
-    buildCreaturePrism,
     evaluateCoverFromOccluders,
     evaluateLOS,
 } from "../services/cover.engine.mjs";
-import { isBlockingCreatureToken } from "../services/cover.service.mjs";
 import { ignoresCover } from "../utils/rules.cover.mjs";
 import { drawCoverDebug, clearCoverDebug } from "../services/cover.debug.mjs";
 import { measureTokenDistance } from "../utils/distance.mjs";
@@ -78,23 +76,14 @@ function getTokenTokenDistance(sourceToken, targetToken) {
 }
 
 /**
- * Build the cover evaluation context and precompute creature prisms for blocking tokens.
+ * Build the cover evaluation context.
  *
  * @param {Scene} [scene=canvas.scene]  The scene for which to build the cover context.
  * @returns {object|null}               The cover evaluation context, or null if no scene is available.
  */
 function buildContextWithPrisms(scene = canvas?.scene) {
-    const s = scene ?? canvas?.scene;
-    if (!s) return null;
-
-    const ctx = buildCoverContext(s);
-    const placeables = canvas?.tokens?.placeables ?? [];
-    const blockingTokens = placeables.filter(t => isBlockingCreatureToken(t));
-
-    ctx.creaturePrisms = new Map(
-        blockingTokens.map(t => [t.id, buildCreaturePrism(t.document, ctx)])
-    );
-    return ctx;
+    if (!scene) return null;
+    return buildCoverContext(scene);
 }
 
 /**

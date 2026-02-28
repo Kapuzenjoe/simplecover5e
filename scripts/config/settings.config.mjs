@@ -1,7 +1,7 @@
 import { MODULE_ID, DEFAULT_SIZE, SETTING_KEYS } from "./constants.config.mjs";
 import { SimpleCoverCreatureHeightsConfig, SimpleCoverVariantConfig, SimpleCoverAutomationConfig } from "./menu.config.mjs";
 import { clearCoverDebug } from "../services/cover.debug.mjs";
-import { clearCoverStatusEffect } from "../services/cover.service.mjs";
+import { clearCoverStatusEffect, isV14, changeTokenShapeGlobal } from "../services/cover.service.mjs";
 
 /**
  * Settings definitions for Simple Cover 5e.
@@ -98,7 +98,7 @@ const SETTINGS = [
     requiresReload: false,
     config: false
   },
-    {
+  {
     key: SETTING_KEYS.IGNORE_FRIENDLY,
     name: "SIMPLE_COVER_5E.Settings.IgnoreFriendly.Name",
     hint: "SIMPLE_COVER_5E.Settings.IgnoreFriendly.Hint",
@@ -214,15 +214,17 @@ const SETTINGS = [
     config: false,
     type: new foundry.data.fields.StringField({
       choices: {
+        none: "SIMPLE_COVER_5E.Settings.GridlessTokenShape.Options.None",
         square: "SIMPLE_COVER_5E.Settings.GridlessTokenShape.Options.Square",
         circle: "SIMPLE_COVER_5E.Settings.GridlessTokenShape.Options.Circle"
       },
-      initial: "square",
+      initial: "none",
       required: true,
       blank: false,
       trim: true
     }),
-    requiresReload: false
+    requiresReload: false,
+    onChange: () => changeTokenShapeGlobal()
   },
   {
     key: SETTING_KEYS.DEBUG,
@@ -323,14 +325,16 @@ export function registerSettings() {
     });
   }
 
-  game.settings.registerMenu(MODULE_ID, "creatureHeightsMenu", {
-    name: "SIMPLE_COVER_5E.Settings.HeightsMenu.Name",
-    label: "SIMPLE_COVER_5E.Settings.HeightsMenu.Label",
-    hint: "SIMPLE_COVER_5E.Settings.HeightsMenu.Hint",
-    icon: "fas fa-ruler-vertical",
-    type: SimpleCoverCreatureHeightsConfig,
-    restricted: true
-  });
+  if (!isV14()) {
+    game.settings.registerMenu(MODULE_ID, "creatureHeightsMenu", {
+      name: "SIMPLE_COVER_5E.Settings.HeightsMenu.Name",
+      label: "SIMPLE_COVER_5E.Settings.HeightsMenu.Label",
+      hint: "SIMPLE_COVER_5E.Settings.HeightsMenu.Hint",
+      icon: "fas fa-ruler-vertical",
+      type: SimpleCoverCreatureHeightsConfig,
+      restricted: true
+    });
+  }
 
   game.settings.registerMenu(MODULE_ID, "variantRulesMenu", {
     name: "SIMPLE_COVER_5E.Settings.VariantMenu.Name",
