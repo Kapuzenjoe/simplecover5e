@@ -56,8 +56,6 @@ export function buildCoverContext(scene) {
     };
 }
 
-
-
 /**
  * Build one or more 3D occluder prisms for a creature token.
  * The prism shape depends on grid mode and token-shape settings (e.g., gridless circle uses an inscribed AABB).
@@ -68,10 +66,9 @@ export function buildCoverContext(scene) {
  */
 export function buildCreaturePrism(td, ctx, debugTokenShapes) {
     const { grid, halfGridSize, insetOccluderPx, distancePixels } = ctx;
-    const elevation = Number(td?.elevation) || 0;
+    const elevation = Number(td?.elevation ?? 0);
     const zMin = elevation * distancePixels;
     let height = getCreatureHeight(td, ctx);
-    console.log("getCreatureHeight", height);
 
     const zMax = zMin + (height * distancePixels);
     const prisms = [];
@@ -214,8 +211,8 @@ function wallsBlock(aCorner, bCorner, attackerDoc, targetDoc, ctx, losCheck = fa
             const topRaw = whFlags?.top;
             const bottomRaw = whFlags?.bottom;
 
-            const wallTop = (topRaw !== null) ? Number(topRaw) : Infinity;
-            const wallBottom = (bottomRaw !== null) ? Number(bottomRaw) : -Infinity;
+            const wallTop = (topRaw != null) ? Number(topRaw) : Infinity;
+            const wallBottom = (bottomRaw != null) ? Number(bottomRaw) : -Infinity;
 
             if (debugOn && activeGM) {
                 const losBlock = losLineZ >= wallBottom && losLineZ <= wallTop
@@ -326,12 +323,12 @@ function segIntersectsAABB3D(p, q, b) {
         return true;
     }
 
-    if (!clip(-d.x, p.x - b[0].minX)) return false;
-    if (!clip(d.x, b[0].maxX - p.x)) return false;
-    if (!clip(-d.y, p.y - b[0].minY)) return false;
-    if (!clip(d.y, b[0].maxY - p.y)) return false;
-    if (!clip(-d.z, p.z - b[0].minZ)) return false;
-    if (!clip(d.z, b[0].maxZ - p.z)) return false;
+    if (!clip(-d.x, p.x - b.minX)) return false;
+    if (!clip(d.x, b.maxX - p.x)) return false;
+    if (!clip(-d.y, p.y - b.minY)) return false;
+    if (!clip(d.y, b.maxY - p.y)) return false;
+    if (!clip(-d.z, p.z - b.minZ)) return false;
+    if (!clip(d.z, b.maxZ - p.z)) return false;
 
     const EPS = 1e-3;
     return (t0 + EPS) < (t1 - EPS);
@@ -341,37 +338,47 @@ function segIntersectsAABB3D(p, q, b) {
  * Compute target/attacker sample centers used for cover evaluation.
  * The sampling pattern depends on grid mode and creature size.
  *
- * @param {TokenDocument} td                      The token document to sample.
- * @param {CoverContext} ctx                      The cover evaluation context.
- * @returns {Array<{x:number,y:number}>}          The sample centers in canvas pixels.
+ * @param {TokenDocument|Position} td                       The token document or position to sample.
+ * @param {CoverContext} ctx                                The cover evaluation context.
+ * @param {boolean} coverCheck                              Whether the centers are being computed for a cover check (true) or a LoS check (false).
+ * @returns {Array<{x:number,y:number,elevation:number}>}   The sample centers with elevation.
  */
-function getTokenSampleCenters(td, ctx) {
+function getTokenSampleCenters(td, ctx, coverCheck = false) {
     const { grid } = ctx;
     const x = td.x
     const y = td.y
     const width = td?.width ?? 0;
     const height = td?.height ?? 0;
+    let elevation = Number(td?.elevation ?? 0);
+    const creatureHeight = coverCheck ? getCreatureHeight(td, ctx) * 0.5 : getCreatureHeight(td, ctx);
+    const steps = (creatureHeight !== elevation || !coverCheck) ? 1 : 0;
+    elevation = coverCheck ? elevation + creatureHeight : elevation;
 
     const centers = [];
 
-    if ((width <= 1) && (height <= 1)) {
-        const center = td.getCenterPoint() || { x: x, y: y };
-        centers.push({ x: center.x, y: center.y });
+    if ((width <= 1) && (height <= 1) && (creatureHeight === 0)) {
+        const center = td.getCenterPoint?.() ?? { x, y };
+        return [{ x: center.x, y: center.y, elevation: center.elevation ?? elevation }];
     }
 
     if (grid.isSquare) {
         if (Number.isInteger(width) && Number.isInteger(height)) {
             for (let i = 0.5; i < height; i++) {
                 for (let j = 0.5; j < width; j++) {
-                    centers.push({ x: x + (grid.size * j), y: y + (grid.size * i), });
+                    for (let k = 0; k <= steps; k++) {
+                        centers.push({ x: x + (grid.size * j), y: y + (grid.size * i), elevation: elevation + (creatureHeight * k) });
+                    }
                 }
             }
         }
     }
     else if (grid.isHexagonal) {
-        const offset = td.getOccupiedGridSpaceOffsets?.() ?? [];
-        if (offset.length) {
-            centers.push(...offset.map(o => grid.getCenterPoint(o)));
+        const offsets = td.getOccupiedGridSpaceOffsets?.() ?? [];
+        for (const o of offsets) {
+            const c = grid.getCenterPoint(o);
+            for (let k = 0; k <= steps; k++) {
+                centers.push({ x: c.x, y: c.y, elevation: elevation + (creatureHeight * k) });
+            }
         }
     }
     else {
@@ -384,11 +391,13 @@ function getTokenSampleCenters(td, ctx) {
         const stepY = n ? (size?.height - (padY * 2)) / n : 0;
         for (let i = 0; i <= n; i++) {
             for (let j = 0; j <= m; j++) {
-                centers.push({
-                    x: x + padX + (stepX * j),
-                    y: y + padY + (stepY * i),
-                });
-
+                for (let k = 0; k <= steps; k++) {
+                    centers.push({
+                        x: x + padX + (stepX * j),
+                        y: y + padY + (stepY * i),
+                        elevation: elevation + (creatureHeight * k)
+                    });
+                }
             }
         }
     }
@@ -517,41 +526,37 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
     const debugTokenShapes = debug ? { attacker: [], target: [], occluders: [] } : null;
     const { grid, distancePixels, insetAttackerPx, insetTargetPx } = ctx;
     const creaturesHalfOnly = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.CREATURES_HALF_ONLY);
-    const ignorefriendly = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.IGNORE_FRIENDLY);
+    const ignoreFriendly = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.IGNORE_FRIENDLY);
 
     const placeables = canvas?.tokens?.placeables ?? [];
     const blockingTokens = placeables.filter(t =>
-        t.id !== attackerDoc.id &&
-        t.id !== targetDoc.id &&
-        (!ignorefriendly || attackerDoc?.disposition !== t?.document?.disposition) &&
+        t.id !== attackerDoc?.id &&
+        t.id !== targetDoc?.id &&
+        (!ignoreFriendly || attackerDoc?.disposition !== t?.document?.disposition) &&
         isBlockingCreatureToken(t)
     );
 
     const boxes = new Map(blockingTokens.map(t => [t.id, buildCreaturePrism(t.document, ctx, debugTokenShapes)]));
 
-    const attackerHeight = getCreatureHeight(attackerDoc, ctx) ?? 0;
-    const targetHeight = getCreatureHeight(targetDoc, ctx) ?? 0;
-    const attackerVisionSource = isV14()
-        ? attackerDoc.getVisionOrigin()
-        : attackerDoc.getCenterPoint({ elevation: (attackerDoc?.elevation ?? 0) + attackerHeight * 0.5 });
-
-    const targetVisionSource = isV14()
-        ? targetDoc.getVisionOrigin()
-        : targetDoc.getCenterPoint({ elevation: (targetDoc?.elevation ?? 0) + targetHeight * 0.5 });
-       
+    let attackerVisionSource = 0;
+    let targetVisionSource = 0;
     let attackerSamples = [];
     let targetSamples = [];
 
     if (isV14()) {
-        attackerSamples = attackerDoc?.getTestPoints({ depth: 0, elevation: attackerVisionSource?.elevation })
+        attackerVisionSource = attackerDoc?.getVisionOrigin?.();
+        targetVisionSource = targetDoc?.getVisionOrigin?.();
+        attackerSamples = attackerDoc?.getTestPoints?.({ depth: 0, elevation: attackerVisionSource?.elevation })
             ?? [{ x: attackerDoc.x, y: attackerDoc.y, elevation: attackerDoc?.elevation ?? 0 }];
 
-        targetSamples = targetDoc?.getTestPoints({ depth: 0, elevation: targetVisionSource?.elevation })
+        targetSamples = targetDoc?.getTestPoints?.({ depth: 0, elevation: targetVisionSource?.elevation })
             ?? [{ x: targetDoc.x, y: targetDoc.y, elevation: targetDoc?.elevation ?? 0 }];
     }
     else {
-        attackerSamples = getTokenSampleCenters(attackerDoc, ctx);
-        targetSamples = getTokenSampleCenters(targetDoc, ctx);
+        attackerSamples = getTokenSampleCenters(attackerDoc, ctx, true);
+        targetSamples = getTokenSampleCenters(targetDoc, ctx, true);
+        attackerVisionSource = attackerSamples[0];
+        targetVisionSource = targetSamples[0];
     }
 
     const attackerZ = (attackerVisionSource?.elevation ?? attackerDoc?.elevation ?? 0) * distancePixels + 0.1;
@@ -564,14 +569,14 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
 
 
     let best = { reachable: -1, coverLevel: 2, segs: [] };
+    const totalLines = grid.isHexagonal ? 6 : (isTargetCircleShape ? 8 : 4);
+    const threshold = grid.isHexagonal ? 4 : (isTargetCircleShape ? 6 : 3);
 
     for (const tCenter of targetSamples) {
         const tgtCorners = buildTokenCornersForCenter(tCenter, ctx, targetDoc, insetTargetPx);
         if (!tgtCorners || !tgtCorners.length) continue;
 
         if (debugTokenShapes) debugTokenShapes.target.push(tgtCorners);
-
-        const totalLinesForThisTarget = tgtCorners.length;
 
         for (const aCenter of attackerSamples) {
             const atkCorners = buildTokenCornersForCenter(aCenter, ctx, attackerDoc, insetAttackerPx);
@@ -593,11 +598,14 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
 
                     let cBlocked = false;
                     if (!wBlocked) {
-                        for (const box of boxes.values()) {
-                            if (segIntersectsAABB3D(attacker, target, box)) {
-                                cBlocked = true;
-                                break;
+                        for (const prisms of boxes.values()) {
+                            for (const b of prisms) {
+                                if (segIntersectsAABB3D(attacker, target, b)) {
+                                    cBlocked = true;
+                                    break;
+                                }
                             }
+                            if (cBlocked) break;
                         }
                     }
 
@@ -615,20 +623,16 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
                         cBlocked,
                         _tested: { a: wallResult.A, b: wallResult.B }
                     });
-
-                    const breakAt = grid.isHexagonal ? 4 : (isTargetCircleShape ? 6 : 3);
-                    if (!debug && !creaturesHalfOnly && ((blockedWalls + blockedCreatures) >= breakAt)) break;
                 }
 
-                const totalBlocked = blockedWalls + blockedCreatures;
-                const reachable = totalLinesForThisTarget - totalBlocked;
-
-                const threshold = grid.isHexagonal ? 4 : (isTargetCircleShape ? 6 : 3);
+                const totalBlocked = blockedWalls + blockedCreatures + Math.max(0, totalLines - tgtCorners.length);
+                const reachable = Math.max(0, totalLines - totalBlocked);
 
                 let coverLevel;
                 if (creaturesHalfOnly) {
-                    if (blockedWalls >= threshold) coverLevel = 2;
-                    else if (blockedWalls >= 1) coverLevel = 1;
+                    const effWalls = blockedWalls + Math.max(0, totalLines - tgtCorners.length);
+                    if (effWalls >= threshold) coverLevel = 2;
+                    else if (effWalls >= 1) coverLevel = 1;
                     else if (blockedCreatures >= 1) coverLevel = 1;
                     else coverLevel = 0;
                 } else {
@@ -639,7 +643,7 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
 
                 if (reachable > best.reachable || (reachable === best.reachable && coverLevel < best.coverLevel)) {
                     best = { reachable, coverLevel, segs };
-                    if (reachable === totalLinesForThisTarget && coverLevel === 0) {
+                    if (!debug && coverLevel === 0 && totalBlocked === 0 && tgtCorners.length === totalLines) {
                         const cover = "none";
                         const bonus = COVER.BONUS[cover] || 0;
                         return debug ? { cover, bonus, debugSegments: best.segs, debugTokenShapes } : { cover, bonus };

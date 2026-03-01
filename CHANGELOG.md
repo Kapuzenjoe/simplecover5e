@@ -4,7 +4,7 @@
 
 This release was originally planned as a **Foundry V14-only** update. However, most of the work is already possible in **V13**, so 2.0.0 now ships with **V13 compatibility** while being **V14-ready**.
 
-⚠️ **V14 is still in development.** V14 support in this release should be considered **“V14-ready / beta”** until it has been verified against the final V14 stable build.
+⚠️ **V14 is still in development.** V14 support in this release should be considered **“V14-ready / beta”** until it has been verified against a V14 stable build.
 
 ### Breaking Changes
 
@@ -16,13 +16,21 @@ This release was originally planned as a **Foundry V14-only** update. However, m
 * **Line of Sight (LoS):** Testing now uses Foundry’s built-in `canvas.visibility._createVisibilityTestConfig` with `tolerance = canvas.grid.size / 4`. This increases sampling points for larger tokens and aligns results more closely with Foundry’s vision rules. LoS tests now **short-circuit** on the first successful hit (**disabled in Debug Mode**).
 * Expanded the workaround for **[foundryvtt#4509](https://github.com/foundryvtt/foundryvtt/issues/4509)** (introduced in **v1.4.2**): for clipping tokens, any test points that **do not** have LoS to the token’s center are **filtered out** before evaluating LoS or Cover.
 * **Gridless scenes:** Token shape now uses `tokenDoc.shape` (`CONST.TOKEN_SHAPES`) instead of a module-specific override.
-* **3D Cover and LoS detection:**
-  * **Vision origin:**
-    * **Attacker:** Always uses **vision origin elevation** for both **Cover** and **LoS**.
-    * **Target (Cover only):** Uses **vision origin elevation** for **Cover** checks to better approximate “at least ~50% of a token should be visible” and to avoid **small creatures fully blocking larger ones**. This behavior was also already implemented for **wall-checks** when using the **wall-height** module.
-    * **V13 approximation:** Since V13 has no native vision-origin elevation, we **approximate vision origin** by using the token’s **midpoint elevation** (i.e., **half the creature height**).
-  * **LoS target sampling:** For **LoS** checks, we don’t rely on target vision origin. Instead we sample **multiple elevation test points on the target**, based on **Token Height**—this mirrors what V14’s `getTestPoint()` effectively provides, and improves hit rates especially on **3D maps** (on purely **2D maps** it has little impact since LoS is primarily blocked by walls).
-  * **Note:** These changes both (a) better support the upcoming **V14 Scene Levels**, and (b) prevent **small creatures** from unrealistically blocking **larger creatures**. There’s no clear RAW statement that lines must be computed only from “token bottom”, and RAI this approach tends to be more sensible. If there’s demand, I can add an optional setting to revert Cover checks to the classic **token-bottom-only** behavior.
+* **3D Cover & Line of Sight (LoS)**
+
+  * **Vision Origin Handling**
+
+    * **Attacker:** Always uses the token’s **vision-origin elevation** for both **Cover** and **LoS**.
+    * **Target (Cover only):** Uses the target’s **vision-origin elevation** for **Cover** checks. This better matches the “**at least ~50% visible**” intent (“Another creature or an object that covers at least half of the target…”) and prevents **Small creatures from fully blocking larger tokens**. This is consistent with the behavior already used for **wall checks** when running with **wall-height**.
+    * **V13 fallback / approximation:** Since Foundry **V13** doesn’t expose native **vision-origin elevation**, we approximate it using the token’s **midpoint elevation** (≈ **50% of token height**).
+  * **LoS Target Sampling**
+
+    * For **LoS** we do **not** rely only on the target’s vision origin. Instead, we sample **multiple elevation test points** across the target based on **Token Height**. This mirrors the practical effect of Foundry **V14**’s `getTestPoint()` behavior and improves LoS reliability on **3D scenes**. (On strictly **2D** scenes the impact is minimal, since LoS is typically dominated by walls.)
+  * **Notes**
+
+    * These changes (a) improve compatibility with upcoming **V14 Scene Levels**, and (b) stop **undersized tokens** from producing unrealistic full-block situations against **larger creatures**.
+    * There’s no clear RAW requirement that rays must be computed strictly from “**token bottom**”; from an RAI perspective this approach is generally more sensible.
+    * If there’s demand, we can add an optional setting to restore classic **token-bottom-only** Cover checks.
 
 * Optimized `buildCreaturePrism` across all grid types for improved performance. **Occluder Inset (px)** now scales consistently with other inset values.
 * Reworked distance calculations, as the previous implementation did not behave as intended:
