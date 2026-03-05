@@ -247,6 +247,7 @@ export class SimpleCoverVariantConfig extends SimpleCoverBaseConfigApp {
         engine: {
             legend: "SIMPLE_COVER_5E.Settings.VariantMenu.Groups.Engine",
             keys: [
+                SETTING_KEYS.ORIGIN_VISION_ATTACKER,
                 SETTING_KEYS.INSET_ATTACKER,
                 SETTING_KEYS.INSET_TARGET,
                 SETTING_KEYS.INSET_OCCLUDER

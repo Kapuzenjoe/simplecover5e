@@ -182,6 +182,10 @@ function wallsBlock(aCorner, bCorner, attackerDoc, targetDoc, ctx, losCheck = fa
         level: levelId
     }) || false : false;
 
+    if (debugOn && activeGM) {
+        console.log(`[${MODULE_ID}]Testing segment A(${A.x}, ${A.y}, ${A.elevation}) → B(${B.x}, ${B.y}, ${B.elevation}) for ${losCheck ? "LoS" : "cover"}:`, { collisions, surfaceBlocked });
+    }
+
     if (!collisions.length && !surfaceBlocked) {
         return { blocked: false, A, B };
     }
@@ -203,7 +207,7 @@ function wallsBlock(aCorner, bCorner, attackerDoc, targetDoc, ctx, losCheck = fa
             }
         }
 
-        const { coverLineZ, attZ, tgtZ, losLineZ } = getLineHeightAtVertex(A, B, vertex, attackerDoc, targetDoc, ctx);
+        const { coverLineZ, attZ, tgtZ } = getLineHeightAtVertex(A, B, vertex, attackerDoc, targetDoc, ctx);
         if (!Number.isFinite(coverLineZ)) continue;
 
         for (const edge of edgeSet) {
@@ -215,7 +219,7 @@ function wallsBlock(aCorner, bCorner, attackerDoc, targetDoc, ctx, losCheck = fa
             const wallBottom = (bottomRaw != null) ? Number(bottomRaw) : -Infinity;
 
             if (debugOn && activeGM) {
-                const losBlock = losLineZ >= wallBottom && losLineZ <= wallTop
+                //  const losBlock = losLineZ >= wallBottom && losLineZ <= wallTop
                 const wallBlock = coverLineZ >= wallBottom && coverLineZ <= wallTop
                 console.log(
                     `[${MODULE_ID}] wall-height line check:`,
@@ -225,8 +229,8 @@ function wallsBlock(aCorner, bCorner, attackerDoc, targetDoc, ctx, losCheck = fa
                         wall: { id: edge?.object?.document.id, bottom: wallBottom, top: wallTop },
                         coverLineZ,
                         wallBlock,
-                        losLineZ,
-                        losBlock,
+                        //  losLineZ,
+                        //   losBlock,
                         tVertex: {
                             x: vertex.x,
                             y: vertex.y
@@ -239,17 +243,17 @@ function wallsBlock(aCorner, bCorner, attackerDoc, targetDoc, ctx, losCheck = fa
                 return { blocked: true, A, B };
             }
 
-            if (losCheck) {
-                if (losLineZ >= wallBottom && losLineZ <= wallTop) {
-                    return { blocked: true, A, B };
-                }
-            }
+            // if (losCheck) {
+            //     if (losLineZ >= wallBottom && losLineZ <= wallTop) {
+            //         return { blocked: true, A, B };
+            //     }
+            // }
             else if (coverLineZ >= wallBottom && coverLineZ <= wallTop) {
                 return { blocked: true, A, B };
             }
         }
     }
-    return { blocked: false, A, B };
+    return { blocked: false, A, B, collisions };
 }
 
 /**
@@ -289,10 +293,11 @@ function getLineHeightAtVertex(A, B, vertex, attackerDoc, targetDoc, ctx) {
     const tgtZ = tgtBottom + (Number.isFinite(tgtHeight) ? tgtHeight * 0.5 : 0);
     const losTgtZ = tgtBottom + (Number.isFinite(tgtHeight) ? tgtHeight : 0);
 
-    const coverLineZ = attZ + t * (tgtZ - attZ);
-    const losLineZ = Math.min(losAttZ, attZ + t * (losTgtZ - attZ));
+    //const coverLineZ = attZ + t * (tgtZ - attZ);
+    const coverLineZ = A.elevation + t * (B.elevation - A.elevation);
+    // const losLineZ = Math.min(losAttZ, attZ + t * (losTgtZ - attZ));
 
-    return { coverLineZ, attZ, tgtZ, losLineZ };
+    return { coverLineZ, attZ, tgtZ };
 }
 
 /**
@@ -351,14 +356,16 @@ function getTokenSampleCenters(td, ctx, coverCheck = false) {
     const height = td?.height ?? 0;
     let elevation = Number(td?.elevation ?? 0);
     const creatureHeight = coverCheck ? getCreatureHeight(td, ctx) * 0.5 : getCreatureHeight(td, ctx);
-    const steps = (creatureHeight !== elevation || !coverCheck) ? 1 : 0;
+    const steps = coverCheck ? 0 : 2;
     elevation = coverCheck ? elevation + creatureHeight : elevation;
 
     const centers = [];
 
-    if ((width <= 1) && (height <= 1) && (creatureHeight === 0)) {
+    if ((width < 1) && (height < 1)) {
         const center = td.getCenterPoint?.() ?? { x, y };
-        return [{ x: center.x, y: center.y, elevation: center.elevation ?? elevation }];
+        return coverCheck
+            ? [{ x: center.x, y: center.y, elevation: elevation }]
+            : [{ x: center.x, y: center.y, elevation: elevation }, { x: center.x, y: center.y, elevation: elevation + creatureHeight }];
     }
 
     if (grid.isSquare) {
@@ -366,7 +373,7 @@ function getTokenSampleCenters(td, ctx, coverCheck = false) {
             for (let i = 0.5; i < height; i++) {
                 for (let j = 0.5; j < width; j++) {
                     for (let k = 0; k <= steps; k++) {
-                        centers.push({ x: x + (grid.size * j), y: y + (grid.size * i), elevation: elevation + (creatureHeight * k) });
+                        centers.push({ x: x + (grid.size * j), y: y + (grid.size * i), elevation: elevation + (creatureHeight * 0.5 * k) });
                     }
                 }
             }
@@ -377,7 +384,7 @@ function getTokenSampleCenters(td, ctx, coverCheck = false) {
         for (const o of offsets) {
             const c = grid.getCenterPoint(o);
             for (let k = 0; k <= steps; k++) {
-                centers.push({ x: c.x, y: c.y, elevation: elevation + (creatureHeight * k) });
+                centers.push({ x: c.x, y: c.y, elevation: elevation + (creatureHeight * 0.5 * k) });
             }
         }
     }
@@ -395,7 +402,7 @@ function getTokenSampleCenters(td, ctx, coverCheck = false) {
                     centers.push({
                         x: x + padX + (stepX * j),
                         y: y + padY + (stepY * i),
-                        elevation: elevation + (creatureHeight * k)
+                        elevation: elevation + (creatureHeight * 0.5 * k)
                     });
                 }
             }
@@ -507,6 +514,8 @@ function buildTokenCornersForCenter(center, ctx, td, inset) {
     }
     else corners = buildBoxCorners(center, radius, inset);
 
+    corners.forEach(c => c.elevation = center?.elevation ?? 0);
+
     return getConstrainedTestPoints(corners, td);
 }
 
@@ -558,6 +567,7 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
         attackerVisionSource = attackerSamples[0];
         targetVisionSource = targetSamples[0];
     }
+    console.log("Cover Sample", attackerSamples, targetSamples)
 
     const attackerZ = (attackerVisionSource?.elevation ?? attackerDoc?.elevation ?? 0) * distancePixels + 0.1;
     const targetZ = (targetVisionSource?.elevation ?? targetDoc?.elevation ?? 0) * distancePixels + 0.1;
@@ -619,9 +629,9 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
                         a: aCorner,
                         b: tCorner,
                         blocked: isBlocked,
+                        wallResult,
                         wBlocked,
                         cBlocked,
-                        _tested: { a: wallResult.A, b: wallResult.B }
                     });
                 }
 
@@ -670,10 +680,19 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
 export function evaluateLOS(attackerDoc, targetDoc, ctx) {
     if (!attackerDoc || !targetDoc) return { hasLOS: true, targetLosPoints: [] };
     const debugOn = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.DEBUG);
+    const attackerVisionOrigin = game.settings?.get?.(MODULE_ID, SETTING_KEYS.ATTACKER_VISION_ORIGIN);
 
-    const origin = (typeof attackerDoc.getVisionOrigin === "function")
-        ? (isV14() ? attackerDoc.getVisionOrigin() : attackerDoc.getCenterPoint())
-        : { x: attackerDoc.x, y: attackerDoc.y, elevation: attackerDoc.elevation ?? 0 };
+    const origin = isV14()
+        ? attackerDoc.getVisionOrigin()
+        : (attackerDoc.getCenterPoint?.() ?? {
+            x: attackerDoc.x,
+            y: attackerDoc.y,
+            elevation: attackerDoc?.elevation ?? 0
+        });
+
+    if (attackerVisionOrigin === "Top") origin.elevation = getCreatureHeight(attackerDoc, ctx) + origin.elevation;
+    else if (attackerVisionOrigin === "Bottom") origin.elevation = origin.elevation;
+    else if (!isV14()) origin.elevation = getCreatureHeight(attackerDoc, ctx) * 0.5 + origin.elevation;
 
     const baseTestPoints = isV14() ? targetDoc.getTestPoints() : getTokenSampleCenters(targetDoc, ctx);
     const tolerance = canvas.grid.size / 4;
@@ -695,6 +714,7 @@ export function evaluateLOS(attackerDoc, targetDoc, ctx) {
         });
 
     const targetTestPoints = getConstrainedTestPoints(testPoints, targetDoc);
+    console.log("LoS Test Points", targetTestPoints)
 
     const targetLosPoints = [];
     let hasLOS = false;
