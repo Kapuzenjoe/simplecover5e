@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.0.0
+## 2.0.0rc1
 
 This release was originally planned as a **Foundry V14-only** update. However, most of the work is already possible in **V13**, so 2.0.0 now ships with **V13 compatibility** while being **V14-ready**.
 
@@ -8,30 +8,30 @@ This release was originally planned as a **Foundry V14-only** update. However, m
 
 ### Breaking Changes
 
-* **V14+ only:** Removed the module’s custom **Token Height** support. The module now relies on Foundry’s built-in **Token Depth** (Token Configuration). Height is calculated as `token.depth * grid.distance`.
-* **Gridless Token Default Shape:** This optional setting now defines the **default token shape on gridless scenes** and is applied to all tokens on gridless scenes as a workaround for **[dnd5e#6739](https://github.com/foundryvtt/dnd5e/issues/6739)**.
+* **V14+ only:** Removed the module’s custom **Token Height** support. The module now relies on Foundry’s built-in **Token Depth** setting in Token Configuration. Height is calculated as `token.depth * grid.distance`.
+* **Gridless Token Default Shape:** This optional setting now defines the **default token shape for gridless scenes**. It is applied to all tokens on gridless scenes as a workaround for **[dnd5e#6739](https://github.com/foundryvtt/dnd5e/issues/6739)**.
 
 ### Changes
 
-* **Line of Sight (LoS):** Testing now uses Foundry’s built-in `canvas.visibility._createVisibilityTestConfig` with `tolerance = canvas.grid.size / 4`. This increases sampling points for larger tokens and aligns results more closely with Foundry’s vision rules. LoS tests now **short-circuit** on the first successful hit (**disabled in Debug Mode**).
-* Expanded the workaround for **[foundryvtt#4509](https://github.com/foundryvtt/foundryvtt/issues/4509)** (introduced in **v1.4.2**): for clipping tokens, any test points that **do not** have LoS to the token’s center are **filtered out** before evaluating LoS or Cover.
+* **Line of Sight (LoS):** LoS testing now uses Foundry’s built-in `canvas.visibility._createVisibilityTestConfig` with `tolerance = canvas.grid.size / 4`. This increases the number of sample points for larger tokens and produces results that more closely match Foundry’s own vision rules. LoS tests now also **short-circuit** on the first successful hit (**except in Debug Mode**).
+* Expanded the workaround for **[foundryvtt#4509](https://github.com/foundryvtt/foundryvtt/issues/4509)** (introduced in **v1.4.2**): for clipping tokens, any test points that **do not** have LoS to the token’s center are now **filtered out** before evaluating LoS or Cover.
 * **Gridless scenes:** Token shape now uses `tokenDoc.shape` (`CONST.TOKEN_SHAPES`) instead of a module-specific override.
 * **3D Cover & Line of Sight (LoS)**
-  * **Attacker:** Added a new **Attacker Vision Origin** setting that controls the attacker token’s **height test point** used as the ray origin for **Cover** and **LoS**. By default, rays originate from the token’s **vision-origin elevation** (Center / half token height; matches Foundry V14+ and is recommended).
-    * **wall-height integration:** `wall-height` performs vision detection from the token **top** (elevation + height). While not always ideal, we recommend switching **Attacker Vision Origin** to **Top** when `wall-height` is active to avoid “full cover” results in cases where the target is still visibly exposed on the canvas.
-  * **Target (Cover only):** Uses the target’s **vision-origin elevation** for **Cover** checks. 
-  * **Target (LoS only):**  For **LoS** we do **not** rely only on the target’s vision origin. Instead, we sample **multiple elevation test points** across the target based on **Token Height**. This partly reflects the behavior of Foundry **V14**’s `getTestPoint()` function and improves LoS reliability on **3D scenes**. (On strictly **2D** scenes the impact is minimal, since LoS is typically dominated by walls.)
-  * **V13 fallback / approximation:** Since Foundry **V13** doesn’t expose native **vision-origin elevation**, we approximate it using half the token’s height.
-  * **Notes**
-    * Improves forward compatibility with upcoming V14 Scene Levels behavior.
-    * Prevents unrealistic “full-block” results caused by undersized tokens versus larger creatures.
-    * There’s no RAW text that specifies an exact ray origin; using the attacker’s and target’s vision origin (approximated via the token’s half-height) better matches the PHB’s “covers at least half of the target…” intent for most cases, even if it can’t model every edge case.
-    * If requested, we can add an optional setting to restore legacy target-bottom Cover check
-* Optimized `buildCreaturePrism` across all grid types for improved performance. **Occluder Inset (px)** now scales consistently with other inset values.
+  * **Attacker:** Cover and LoS checks now use the attacker’s **vision origin**.
+    * **`wall-height` integration:** The `wall-height` module performs vision detection from the token’s **top** (`elevation + height`). While this is not ideal in every case, the attacker’s vision origin is set to the **top** when `wall-height` is active in order to avoid incorrect **full cover** results when the target is still visibly exposed on the canvas. On purely 2D maps, vision origin does not affect the result.
+  * **Target (Cover only):** Cover checks now use the target’s **vision origin**.
+  * **Target (LoS only):** LoS checks now uses samples **multiple elevation test points** across the target based on its height. This partially reflects the behavior of Foundry V14’s `getTestPoint()` and improves LoS reliability in **3D scenes**.
+  * **V13 fallback / approximation:** Because Foundry **V13** does not expose a native **vision origin**, the module approximates it using **half the token’s height**.
+  * **Notes:**
+    * Improves forward compatibility with upcoming **V14 Scene Levels** behavior.
+    * Prevents unrealistic “fully blocked” results caused by undersized tokens when targeting larger creatures.
+    * While the RAW rules do not define an exact ray origin, using the attacker’s and target’s vision origin (approximated as half the token’s height) better reflects the PHB wording of “covers at least half of the target” in most cases, even if it cannot represent every edge case perfectly.
+    * A legacy option to restore the previous target-bottom Cover check can be added if there is demand.
+* Optimized `buildCreaturePrism` across all grid types for improved performance. **Occluder Inset (px)** now scales consistently with the module’s other inset values.
 * Reworked distance calculations, as the previous implementation did not behave as intended:
-  * **Square/hex grids:** Measure as usual **center-to-center**.
-  * **Gridless scenes:** Respect the selected distance mode; **Edge** mode uses the token’s **outer radius**, including rectangular tokens (not perfect for every edge case, but avoids disproportionate complexity).
-  * Distance now uses the **shortest effective range**, taking into account each token’s vertical span (bottom elevation through creature height), where applicable.
+  * **Square/hex grids:** Distance is measured as usual, **center-to-center**.
+  * **Gridless scenes:** The selected distance mode is now respected. **Edge** mode uses the token’s **outer radius**, including rectangular tokens. This is not perfect for every edge case, but avoids disproportionate complexity.
+  * Distance now uses the **shortest effective range**, taking each token’s vertical span into account where applicable (from bottom elevation to creature height).
 * General cleanup, bug fixes, and performance improvements.
 
 ## Version 1.4.4

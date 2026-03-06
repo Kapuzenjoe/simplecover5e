@@ -114,7 +114,6 @@ export const SETTING_KEYS = {
   INSET_OCCLUDER: "insetOccluder",
   COVER_HINTS: "coverHints",
   IGNORE_FRIENDLY: "ignoreFriendly",
-  ORIGIN_VISION_ATTACKER: "originVisionAttacker",
 };
 
 /**

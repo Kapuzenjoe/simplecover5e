@@ -62,6 +62,7 @@ export function buildCoverContext(scene) {
  *
  * @param {TokenDocument} td                     The token document to build prisms for.
  * @param {CoverContext} ctx                     The cover evaluation context.
+ * @param {{ attacker: object[], target: object[], occluders: object[] }[]} debugTokenShapes  Debug shape data for attacker, target, and occluders.
  * @returns {Array<{minX:number,minY:number,maxX:number,maxY:number,minZ:number,maxZ:number}>} The occluder prisms (AABBs) in canvas pixel space.
  */
 export function buildCreaturePrism(td, ctx, debugTokenShapes) {
@@ -151,17 +152,14 @@ export function buildCreaturePrism(td, ctx, debugTokenShapes) {
 }
 
 /**
- * Test whether sight-blocking walls obstruct the segment between two inset corners.
+ * Test whether sight-blocking walls obstruct the segment between two positions.
  * If wall-height is active, the intersection is additionally filtered by wall top/bottom values.
  *
- * @param {{raw:{x:number,y:number}|null, inset:{x:number,y:number}}} aCorner   The attacker corner (raw and inset).
- * @param {{raw:{x:number,y:number}|null, inset:{x:number,y:number}}} bCorner   The target corner (raw and inset).
- * @param {TokenDocument|Position} attackerDoc                                  The attacking token document OR a generic position {x,y,elevation?}.
- * @param {TokenDocument} targetDoc                                             The target token document.
- * @param {CoverContext} ctx                                                    The cover evaluation context.
- * @returns {{blocked:boolean, A:{x:number,y:number}, B:{x:number,y:number}}} Whether the segment is blocked and the tested inset segment.
+ * @param {{x:number,y:number,elevation:number,level?:string}} aCorner                       The attacker corner.
+ * @param {{x:number,y:number,elevation:number}} bCorner                                     The target corner.
+ * @returns {{blocked:boolean, A:{x:number,y:number,elevation:number}, B:{x:number,y:number,elevation:number}}}   Whether the segment is blocked and the tested inset segment.
  */
-function wallsBlock(aCorner, bCorner, attackerDoc, targetDoc, ctx, losCheck = false) {
+function wallsBlock(aCorner, bCorner) {
     const A = aCorner
     const B = bCorner
     const backend = CONFIG.Canvas.polygonBackends.sight;
@@ -169,7 +167,7 @@ function wallsBlock(aCorner, bCorner, attackerDoc, targetDoc, ctx, losCheck = fa
     const debugOn = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.DEBUG);
     const activeGM = game.users?.activeGM;
 
-    const levelId = attackerDoc?.level ?? targetDoc?.level ?? canvas.level?.id ?? null;
+    const levelId = A?.level ?? null;
 
     const collisions = backend.testCollision(A, B, {
         type: "sight",
@@ -180,10 +178,10 @@ function wallsBlock(aCorner, bCorner, attackerDoc, targetDoc, ctx, losCheck = fa
         type: "sight",
         mode: "any",
         level: levelId
-    }) || false : false;
+    }) : false;
 
     if (debugOn && activeGM) {
-        console.log(`[${MODULE_ID}]Testing segment A(${A.x}, ${A.y}, ${A.elevation}) → B(${B.x}, ${B.y}, ${B.elevation}) for ${losCheck ? "LoS" : "cover"}:`, { collisions, surfaceBlocked });
+        console.log(`[${MODULE_ID}]Testing wall-block: A(${A.x}, ${A.y}, ${A.elevation}, ${A.level}) → B(${B.x}, ${B.y}, ${B.elevation}):`, { collisions, surfaceBlocked });
     }
 
     if (!collisions.length && !surfaceBlocked) {
@@ -200,14 +198,7 @@ function wallsBlock(aCorner, bCorner, attackerDoc, targetDoc, ctx, losCheck = fa
         const edgeSet = vertex.edges ?? vertex.cwEdges ?? vertex.ccwEdges;
         if (!edgeSet) continue;
 
-        for (const edge of edgeSet) {
-            const whFlags = edge?.object?.document?.flags?.["wall-height"];
-            if (!whFlags) {
-                return { blocked: true, A, B };
-            }
-        }
-
-        const { coverLineZ, attZ, tgtZ } = getLineHeightAtVertex(A, B, vertex, attackerDoc, targetDoc, ctx);
+        const { coverLineZ } = getLineHeightAtVertex(A, B, vertex);
         if (!Number.isFinite(coverLineZ)) continue;
 
         for (const edge of edgeSet) {
@@ -218,19 +209,18 @@ function wallsBlock(aCorner, bCorner, attackerDoc, targetDoc, ctx, losCheck = fa
             const wallTop = (topRaw != null) ? Number(topRaw) : Infinity;
             const wallBottom = (bottomRaw != null) ? Number(bottomRaw) : -Infinity;
 
+            if (wallTop === Infinity && wallBottom === -Infinity) {
+                return { blocked: true, A, B };
+            }
+
             if (debugOn && activeGM) {
-                //  const losBlock = losLineZ >= wallBottom && losLineZ <= wallTop
                 const wallBlock = coverLineZ >= wallBottom && coverLineZ <= wallTop
                 console.log(
                     `[${MODULE_ID}] wall-height line check:`,
                     {
-                        attacker: { id: attackerDoc?.id, z: attZ },
-                        target: { id: targetDoc.id, z: tgtZ },
                         wall: { id: edge?.object?.document.id, bottom: wallBottom, top: wallTop },
                         coverLineZ,
                         wallBlock,
-                        //  losLineZ,
-                        //   losBlock,
                         tVertex: {
                             x: vertex.x,
                             y: vertex.y
@@ -239,16 +229,7 @@ function wallsBlock(aCorner, bCorner, attackerDoc, targetDoc, ctx, losCheck = fa
                 );
             }
 
-            if (wallTop === Infinity && wallBottom === -Infinity) {
-                return { blocked: true, A, B };
-            }
-
-            // if (losCheck) {
-            //     if (losLineZ >= wallBottom && losLineZ <= wallTop) {
-            //         return { blocked: true, A, B };
-            //     }
-            // }
-            else if (coverLineZ >= wallBottom && coverLineZ <= wallTop) {
+            if (coverLineZ >= wallBottom && coverLineZ <= wallTop) {
                 return { blocked: true, A, B };
             }
         }
@@ -268,7 +249,7 @@ function wallsBlock(aCorner, bCorner, attackerDoc, targetDoc, ctx, losCheck = fa
  * @param {CoverContext} ctx                     The cover evaluation context.
  * @returns {{lineZ:number, attZ:number, tgtZ:number}} The interpolated line height and the attacker/target sampling heights.
  */
-function getLineHeightAtVertex(A, B, vertex, attackerDoc, targetDoc, ctx) {
+function getLineHeightAtVertex(A, B, vertex) {
     const dx = B.x - A.x;
     const dy = B.y - A.y;
 
@@ -282,22 +263,9 @@ function getLineHeightAtVertex(A, B, vertex, attackerDoc, targetDoc, ctx) {
     }
     t = Math.min(Math.max(t, 0), 1);
 
-    const attBottom = Number(attackerDoc.elevation ?? 0);
-    const tgtBottom = Number(targetDoc.elevation ?? 0);
-
-    const attHeight = getCreatureHeight(attackerDoc, ctx);
-    const tgtHeight = getCreatureHeight(targetDoc, ctx);
-
-    const attZ = attBottom + (Number.isFinite(attHeight) ? attHeight * 0.5 : 0);
-    const losAttZ = attBottom + (Number.isFinite(attHeight) ? attHeight : 0);
-    const tgtZ = tgtBottom + (Number.isFinite(tgtHeight) ? tgtHeight * 0.5 : 0);
-    const losTgtZ = tgtBottom + (Number.isFinite(tgtHeight) ? tgtHeight : 0);
-
-    //const coverLineZ = attZ + t * (tgtZ - attZ);
     const coverLineZ = A.elevation + t * (B.elevation - A.elevation);
-    // const losLineZ = Math.min(losAttZ, attZ + t * (losTgtZ - attZ));
 
-    return { coverLineZ, attZ, tgtZ };
+    return { coverLineZ };
 }
 
 /**
@@ -357,7 +325,7 @@ function getTokenSampleCenters(td, ctx, coverCheck = false) {
     let elevation = Number(td?.elevation ?? 0);
     const creatureHeight = coverCheck ? getCreatureHeight(td, ctx) * 0.5 : getCreatureHeight(td, ctx);
     const steps = coverCheck ? 0 : 2;
-    elevation = coverCheck ? elevation + creatureHeight : elevation;
+    elevation = coverCheck ? (elevation + creatureHeight) : elevation;
 
     const centers = [];
 
@@ -515,6 +483,7 @@ function buildTokenCornersForCenter(center, ctx, td, inset) {
     else corners = buildBoxCorners(center, radius, inset);
 
     corners.forEach(c => c.elevation = center?.elevation ?? 0);
+    corners.forEach(c => c.level = center?.level ?? null);
 
     return getConstrainedTestPoints(corners, td);
 }
@@ -553,30 +522,27 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
     let targetSamples = [];
 
     if (isV14()) {
-        attackerVisionSource = attackerDoc?.getVisionOrigin?.();
-        targetVisionSource = targetDoc?.getVisionOrigin?.();
-        attackerSamples = attackerDoc?.getTestPoints?.({ depth: 0, elevation: attackerVisionSource?.elevation })
+        attackerVisionSource = attackerDoc?.getVisionOrigin?.()?.elevation ?? attackerDoc?.elevation ?? 0;
+        targetVisionSource = targetDoc?.getVisionOrigin?.()?.elevation ?? targetDoc?.elevation ?? 0;
+        attackerSamples = attackerDoc?.getTestPoints?.({ depth: 0, elevation: attackerVisionSource })
             ?? [{ x: attackerDoc.x, y: attackerDoc.y, elevation: attackerDoc?.elevation ?? 0 }];
-
-        targetSamples = targetDoc?.getTestPoints?.({ depth: 0, elevation: targetVisionSource?.elevation })
+        targetSamples = targetDoc?.getTestPoints?.({ depth: 0, elevation: targetVisionSource })
             ?? [{ x: targetDoc.x, y: targetDoc.y, elevation: targetDoc?.elevation ?? 0 }];
     }
     else {
         attackerSamples = getTokenSampleCenters(attackerDoc, ctx, true);
         targetSamples = getTokenSampleCenters(targetDoc, ctx, true);
-        attackerVisionSource = attackerSamples[0];
-        targetVisionSource = targetSamples[0];
+        attackerVisionSource = targetSamples[0]?.elevation ?? attackerDoc?.elevation ?? 0;
+        targetVisionSource = attackerSamples[0]?.elevation ?? targetDoc?.elevation ?? 0;
     }
-    console.log("Cover Sample", attackerSamples, targetSamples)
 
-    const attackerZ = (attackerVisionSource?.elevation ?? attackerDoc?.elevation ?? 0) * distancePixels + 0.1;
-    const targetZ = (targetVisionSource?.elevation ?? targetDoc?.elevation ?? 0) * distancePixels + 0.1;
+    const attackerZ = attackerVisionSource * distancePixels + 0.1;
+    const targetZ = targetVisionSource * distancePixels + 0.1;
 
     const isAttackerCircleShape = grid.isGridless && isEllipse(attackerDoc)
     const isTargetCircleShape = grid.isGridless && isEllipse(targetDoc)
     if (isAttackerCircleShape) attackerSamples = pullOnlyOuterCorners(attackerDoc, attackerSamples, 0.30);
     if (isTargetCircleShape) targetSamples = pullOnlyOuterCorners(targetDoc, targetSamples, 0.30);
-
 
     let best = { reachable: -1, coverLevel: 2, segs: [] };
     const totalLines = grid.isHexagonal ? 6 : (isTargetCircleShape ? 8 : 4);
@@ -600,7 +566,7 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
                 const segs = [];
 
                 for (const tCorner of tgtCorners) {
-                    const wallResult = wallsBlock(aCorner, tCorner, attackerDoc, targetDoc, ctx);
+                    const wallResult = wallsBlock(aCorner, tCorner);
                     const wBlocked = wallResult.blocked;
 
                     const attacker = { x: aCorner.x, y: aCorner.y, z: attackerZ };
@@ -680,19 +646,18 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
 export function evaluateLOS(attackerDoc, targetDoc, ctx) {
     if (!attackerDoc || !targetDoc) return { hasLOS: true, targetLosPoints: [] };
     const debugOn = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.DEBUG);
-    const attackerVisionOrigin = game.settings?.get?.(MODULE_ID, SETTING_KEYS.ATTACKER_VISION_ORIGIN);
+    console.log("Evaluating LoS:", { attackerDoc, targetDoc });
 
     const origin = isV14()
         ? attackerDoc.getVisionOrigin()
         : (attackerDoc.getCenterPoint?.() ?? {
             x: attackerDoc.x,
             y: attackerDoc.y,
-            elevation: attackerDoc?.elevation ?? 0
+            elevation: (attackerDoc?.elevation ?? 0) + (getCreatureHeight(attackerDoc, ctx) * 0.5),
         });
+    origin.level = attackerDoc?.level ?? null;
 
-    if (attackerVisionOrigin === "Top") origin.elevation = getCreatureHeight(attackerDoc, ctx) + origin.elevation;
-    else if (attackerVisionOrigin === "Bottom") origin.elevation = origin.elevation;
-    else if (!isV14()) origin.elevation = getCreatureHeight(attackerDoc, ctx) * 0.5 + origin.elevation;
+    if (isWallHeightModuleActive()) origin.elevation = (attackerDoc?.elevation ?? 0) + getCreatureHeight(attackerDoc, ctx);
 
     const baseTestPoints = isV14() ? targetDoc.getTestPoints() : getTokenSampleCenters(targetDoc, ctx);
     const tolerance = canvas.grid.size / 4;
@@ -714,14 +679,13 @@ export function evaluateLOS(attackerDoc, targetDoc, ctx) {
         });
 
     const targetTestPoints = getConstrainedTestPoints(testPoints, targetDoc);
-    console.log("LoS Test Points", targetTestPoints)
+    console.log("LoS:", targetTestPoints, "origin:", origin);
 
     const targetLosPoints = [];
     let hasLOS = false;
-    const losCheck = true;
 
     for (const p of targetTestPoints) {
-        const wallResult = wallsBlock(origin, p, attackerDoc, targetDoc, ctx, losCheck);
+        const wallResult = wallsBlock(origin, p, attackerDoc, targetDoc);
         targetLosPoints.push({ x: p.x, y: p.y, blocked: wallResult.blocked });
 
         if (!wallResult.blocked) {

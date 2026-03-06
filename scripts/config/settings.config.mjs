@@ -284,24 +284,6 @@ const SETTINGS = [
     requiresReload: false
   },
   {
-    key: SETTING_KEYS.ORIGIN_VISION_ATTACKER,
-    name: "SIMPLE_COVER_5E.Settings.OriginVisionAttacker.Name",
-    hint: "SIMPLE_COVER_5E.Settings.OriginVisionAttacker.Hint",
-    config: false,
-    type: new foundry.data.fields.StringField({
-      choices: {
-        top: "SIMPLE_COVER_5E.Settings.OriginVisionAttacker.Options.Top",
-        center: "SIMPLE_COVER_5E.Settings.OriginVisionAttacker.Options.Center",
-        bottom: "SIMPLE_COVER_5E.Settings.OriginVisionAttacker.Options.Bottom",
-      },
-      initial: "Center",
-      required: true,
-      blank: false,
-      trim: true
-    }),
-    requiresReload: false,
-  },
-  {
     key: SETTING_KEYS.CREATURE_HEIGHTS,
     name: "SIMPLE_COVER_5E.Settings.CreatureHeights.Name",
     hint: "SIMPLE_COVER_5E.Settings.CreatureHeights.Hint",

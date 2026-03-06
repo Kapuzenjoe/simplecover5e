@@ -115,15 +115,6 @@
         "Name": "Default Creature Heights",
         "Hint": "Default creature heights (in Grid Units) per size category used for 3D cover evaluation. When the \"Wall Height\" module is active, these defaults are ignored and heights are taken from that module instead."
       },
-      "OriginVisionAttacker": {
-        "Name": "Attacker Vision Origin",
-        "Hint": "Sets the attacker’s token height test point used as the origin for Cover and LoS rays. Center (half token height) is the default and matches Foundry V14+ token vision-origin behavior; recommended for most setups.",
-        "Options": {
-          "Top": "Top",
-          "Center": "Center",
-          "Bottom": "Bottom"
-        }
-      },
       "insetAttacker": {
         "Name": "Attacker Inset (px)",
         "Hint": "Moves the attacker's sampling points from the raw corner toward the token center (default: 1; max: 30% of the current grid size)."
