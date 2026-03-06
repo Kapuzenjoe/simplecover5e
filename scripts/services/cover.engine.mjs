@@ -646,7 +646,6 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
 export function evaluateLOS(attackerDoc, targetDoc, ctx) {
     if (!attackerDoc || !targetDoc) return { hasLOS: true, targetLosPoints: [] };
     const debugOn = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.DEBUG);
-    console.log("Evaluating LoS:", { attackerDoc, targetDoc });
 
     const origin = isV14()
         ? attackerDoc.getVisionOrigin()
@@ -679,7 +678,6 @@ export function evaluateLOS(attackerDoc, targetDoc, ctx) {
         });
 
     const targetTestPoints = getConstrainedTestPoints(testPoints, targetDoc);
-    console.log("LoS:", targetTestPoints, "origin:", origin);
 
     const targetLosPoints = [];
     let hasLOS = false;
