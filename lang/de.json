@@ -74,11 +74,10 @@
             },
             "GridlessDistanceMode": {
                 "Name": "Entfernungsmodus auf gitterlosen Szenen",
-                "Hint": "Wähle, wie Entfernungen in gitterlosen Szenen gemessen werden: von Zentrum zu Zentrum oder von Kante zu Kante.",
+                "Hint": "Wähle, wie Entfernungen in rasterlosen Szenen gemessen werden. \"Abstand zwischen Tokens\" misst den kürzesten Abstand zwischen den Figuren Begrenzungen. \"Abstand bis zum Zielfeld\" soll dem Ergebnis auf Quadrat-/Hexrastern mit der globalen Diagonalen-Einstellung \"Exakt (√2)\" entsprechen.",
                 "Options": {
-                    "CenterCenter": "Zentrum zu Zentrum",
-                    "EdgeEdge": "Kante zu Kante",
-                    "EdgeToCenter": "Quellenkante zu Zielzentrum"
+                    "EdgeEdge": "Abstand zwischen Tokens",
+                    "EdgeToCenter": "Abstand bis zum Zielfeld"
                 }
             },
             "GridlessTokenShape": {

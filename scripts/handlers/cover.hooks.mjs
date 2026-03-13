@@ -102,6 +102,7 @@ export function onPreRollAttack(config, dialog, message) {
       const coverPrefix = `${game.i18n.localize(COVER.I18N.LABEL_PREFIX_KEY)}`;
       const hint = game.i18n.localize(COVER.I18N.HINT_KEYS.Attack[desiredCover]);
       setDialogNote(dialog, {
+        cover: desiredCover,
         icon: COVER.FA_ICONS[desiredCover],
         label: coverPrefix,
         hint: hint
@@ -369,4 +370,20 @@ export function getCoverStatuses(actor) {
   }
 
   return { overallStatus, systemStatus, customStatus };
+}
+/**
+ * 
+ * @param {RollConfigurationDialog} app		  Roll configuration dialog.
+ * @param {BasicRollConfiguration} config		Roll configuration data.
+ * @param {[FormDataExtended]} formData	  	Any data entered into the rolling prompt.
+ * @param {number} index		                Index of the roll within all rolls being prepared.
+ */
+export function onBuildAttackRollConfig(app, config, formData, index) {
+  console.log(app, config, formData, index)
+  if (!formData) return;
+  const mode = formData?.object["notes.0.cover"] ?? null;
+  if (!mode) return;
+
+  app.message.data.flags.dnd5e.targets[0].ac = 90;
+
 }

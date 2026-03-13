@@ -62,11 +62,6 @@ function getLOS(attackerDoc, targetDoc, ctx = null) {
 /**
  * Measure the minimal 3D distance between two tokens in scene grid units.
  *
- * Gridless distance modes:
- *  - "edgeEdge":      edge-to-edge
- *  - "centerCenter":  center-to-center
- *  - "edgeToCenter":  source edge to target center
- *
  * @param {Token|TokenDocument} sourceToken      The source token or document.
  * @param {Token|TokenDocument} targetToken      The target token or document.
  * @returns {number}                             The minimal distance in grid units (clamped to 0+).
@@ -90,7 +85,7 @@ function buildContextWithPrisms(scene = canvas?.scene) {
  * Compute cover between a single attacker and a single target, optionally including a wall LoS check.
  *
  * @param {object} [options={}]                             Options controlling the cover evaluation. 
- * @param {Token|TokenDocument|Position} options.attacker   The attacking Token or TokenDocument or a generic position {x,y,elevation?}.
+ * @param {Token|TokenDocument|Position} options.attacker   The attacking Token or TokenDocument or a generic position {x,y,elevation?,level?}.
  * @param {Token|TokenDocument} options.target              The target Token or TokenDocument.
  * @param {Scene} [options.scene=canvas.scene]              The scene on which to evaluate cover.
  * @param {boolean|null} [options.debug=null]               Whether to force debug output. Null uses the module Debug setting.
@@ -144,7 +139,7 @@ export function getCover({ attacker, target, scene = canvas?.scene, debug = null
  * Compute cover between a single attacker and multiple targets, optionally including a wall LoS check.
  *
  * @param {object} [options={}]                             Options controlling the cover evaluation.
- * @param {Token|TokenDocument|Position} options.attacker   The attacking Token or TokenDocument or a generic position {x,y,elevation?}.
+ * @param {Token|TokenDocument|Position} options.attacker   The attacking Token or TokenDocument or a generic position {x,y,elevation?,level?}.
  * @param {Token[]|TokenDocument[]|null} [options.targets]  Explicit targets; defaults to the user's current targets.
  * @param {Scene} [options.scene=canvas.scene]              The scene on which to evaluate cover.
  * @param {boolean|null} [options.debug=null]               Whether to force debug output. Null uses the module Debug setting.
@@ -218,7 +213,7 @@ export function getCoverForTargets({ attacker, targets = null, scene = canvas?.s
  * @param {string} [note.hint=""]               The hint HTML/text, e.g. `"+2 to save rolls."`.
  * @returns {void}
  */
-export function setDialogNote(dialogConfig, { icon = "", label = "", hint = "" } = {}) {
+export function setDialogNote(dialogConfig, { cover, icon = "", label = "", hint = "" } = {}) {
     if (!dialogConfig) return;
 
     dialogConfig.options ??= {};
@@ -226,6 +221,7 @@ export function setDialogNote(dialogConfig, { icon = "", label = "", hint = "" }
     data.notes ??= [];
 
     data.notes.push({
+        cover: cover ?? null,
         icon: String(icon ?? ""),
         label: String(label ?? ""),
         hint: String(hint ?? "")

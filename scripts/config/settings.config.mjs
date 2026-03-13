@@ -196,11 +196,10 @@ const SETTINGS = [
     config: false,
     type: new foundry.data.fields.StringField({
       choices: {
-        centerCenter: "SIMPLE_COVER_5E.Settings.GridlessDistanceMode.Options.CenterCenter",
         edgeEdge: "SIMPLE_COVER_5E.Settings.GridlessDistanceMode.Options.EdgeEdge",
         edgeToCenter: "SIMPLE_COVER_5E.Settings.GridlessDistanceMode.Options.EdgeToCenter"
       },
-      initial: "edgeEdge",
+      initial: "EdgeToCenter",
       required: true,
       blank: false,
       trim: true

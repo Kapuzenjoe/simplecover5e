@@ -1,4 +1,4 @@
-import { MODULE_ID } from "../config/constants.config.mjs";
+import { MODULE_ID, COVER } from "../config/constants.config.mjs";
 
 /**
  * Inject module-provided notes into a rendered Roll Configuration Dialog.
@@ -7,6 +7,7 @@ import { MODULE_ID } from "../config/constants.config.mjs";
  * @returns {Promise<void>}
  */
 export async function onRenderRollConfigurationDialog(dialog, html) {
+    console.log(dialog, html)
     const notes = await prepareNotes(dialog);
     if (!notes) return;
 
@@ -30,9 +31,19 @@ async function prepareNotes(dialog) {
     const notes = data.notes ?? [];
     if (!notes.length) return null;
 
+    const coverChoices = {
+        none: game.i18n.localize("SIMPLE_COVER_5E.Cover.NoCover"),
+        half: game.i18n.localize(COVER.IDS.half),
+        threeQuarters: game.i18n.localize(COVER.IDS.threeQuarters),
+        total: game.i18n.localize(COVER.IDS.total)
+    };
+
     const rendered = await foundry.applications.handlebars.renderTemplate(
         "modules/simplecover5e/templates/dialog-note.hbs",
-        { notes }
+        {
+            notes,
+            coverChoices
+        }
     );
 
     const enriched = await foundry.applications.ux.TextEditor.enrichHTML(rendered, {
@@ -45,4 +56,9 @@ async function prepareNotes(dialog) {
     const template = document.createElement("template");
     template.innerHTML = enriched.trim();
     return template.content.firstElementChild;
+}
+
+
+async function activateInteractions(html) {
+
 }

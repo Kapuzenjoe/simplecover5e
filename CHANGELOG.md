@@ -13,15 +13,14 @@ This release was originally planned as a **Foundry V14-only** update. However, m
 
 ### Changes
 
-* **Line of Sight (LoS):** LoS testing now uses Foundry’s built-in `canvas.visibility._createVisibilityTestConfig` with `tolerance = canvas.grid.size / 4`. This increases the number of sample points for larger tokens and produces results that more closely match Foundry’s own vision rules. LoS tests now also **short-circuit** on the first successful hit (**except in Debug Mode**).
+* **Line of Sight (LoS):** LoS testing now uses Foundry’s built-in `canvas.visibility._createVisibilityTestConfig`. This increases the number of sample points and produces results that more closely match Foundry’s own vision rules. LoS tests now also **short-circuit** on the first successful hit (**except in Debug Mode**).
 * Expanded the workaround for **[foundryvtt#4509](https://github.com/foundryvtt/foundryvtt/issues/4509)** (introduced in **v1.4.2**): for clipping tokens, any test points that **do not** have LoS to the token’s center are now **filtered out** before evaluating LoS or Cover.
 * **Gridless scenes:** Token shape now uses `tokenDoc.shape` (`CONST.TOKEN_SHAPES`) instead of a module-specific override.
 * **3D Cover & Line of Sight (LoS)**
-  * **Attacker:** Cover and LoS checks now use the attacker’s **vision origin**.
+  * **Attacker:** Cover and LoS checks now use the attacker’s **vision origin** (half the tokens height).
     * **`wall-height` integration:** The `wall-height` module performs vision detection from the token’s **top** (`elevation + height`). While this is not ideal in every case, the attacker’s vision origin is set to the **top** when `wall-height` is active in order to avoid incorrect **full cover** results when the target is still visibly exposed on the canvas. On purely 2D maps, vision origin does not affect the result.
   * **Target (Cover only):** Cover checks now use the target’s **vision origin**.
-  * **Target (LoS only):** LoS checks now uses samples **multiple elevation test points** across the target based on its height. This partially reflects the behavior of Foundry V14’s `getTestPoint()` and improves LoS reliability in **3D scenes**.
-  * **V13 fallback / approximation:** Because Foundry **V13** does not expose a native **vision origin**, the module approximates it using **half the token’s height**.
+  * **Target (LoS only):** LoS checks now uses samples **multiple elevation test points** across the target based on its height. 
   * **Notes:**
     * Improves forward compatibility with upcoming **V14 Scene Levels** behavior.
     * Prevents unrealistic “fully blocked” results caused by undersized tokens when targeting larger creatures.
@@ -29,9 +28,13 @@ This release was originally planned as a **Foundry V14-only** update. However, m
     * A legacy option to restore the previous target-bottom Cover check can be added if there is demand.
 * Optimized `buildCreaturePrism` across all grid types for improved performance. **Occluder Inset (px)** now scales consistently with the module’s other inset values.
 * Reworked distance calculations, as the previous implementation did not behave as intended:
-  * **Square/hex grids:** Distance is measured as usual, **center-to-center**.
-  * **Gridless scenes:** The selected distance mode is now respected. **Edge** mode uses the token’s **outer radius**, including rectangular tokens. This is not perfect for every edge case, but avoids disproportionate complexity.
-  * Distance now uses the **shortest effective range**, taking each token’s vertical span into account where applicable (from bottom elevation to creature height).
+  * **Square/hex grids:** distance is now calculated in a way that is comparable to movement distance, without applying movement penalties or extra costs. The check also uses both the token’s bottom elevation and its **top elevation** (`elevation + height`).
+  * Removed **Center to Center**, as it produced unintuitive results in play. For example, a Huge token attacking a Small token could always end up with a range greater than 5 ft, which does not make sense for gameplay.
+  * Renamed **Edge to Edge** to **Distance Between Tokens**.
+  * Renamed **Source Center to Edge** to **Distance to Target Space**.
+  * **Gridless scenes:** **Distance to Target Space** is intended to match the same result as square/hex grids, at least when the global diagonal setting is **Exact (√2)**.
+  * **Gridless scenes with "Distance Between Tokens":** this mode uses the token’s **outer radius**, including rectangular tokens. This is not perfect for every edge case involving rectangular tokens, but avoids disproportionate complexity. (It may be improved further in a future update.)
+* Added option that allows to change the cover calculation in the cover notes inside the roll dialog. It includes an optional setting to always display the cover notes. Also the aktive GM will get a Chat Message if the cover statuse is change. (#29)
 * General cleanup, bug fixes, and performance improvements.
 
 ## Version 1.4.4

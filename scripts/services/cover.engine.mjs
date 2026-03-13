@@ -93,7 +93,7 @@ export function buildCreaturePrism(td, ctx, debugTokenShapes) {
     else if (grid.isHexagonal) {
         let centers = [];
         if (isV14()) {
-            centers = td.getTestPoints({ depth: 0 });
+            centers = td.getContainmentTestPoints({ depth: 0 });
         }
         else {
             const offs = td.getOccupiedGridSpaceOffsets?.() ?? [];
@@ -181,7 +181,7 @@ function wallsBlock(aCorner, bCorner) {
     }) : false;
 
     if (debugOn && activeGM) {
-        console.log(`[${MODULE_ID}]Testing wall-block: A(${A.x}, ${A.y}, ${A.elevation}, ${A.level}) → B(${B.x}, ${B.y}, ${B.elevation}):`, { collisions, surfaceBlocked });
+       // console.log(`[${MODULE_ID}]Testing wall-block: A(${A.x}, ${A.y}, ${A.elevation}, ${A.level}) → B(${B.x}, ${B.y}, ${B.elevation}):`, { collisions, surfaceBlocked });
     }
 
     if (!collisions.length && !surfaceBlocked) {
@@ -316,7 +316,7 @@ function segIntersectsAABB3D(p, q, b) {
  * @param {boolean} coverCheck                              Whether the centers are being computed for a cover check (true) or a LoS check (false).
  * @returns {Array<{x:number,y:number,elevation:number}>}   The sample centers with elevation.
  */
-function getTokenSampleCenters(td, ctx, coverCheck = false) {
+export function getTokenSampleCenters(td, ctx, coverCheck = false) {
     const { grid } = ctx;
     const x = td.x
     const y = td.y
@@ -524,10 +524,14 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
     if (isV14()) {
         attackerVisionSource = attackerDoc?.getVisionOrigin?.()?.elevation ?? attackerDoc?.elevation ?? 0;
         targetVisionSource = targetDoc?.getVisionOrigin?.()?.elevation ?? targetDoc?.elevation ?? 0;
-        attackerSamples = attackerDoc?.getTestPoints?.({ depth: 0, elevation: attackerVisionSource })
+
+        attackerSamples = attackerDoc?.getContainmentTestPoints?.()
             ?? [{ x: attackerDoc.x, y: attackerDoc.y, elevation: attackerDoc?.elevation ?? 0 }];
-        targetSamples = targetDoc?.getTestPoints?.({ depth: 0, elevation: targetVisionSource })
+        for (const point of attackerSamples) point.elevation = attackerVisionSource;
+
+        targetSamples = targetDoc?.getContainmentTestPoints?.()
             ?? [{ x: targetDoc.x, y: targetDoc.y, elevation: targetDoc?.elevation ?? 0 }];
+        for (const point of targetSamples) point.elevation = targetVisionSource;
     }
     else {
         attackerSamples = getTokenSampleCenters(attackerDoc, ctx, true);
@@ -658,8 +662,9 @@ export function evaluateLOS(attackerDoc, targetDoc, ctx) {
 
     if (isWallHeightModuleActive()) origin.elevation = (attackerDoc?.elevation ?? 0) + getCreatureHeight(attackerDoc, ctx);
 
-    const baseTestPoints = isV14() ? targetDoc.getTestPoints() : getTokenSampleCenters(targetDoc, ctx);
+    const baseTestPoints = isV14() ? targetDoc.getVisibilityTestPoints() : getTokenSampleCenters(targetDoc, ctx);
     const tolerance = canvas.grid.size / 4;
+    console.log(targetDoc, baseTestPoints)
 
     const testPoints = isV14()
         ? (() => {

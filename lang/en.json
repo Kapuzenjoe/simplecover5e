@@ -78,11 +78,10 @@
       },
       "GridlessDistanceMode": {
         "Name": "Gridless Distance Mode",
-        "Hint": "Choose how distance is measured on gridless scenes: center-to-center or edge-to-edge.",
+        "Hint": "Choose how distance is measured in gridless scenes. \"Distance Between Tokens\" measures the shortest distance between token boundaries. \"Distance to Target Space\" is intended to match the result used on square/hex grids with the global diagonal setting \"Exact (√2)\".",
         "Options": {
-          "CenterCenter": "Center to center",
-          "EdgeEdge": "Edge to edge",
-          "EdgeToCenter": "Source edge to target center"
+          "EdgeEdge": "Distance Between Tokens",
+          "EdgeToCenter": "Distance to Target Space"
         }
       },
       "GridlessTokenShape": {

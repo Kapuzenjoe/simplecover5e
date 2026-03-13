@@ -2,17 +2,25 @@
   <legend>{{localize "SIMPLE_COVER_5E.Dialog.Legend"}}</legend>
 
   {{#each notes}}
-    <div class="form-group stacked">
-      <label>
-        {{#if this.icon}}
-          <i class="{{this.icon}}" title="{{this.label}}"></i>
-        {{/if}}
-        {{this.label}}
-      </label>
+  <div class="form-group">
+    <label>
+      {{this.label}}
+    </label>
 
-      <div class="form-fields">
-        <p class="hint">{{{this.hint}}}</p>
-      </div>
+    {{#if this.cover}}
+    <div class="form-fields">
+      <select name="notes.{{@index}}.cover" data-action="change-note-label">
+        {{selectOptions ../coverChoices selected=this.cover}}
+      </select>
     </div>
+    {{/if}}
+
+    <p class="hint">
+      {{#if this.icon}}
+      <i class="{{this.icon}}" title="{{this.label}}"></i>
+      {{/if}}
+      {{{this.hint}}}
+    </p>
+  </div>
   {{/each}}
 </fieldset>

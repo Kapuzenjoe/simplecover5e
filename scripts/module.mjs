@@ -6,6 +6,7 @@ import {
   clearCoverOnMovement,
   onPreRollAttack,
   onPreRollSavingThrow,
+  onBuildAttackRollConfig
 } from "./handlers/cover.hooks.mjs";
 import { initQueries } from "./services/queries.service.mjs";
 import { clearCoverDebug } from "./services/cover.debug.mjs";
@@ -37,6 +38,7 @@ for (const [hook, fn] of [
   ["renderRollConfigurationDialog", onRenderRollConfigurationDialog],
   ["preDeleteToken", onPreDeleteToken],
   ["createToken", onCreateToken],
+  ["dnd5e.buildAttackRollConfig",onBuildAttackRollConfig]
 ]) {
   Hooks.on(hook, fn);
 }
