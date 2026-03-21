@@ -69,11 +69,13 @@ export const COVER = Object.freeze({
     LABEL_PREFIX_KEY: "DND5E.Cover",
     HINT_KEYS: Object.freeze({
       Attack: Object.freeze({
+        none: "SIMPLE_COVER_5E.CoverHint.Attack.none",
         half: "SIMPLE_COVER_5E.CoverHint.Attack.half",
         threeQuarters: "SIMPLE_COVER_5E.CoverHint.Attack.threeQuarters",
         total: "SIMPLE_COVER_5E.CoverHint.Attack.total"
       }),
       Save: Object.freeze({
+        none: "SIMPLE_COVER_5E.CoverHint.Save.none",
         half: "SIMPLE_COVER_5E.CoverHint.Save.half",
         threeQuarters: "SIMPLE_COVER_5E.CoverHint.Save.threeQuarters",
         total: "SIMPLE_COVER_5E.CoverHint.Save.total"
@@ -113,6 +115,7 @@ export const SETTING_KEYS = {
   INSET_TARGET: "insetTarget",
   INSET_OCCLUDER: "insetOccluder",
   COVER_HINTS: "coverHints",
+  ALWAYS_COVER_HINTS: "alwaysCoverHints",
   IGNORE_FRIENDLY: "ignoreFriendly",
 };
 

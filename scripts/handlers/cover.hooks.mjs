@@ -46,6 +46,7 @@ export function onPreRollAttack(config, dialog, message) {
 
   const losCheck = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.LOS_CHECK);
   const resultArray = getCoverForTargets({ attacker: attackerToken, targets: targets, scene: attackerToken.scene, losCheck: losCheck, activity: activity });
+  message.data.flags[MODULE_ID] = [];
 
   for (const out of resultArray) {
     const targetActor = out.target?.actor
@@ -53,56 +54,31 @@ export function onPreRollAttack(config, dialog, message) {
     if (targetActor.statuses?.has?.(COVER.IDS.total) && !losCheck) continue;
 
     const calcCover = out.result?.cover ?? "none";
+    const calcBonus = out.result?.bonus;
 
-    let desiredCover = calcCover;
-    let desiredBonus = out.result?.bonus
+    const { desiredCover, desiredBonus, currentStatus } = setCoverStatuses(targetActor, calcCover, calcBonus);
+    setAttackCoverBonus({ desiredBonus, currentStatus, targetActor, singleTarget: targets.length === 1, config, message });
 
-    const { overallStatus: currentStatus, systemStatus, customStatus } = getCoverStatuses(targetActor);
+    const coverHintsMode = game.settings?.get?.(MODULE_ID, SETTING_KEYS.COVER_HINTS) ?? "none";
 
-    if (COVER.ORDER[customStatus] > COVER.ORDER[desiredCover]) {
-      ; ({ cover: desiredCover, bonus: desiredBonus } = getIgnoreCover(activity, customStatus));
-    }
+    if (coverHintsMode === "always" || (coverHintsMode === "conditional" && desiredCover !== "none")) {
+      message.data.flags[MODULE_ID].push({
+        desiredCover,
+        desiredBonus,
+        targetId: out.target.id,
+        targetName: out.target?.name || "???",
+        targetActorUuid: targetActor.uuid
+      });
 
-    if (COVER.ORDER[calcCover] > COVER.ORDER[customStatus]) {
-      if (calcCover !== systemStatus) {
-        toggleCoverEffectViaGM(targetActor.uuid, COVER.IDS[calcCover], true);
-      }
-    } else {
-      if (systemStatus !== "none") {
-        toggleCoverEffectViaGM(targetActor.uuid, COVER.IDS[systemStatus], false);
-      }
-    }
-
-    const currentBonus = getCurrentACCoverBonus(targetActor);
-
-    if (desiredBonus !== null) {
-      const baseAC = targetActor?.system?.attributes?.ac?.value;
-      const delta = desiredBonus - currentBonus;
-      if (delta) {
-        if (currentStatus === "total") adjustMessageTargetAC(message, targetActor.uuid, delta + baseAC);
-        else if (targets.length === 1 && typeof config.target === "number") {
-          config.target = Math.max(0, (config.target || 0) + delta);
-          adjustMessageTargetAC(message, targetActor.uuid, delta);
-        }
-        else adjustMessageTargetAC(message, targetActor.uuid, delta);
-      }
-      else if (currentStatus === "total") {
-        adjustMessageTargetAC(message, targetActor.uuid, baseAC);
-        if (targets.length === 1) config.target = baseAC;
-      }
-    }
-    else { //total cover
-      adjustMessageTargetAC(message, targetActor.uuid, null);
-      if (targets.length === 1) config.target = null;
-    }
-
-    const coverHints = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.COVER_HINTS);
-
-    if (desiredCover !== "none" && coverHints) {
       const coverPrefix = `${game.i18n.localize(COVER.I18N.LABEL_PREFIX_KEY)}`;
-      const hint = game.i18n.localize(COVER.I18N.HINT_KEYS.Attack[desiredCover]);
+      const hint = game.i18n.format(
+        COVER.I18N.HINT_KEYS.Attack[desiredCover],
+        { tokenName: out.target?.name || "???" }
+      );
+
       setDialogNote(dialog, {
         cover: desiredCover,
+        target: out.target.id,
         icon: COVER.FA_ICONS[desiredCover],
         label: coverPrefix,
         hint: hint
@@ -126,6 +102,8 @@ export function onPreRollSavingThrow(config, dialog, message) {
   if (onlyInCombat && !game?.combats?.active) return;
 
   const actor = config.subject
+  const isDex = config.ability === "dex";
+  if (!isDex) return;
 
   const targetToken = actor.getActiveTokens?.()[0]
   if (!targetToken) return;
@@ -142,54 +120,29 @@ export function onPreRollSavingThrow(config, dialog, message) {
   const result = getCover({ attacker: sourceToken, target: targetToken, scene: sourceToken.scene, losCheck: losCheck, activity: activity });
 
   const calcCover = result?.cover ?? "none";
+  const calcBonus = result?.bonus;
 
-  let desiredCover = calcCover;
-  let desiredBonus = result?.bonus
+  const { desiredCover, desiredBonus } = setCoverStatuses(actor, calcCover, calcBonus);
+  setSaveCoverBonus(config, desiredBonus, desiredCover)
 
-  const { systemStatus, customStatus } = getCoverStatuses(actor);
+  message.data.flags[MODULE_ID] = [];
 
-  if (COVER.ORDER[customStatus] > COVER.ORDER[desiredCover]) {
-    ; ({ cover: desiredCover, bonus: desiredBonus } = getIgnoreCover(activity, customStatus));
-  }
+  const coverHintsMode = game.settings?.get?.(MODULE_ID, SETTING_KEYS.COVER_HINTS) ?? "none";
 
-  if (COVER.ORDER[calcCover] > COVER.ORDER[customStatus]) {
-    if (calcCover !== systemStatus) {
-      toggleCoverEffectViaGM(actor.uuid, COVER.IDS[calcCover], true);
-    }
-  } else {
-    if (systemStatus !== "none") {
-      toggleCoverEffectViaGM(actor.uuid, COVER.IDS[systemStatus], false);
-    }
-  }
+  if (coverHintsMode === "always" || (coverHintsMode === "conditional" && desiredCover !== "none")) {
+    message.data.flags[MODULE_ID].push({
+      desiredCover,
+      desiredBonus: desiredBonus === null ? "9999" : String(desiredBonus),
+      targetId: targetToken.id,
+      targetActorUuid: actor.uuid
+    });
 
-  const isDex = config.ability === "dex";
-  const roll0 = config.rolls?.[0];
-
-  const addSaveBonus = (n) => {
-    if (!isDex || !roll0?.parts) return;
-    roll0.parts.push(String(n));
-  };
-  const removeSaveBonus = () => {
-    if (!isDex || !roll0?.parts) return;
-    const parts = roll0.parts;
-    const idx = parts.lastIndexOf("@cover");
-    if (idx !== -1) parts.splice(idx, 1);
-  };
-
-  removeSaveBonus();
-  if (desiredCover === "total") {
-    addSaveBonus(9999);
-  }
-  else if (typeof desiredBonus === "number" && Number.isFinite(desiredBonus)) {
-    addSaveBonus(desiredBonus);
-  }
-
-  const coverHints = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.COVER_HINTS);
-
-  if (desiredCover !== "none" && coverHints && isDex) {
     const coverPrefix = `${game.i18n.localize(COVER.I18N.LABEL_PREFIX_KEY)}`;
     const hint = game.i18n.localize(COVER.I18N.HINT_KEYS.Save[desiredCover]);
+
     setDialogNote(dialog, {
+      cover: desiredCover,
+      target: targetToken.id,
       icon: COVER.FA_ICONS[desiredCover],
       label: coverPrefix,
       hint: hint
@@ -339,7 +292,7 @@ function getCurrentACCoverBonus(actor) {
  * @param {Actor5e} actor The actor to evaluate.
  * @returns {{overallStatus: ("none"|"half"|"threeQuarters"|"total"), systemStatus: ("none"|"half"|"threeQuarters"|"total"), customStatus: ("none"|"half"|"threeQuarters"|"total")}} The resolved cover statuses.
  */
-export function getCoverStatuses(actor) {
+function getCoverStatuses(actor) {
   const statuses = actor?.statuses;
 
   const overallStatus =
@@ -371,6 +324,80 @@ export function getCoverStatuses(actor) {
 
   return { overallStatus, systemStatus, customStatus };
 }
+
+function setCoverStatuses(actor, calcCover, calcBonus) {
+  let desiredCover = calcCover;
+  let desiredBonus = calcBonus;
+
+  const { overallStatus: currentStatus, systemStatus, customStatus } = getCoverStatuses(actor);
+
+  if (COVER.ORDER[customStatus] > COVER.ORDER[desiredCover]) {
+    ; ({ cover: desiredCover, bonus: desiredBonus } = getIgnoreCover(activity, customStatus));
+  }
+
+  if (COVER.ORDER[calcCover] > COVER.ORDER[customStatus]) {
+    if (calcCover !== systemStatus) {
+      toggleCoverEffectViaGM(actor.uuid, COVER.IDS[calcCover], true);
+    }
+  } else {
+    if (systemStatus !== "none") {
+      toggleCoverEffectViaGM(actor.uuid, COVER.IDS[systemStatus], false);
+    }
+  }
+
+  return { desiredCover, desiredBonus, currentStatus }
+}
+
+function setAttackCoverBonus({ desiredBonus, currentStatus, targetActor, singleTarget = true, config, message }) {
+  const currentBonus = getCurrentACCoverBonus(targetActor);
+
+  if (desiredBonus !== null) {
+    const baseAC = targetActor?.system?.attributes?.ac?.value;
+    const delta = desiredBonus - currentBonus;
+    if (delta) {
+      if (currentStatus === "total") adjustMessageTargetAC(message, targetActor.uuid, delta + baseAC);
+      else if (singleTarget) {
+        config.target = Math.max(0, (config.target || 0) + delta);
+        adjustMessageTargetAC(message, targetActor.uuid, delta);
+      }
+      else adjustMessageTargetAC(message, targetActor.uuid, delta);
+    }
+    else if (currentStatus === "total") {
+      adjustMessageTargetAC(message, targetActor.uuid, baseAC);
+      if (singleTarget) config.target = baseAC;
+    }
+  }
+  else { //total cover
+    adjustMessageTargetAC(message, targetActor.uuid, null);
+    if (singleTarget) config.target = null;
+  }
+}
+
+
+function setSaveCoverBonus(config, desiredBonus, desiredCover) {
+  const roll0 = config.rolls?.[0];
+
+  const addSaveBonus = (n) => {
+    if (!roll0?.parts) return;
+    roll0.parts.push(String(n));
+  };
+  const removeSaveBonus = () => {
+    if (!roll0?.parts) return;
+    const parts = roll0.parts;
+    const idx = parts.lastIndexOf("@cover");
+    if (idx !== -1) parts.splice(idx, 1);
+  };
+
+  removeSaveBonus();
+  if (desiredCover === "total") {
+    addSaveBonus(9999);
+  }
+  else if (typeof desiredBonus === "number" && Number.isFinite(desiredBonus)) {
+    addSaveBonus(desiredBonus);
+  }
+
+}
+
 /**
  * 
  * @param {RollConfigurationDialog} app		  Roll configuration dialog.
@@ -379,11 +406,79 @@ export function getCoverStatuses(actor) {
  * @param {number} index		                Index of the roll within all rolls being prepared.
  */
 export function onBuildAttackRollConfig(app, config, formData, index) {
-  console.log(app, config, formData, index)
-  if (!formData) return;
-  const mode = formData?.object["notes.0.cover"] ?? null;
-  if (!mode) return;
+  if (!formData?.object) return;
+  console.log(app, config, formData)
 
-  app.message.data.flags.dnd5e.targets[0].ac = 90;
+  const changed = foundry.utils.flattenObject(formData.object);
+  const messageFlags = app.message?.data?.flags?.simplecover5e ?? [];
 
+  for (const [path, mode] of Object.entries(changed)) {
+    if (!path.startsWith("simplecover5e.") || !path.endsWith(".cover")) continue;
+
+    const targetId = path.slice("simplecover5e.".length, -".cover".length);
+
+    const original = messageFlags.find(entry => entry.targetId === targetId);
+    if (!original) continue;
+
+    const targetActor = fromUuidSync(original.targetActorUuid);
+    const targets = app.message?.data?.flags?.dnd5e?.targets ?? [];
+
+    const { desiredCover, desiredBonus, currentStatus } = setCoverStatuses(targetActor, mode, COVER.BONUS[mode]);
+    setAttackCoverBonus({ desiredBonus, currentStatus, targetActor, singleTarget: targets.length === 1, config, message: app.message });
+
+    const coverPrefix = `${game.i18n.localize(COVER.I18N.LABEL_PREFIX_KEY)}`;
+    const hint = game.i18n.format(
+      COVER.I18N.HINT_KEYS.Attack[desiredCover],
+      { tokenName: original?.targetName || "???" }
+    );
+
+    setDialogNote(app, {
+      cover: desiredCover,
+      target: targetId,
+      icon: COVER.FA_ICONS[desiredCover],
+      label: coverPrefix,
+      hint: hint
+    });
+  }
+}
+
+/**
+ * 
+ * @param {RollConfigurationDialog} app		  Roll configuration dialog.
+ * @param {BasicRollConfiguration} config		Roll configuration data.
+ * @param {[FormDataExtended]} formData	  	Any data entered into the rolling prompt.
+ * @param {number} index		                Index of the roll within all rolls being prepared.
+ */
+export function onBuildSavingThrowRollConfig(app, config, formData, index) {
+  if (!formData?.object) return;
+
+  const changed = foundry.utils.flattenObject(formData.object);
+  const messageFlags = app.message?.data?.flags?.simplecover5e ?? [];
+
+  for (const [path, mode] of Object.entries(changed)) {
+    if (!path.startsWith("simplecover5e.") || !path.endsWith(".cover")) continue;
+
+    const targetId = path.slice("simplecover5e.".length, -".cover".length);
+
+    const original = messageFlags.find(entry => entry.targetId === targetId);
+    if (!original) continue;
+
+    const targetActor = fromUuidSync(original.targetActorUuid)
+    const { desiredCover, desiredBonus, currentStatus } = setCoverStatuses(targetActor, mode, COVER.BONUS[mode]);
+
+    config.parts = config.parts.filter(part => part !== String(original.desiredBonus));
+    if (desiredBonus !== "0") {
+      config.parts.push(desiredBonus === null ? "9999" : String(desiredBonus));
+    }
+    const coverPrefix = `${game.i18n.localize(COVER.I18N.LABEL_PREFIX_KEY)}`;
+    const hint = game.i18n.localize(COVER.I18N.HINT_KEYS.Save[desiredCover]);
+
+    setDialogNote(app, {
+      cover: desiredCover,
+      target: targetId,
+      icon: COVER.FA_ICONS[desiredCover],
+      label: coverPrefix,
+      hint: hint
+    });
+  }
 }

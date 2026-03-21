@@ -7,7 +7,6 @@ import { MODULE_ID, COVER } from "../config/constants.config.mjs";
  * @returns {Promise<void>}
  */
 export async function onRenderRollConfigurationDialog(dialog, html) {
-    console.log(dialog, html)
     const notes = await prepareNotes(dialog);
     if (!notes) return;
 
@@ -32,10 +31,10 @@ async function prepareNotes(dialog) {
     if (!notes.length) return null;
 
     const coverChoices = {
-        none: game.i18n.localize("SIMPLE_COVER_5E.Cover.NoCover"),
-        half: game.i18n.localize(COVER.IDS.half),
-        threeQuarters: game.i18n.localize(COVER.IDS.threeQuarters),
-        total: game.i18n.localize(COVER.IDS.total)
+        none: game.i18n.localize("DND5E.None"),
+        half: game.i18n.localize("EFFECT.DND5E.StatusHalfCover"),
+        threeQuarters: game.i18n.localize("EFFECT.DND5E.StatusThreeQuartersCover"),
+        total: game.i18n.localize("EFFECT.DND5E.StatusTotalCover"),
     };
 
     const rendered = await foundry.applications.handlebars.renderTemplate(
@@ -56,9 +55,4 @@ async function prepareNotes(dialog) {
     const template = document.createElement("template");
     template.innerHTML = enriched.trim();
     return template.content.firstElementChild;
-}
-
-
-async function activateInteractions(html) {
-
 }

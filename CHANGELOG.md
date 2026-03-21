@@ -1,41 +1,38 @@
 # Changelog
 
-## 2.0.0rc1
+## 2.0.0
 
 This release was originally planned as a **Foundry V14-only** update. However, most of the work is already possible in **V13**, so 2.0.0 now ships with **V13 compatibility** while being **V14-ready**.
 
-⚠️ **V14 is still in development.** V14 support in this release should be considered **“V14-ready / beta”** until it has been verified against a V14 stable build.
-
 ### Breaking Changes
 
-* **V14+ only:** Removed the module’s custom **Token Height** support. The module now relies on Foundry’s built-in **Token Depth** setting in Token Configuration. Height is calculated as `token.depth * grid.distance`.
-* **Gridless Token Default Shape:** This optional setting now defines the **default token shape for gridless scenes**. It is applied to all tokens on gridless scenes as a workaround for **[dnd5e#6739](https://github.com/foundryvtt/dnd5e/issues/6739)**.
+- **V14+ only:** Removed the module’s custom **Token Height** support. The module now relies on Foundry’s built-in **Token Depth** setting in Token Configuration. Height is calculated as `token.depth * grid.distance`.
+- **Gridless Token Default Shape:** This optional setting now defines the **default token shape for gridless scenes**. It is applied to all tokens on gridless scenes as a workaround for **[dnd5e#6739](https://github.com/foundryvtt/dnd5e/issues/6739)**.
 
 ### Changes
 
-* **Line of Sight (LoS):** LoS testing now uses Foundry’s built-in `canvas.visibility._createVisibilityTestConfig`. This increases the number of sample points and produces results that more closely match Foundry’s own vision rules. LoS tests now also **short-circuit** on the first successful hit (**except in Debug Mode**).
-* Expanded the workaround for **[foundryvtt#4509](https://github.com/foundryvtt/foundryvtt/issues/4509)** (introduced in **v1.4.2**): for clipping tokens, any test points that **do not** have LoS to the token’s center are now **filtered out** before evaluating LoS or Cover.
-* **Gridless scenes:** Token shape now uses `tokenDoc.shape` (`CONST.TOKEN_SHAPES`) instead of a module-specific override.
-* **3D Cover & Line of Sight (LoS)**
-  * **Attacker:** Cover and LoS checks now use the attacker’s **vision origin** (half the tokens height).
-    * **`wall-height` integration:** The `wall-height` module performs vision detection from the token’s **top** (`elevation + height`). While this is not ideal in every case, the attacker’s vision origin is set to the **top** when `wall-height` is active in order to avoid incorrect **full cover** results when the target is still visibly exposed on the canvas. On purely 2D maps, vision origin does not affect the result.
-  * **Target (Cover only):** Cover checks now use the target’s **vision origin**.
-  * **Target (LoS only):** LoS checks now uses samples **multiple elevation test points** across the target based on its height. 
-  * **Notes:**
-    * Improves forward compatibility with upcoming **V14 Scene Levels** behavior.
-    * Prevents unrealistic “fully blocked” results caused by undersized tokens when targeting larger creatures.
-    * While the RAW rules do not define an exact ray origin, using the attacker’s and target’s vision origin (approximated as half the token’s height) better reflects the PHB wording of “covers at least half of the target” in most cases, even if it cannot represent every edge case perfectly.
-    * A legacy option to restore the previous target-bottom Cover check can be added if there is demand.
-* Optimized `buildCreaturePrism` across all grid types for improved performance. **Occluder Inset (px)** now scales consistently with the module’s other inset values.
-* Reworked distance calculations, as the previous implementation did not behave as intended:
-  * **Square/hex grids:** distance is now calculated in a way that is comparable to movement distance, without applying movement penalties or extra costs. The check also uses both the token’s bottom elevation and its **top elevation** (`elevation + height`).
-  * Removed **Center to Center**, as it produced unintuitive results in play. For example, a Huge token attacking a Small token could always end up with a range greater than 5 ft, which does not make sense for gameplay.
-  * Renamed **Edge to Edge** to **Distance Between Tokens**.
-  * Renamed **Source Center to Edge** to **Distance to Target Space**.
-  * **Gridless scenes:** **Distance to Target Space** is intended to match the same result as square/hex grids, at least when the global diagonal setting is **Exact (√2)**.
-  * **Gridless scenes with "Distance Between Tokens":** this mode uses the token’s **outer radius**, including rectangular tokens. This is not perfect for every edge case involving rectangular tokens, but avoids disproportionate complexity. (It may be improved further in a future update.)
-* Added option that allows to change the cover calculation in the cover notes inside the roll dialog. It includes an optional setting to always display the cover notes. Also the aktive GM will get a Chat Message if the cover statuse is change. (#29)
-* General cleanup, bug fixes, and performance improvements.
+- **Line of Sight (LoS):** When the attacker is a Token with active vision, LoS testing now uses the attacker's `losPolygon`. For the target, Foundry's built-in `getVisibilityTestPoints()` is now used where available; in V13, this behavior is simulated. As a result, when token vision is active, target test points are checked against the attacker's `losPolygon` instead of always relying on custom ray calculations.
+- For clipping Tokens, test points that are unreachable from the Token's center are now filtered out before cover is evaluated.
+- **3D Cover:**
+  - **Vision Origin:** Cover checks now use the Token's **vision origin** (approximated as half the Token's height), aligning more closely with Foundry's own vision behavior.
+  - **Additional notes:**
+    - Improves forward compatibility with expected **V14 Scene Levels** behavior.
+    - Prevents unrealistic "fully blocked" results caused by undersized Tokens when targeting larger creatures.
+    - While the RAW rules do not define an exact ray origin, using the attacker’s and target’s vision origins (approximated as half the Token's height) more closely reflects the PHB wording that cover applies when it obscures at least half of the target, while still acknowledging that some edge cases cannot be represented perfectly.
+- **Gridless scenes:** Token shape now uses `tokenDoc.shape` (`CONST.TOKEN_SHAPES`) instead of a module-specific override.
+- Optimized `buildCreaturePrism` across all grid types for improved performance and accuracy.
+- **Occluder Inset (px)** now scales consistently with the module’s other inset values.
+- Reworked distance calculations, as the previous implementation did not behave as intended:
+  - **Square/hex grids:** distance is now calculated in a way that is comparable to movement distance, without applying movement penalties or extra costs. The check also uses both the token’s bottom elevation and its top elevation(`elevation + height`).
+  - Removed **Center to Center**, as it produced unintuitive results in play. For example, a Huge token attacking a Small token could always end up with a range greater than 5 ft, which does not make sense for gameplay.
+  - Renamed **Edge to Edge** to **Distance Between Tokens**.
+  - Renamed **Source Center to Edge** to **Distance to Target Space**.
+  - **Gridless scenes:** **Distance to Target Space** is intended to match the same result as square/hex grids, at least when the global diagonal setting is **Exact (√2)**.
+  - **Gridless scenes with "Distance Between Tokens":** this mode uses the token’s **outer radius**, including rectangular tokens. This is not perfect for every edge case involving rectangular tokens, but avoids disproportionate complexity. (It may be improved further in a future update.)
+- Added support for adjusting the calculated cover status directly in the roll dialog’s cover notes. The active GM also receives a chat message whenever the cover status changes. (#29)
+- Changed the cover notes display setting from a toggle to a mode selection: never, only when cover applies, or always. 
+- Cover automation now only applies to Dexterity saving throws.
+- General cleanup, bug fixes, and performance improvements.
 
 ## Version 1.4.4
 

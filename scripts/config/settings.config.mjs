@@ -54,7 +54,17 @@ const SETTINGS = [
     key: SETTING_KEYS.COVER_HINTS,
     name: "SIMPLE_COVER_5E.Settings.coverHints.Name",
     hint: "SIMPLE_COVER_5E.Settings.coverHints.Hint",
-    type: new foundry.data.fields.BooleanField({ initial: false }),
+    type: new foundry.data.fields.StringField({
+      choices: {
+        none: "SIMPLE_COVER_5E.Settings.coverHints.Options.None",
+        conditional: "SIMPLE_COVER_5E.Settings.coverHints.Options.Conditional",
+        always: "SIMPLE_COVER_5E.Settings.coverHints.Options.Always"
+      },
+      initial: "conditional",
+      required: true,
+      blank: false,
+      trim: true
+    }),
     requiresReload: false,
     config: false
   },
@@ -62,7 +72,7 @@ const SETTINGS = [
     key: SETTING_KEYS.LOS_CHECK,
     name: "SIMPLE_COVER_5E.Settings.losCheck.Name",
     hint: "SIMPLE_COVER_5E.Settings.losCheck.Hint",
-    type: new foundry.data.fields.BooleanField({ initial: false }),
+    type: new foundry.data.fields.BooleanField({ initial: true }),
     requiresReload: false,
     config: false
   },

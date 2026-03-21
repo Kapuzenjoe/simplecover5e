@@ -26,6 +26,15 @@
                 "Name": "Wand Sichtlinen Prüfung",
                 "Hint": "Wenn aktiviert, prüft das Modul auch die Sichtlinie gegen sichtlichen blockierenden Wänden. Dies kann genutzt werden, um Fälle zu erkennen, in denen das Ziel vollständig von Wänden blockiert ist."
             },
+            "coverHints": {
+                "Name": "Deckungshinweise in Wurfdialogen",
+                "Hint": "Lege fest, ob in Angriffs- und Rettungswurfdialogen Deckungshinweise angezeigt werden sollen.",
+                "Options": {
+                    "None": "Nie",
+                    "Conditional": "Nur bei berechneter Deckung.",
+                    "Always": "Immer"
+                }
+            },
             "CreaturesHalfOnly": {
                 "Name": "Deckung durch Kreaturen auf Halbe Deckung begrenzen",
                 "Hint": "Wenn aktiviert, können Kreaturen maximal Halbe Deckung gewähren. Sobald mindestens eine Linie ausschließlich durch Kreaturen blockiert wird, erhält das Ziel Halbe Deckung, aber niemals Dreiviertel Deckung allein durch Kreaturen. Wände folgen weiterhin den normalen DMG-Regeln."

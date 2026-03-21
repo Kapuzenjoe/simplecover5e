@@ -282,6 +282,7 @@ export class SimpleCoverAutomationConfig extends SimpleCoverBaseConfigApp {
             legend: "SIMPLE_COVER_5E.Settings.AutomationMenu.Groups.General",
             keys: [
                 SETTING_KEYS.COVER_HINTS,
+                SETTING_KEYS.ALWAYS_COVER_HINTS,
                 SETTING_KEYS.COVER_SCOPE,
                 SETTING_KEYS.ONLY_IN_COMBAT,
                 SETTING_KEYS.RMV_ON_COMBAT,

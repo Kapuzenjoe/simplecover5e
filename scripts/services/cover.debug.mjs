@@ -136,9 +136,9 @@ export function drawCoverDebug({ segments = [], tokenShapes, targetLosPoints = [
   const g = getDebugGraphics();
   if (!g) return;
 
-  // for (const seg of segments) {
-  //   drawDebugSegment(g, seg);
-  // }
+  for (const seg of segments) {
+    drawDebugSegment(g, seg);
+  }
 
   if (targetLosPoints.length) {
     const blockedPts = targetLosPoints.filter(p => p?.blocked);
@@ -162,7 +162,7 @@ export function drawCoverDebug({ segments = [], tokenShapes, targetLosPoints = [
       DEFAULT_POINT_LINE_WIDTH
     );
   }
-return
+
   if (!tokenShapes) return;
 
   const attackerPolys = tokenShapes?.attacker ?? [];

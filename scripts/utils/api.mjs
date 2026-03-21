@@ -208,24 +208,35 @@ export function getCoverForTargets({ attacker, targets = null, scene = canvas?.s
  *
  * @param {object} dialogConfig                 The dialog configuration object provided by DnD5e pre-roll V2 hooks.
  * @param {object} [note={}]                    The note definition.
+ * @param {string} [note.cover]                 The calculated Cover.
+ * @param {string} [note.target]                The Target ID.
  * @param {string} [note.icon=""]               A Font Awesome class string, e.g. `"fa-solid fa-circle-info"`.
  * @param {string} [note.label=""]              The note label text, e.g. `"Half Cover"`.
  * @param {string} [note.hint=""]               The hint HTML/text, e.g. `"+2 to save rolls."`.
  * @returns {void}
  */
-export function setDialogNote(dialogConfig, { cover, icon = "", label = "", hint = "" } = {}) {
+export function setDialogNote(dialogConfig, { cover, target, icon = "", label = "", hint = "" } = {}) {
     if (!dialogConfig) return;
 
     dialogConfig.options ??= {};
     const data = (dialogConfig.options[MODULE_ID] ??= {});
     data.notes ??= [];
 
-    data.notes.push({
+    const noteData = {
         cover: cover ?? null,
+        target: String(target) ?? null,
         icon: String(icon ?? ""),
         label: String(label ?? ""),
         hint: String(hint ?? "")
-    });
+    };
+
+    const existingIndex = data.notes.findIndex(note => String(note.target) === String(target) && note.target != null);
+
+    if (existingIndex !== -1) {
+        data.notes[existingIndex] = noteData;
+    } else {
+        data.notes.push(noteData);
+    }
 
     data.rendered = false;
 }

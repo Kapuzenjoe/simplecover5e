@@ -156,10 +156,10 @@ export function buildCreaturePrism(td, ctx, debugTokenShapes) {
  * If wall-height is active, the intersection is additionally filtered by wall top/bottom values.
  *
  * @param {{x:number,y:number,elevation:number,level?:string}} aCorner                       The attacker corner.
- * @param {{x:number,y:number,elevation:number}} bCorner                                     The target corner.
+ * @param {{x:number,y:number,elevation:number,level?:string}} bCorner                                     The target corner.
  * @returns {{blocked:boolean, A:{x:number,y:number,elevation:number}, B:{x:number,y:number,elevation:number}}}   Whether the segment is blocked and the tested inset segment.
  */
-function wallsBlock(aCorner, bCorner) {
+function wallsBlock(aCorner, bCorner, losPolygon = null) {
     const A = aCorner
     const B = bCorner
     const backend = CONFIG.Canvas.polygonBackends.sight;
@@ -167,29 +167,132 @@ function wallsBlock(aCorner, bCorner) {
     const debugOn = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.DEBUG);
     const activeGM = game.users?.activeGM;
 
-    const levelId = A?.level ?? null;
+    let fromLevel = A?.level ?? canvas?.level ?? null;
+    if (typeof fromLevel === "string") fromLevel = canvas.scene?.levels?.get(fromLevel) ?? null;
 
-    const collisions = backend.testCollision(A, B, {
-        type: "sight",
-        mode: "all",
-        useThreshold: true
-    }) || [];
-    const surfaceBlocked = levelId ? canvas?.scene?.testSurfaceCollision(A, B, {
-        type: "sight",
-        mode: "any",
-        level: levelId
-    }) : false;
+    let toLevel = B?.level ?? canvas?.level ?? null;
+    if (typeof toLevel === "string") toLevel = canvas.scene?.levels?.get(toLevel) ?? null;
+
+    toLevel ??= fromLevel;
+
+    let tSplit = 1;
+
+    if (fromLevel && toLevel && (fromLevel !== toLevel)) {
+        const delta = (B.elevation ?? 0) - (A.elevation ?? 0);
+
+        if (delta !== 0) {
+            let t00 = (fromLevel.elevation.bottom - A.elevation) / delta;
+            let t01 = (fromLevel.elevation.top - A.elevation) / delta;
+            if (t00 > t01) [t00, t01] = [t01, t00];
+
+            let t10 = (toLevel.elevation.bottom - A.elevation) / delta;
+            let t11 = (toLevel.elevation.top - A.elevation) / delta;
+            if (t10 > t11) [t10, t11] = [t11, t10];
+
+            tSplit = ((t11 > 0) && (t01 < t11)) ? Math.min(Math.max(t01, t10), 1) : 1;
+            if (tSplit < 0) tSplit = 0;
+        }
+    }
+
+    let blocked = false;
+    let collisions = [];
+
+    const debugData = {
+        A,
+        B,
+        losPolygon,
+        fromLevel: fromLevel?.id ?? null,
+        toLevel: toLevel?.id ?? null,
+        tSplit,
+        segment1: null,
+        segment2: null
+    };
+
+    // Segment 1: source level
+    if ((fromLevel && (tSplit > 0)) || !isV14()) {
+        const tMin = 0;
+        const tMax = tSplit;
+
+        if (losPolygon) {
+            const splitX = A.x + ((B.x - A.x) * tSplit);
+            const splitY = A.y + ((B.y - A.y) * tSplit);
+
+            const losBlocked = !losPolygon.contains(splitX, splitY);
+            if (losBlocked) blocked = true;
+        } else {
+
+            const surfaceBlocked = canvas.scene?.testSurfaceCollision?.(A, B, {
+                type: "sight",
+                mode: "any",
+                level: fromLevel,
+                tMin,
+                tMax
+            }) ?? false;
+
+            const wallBlocked = backend.testCollision(A, B, {
+                type: "sight",
+                mode: "all",
+                useThreshold: true,
+                level: fromLevel,
+                tMin,
+                tMax
+            }) ?? false;
+
+            if (!isV14()) collisions = wallBlocked
+
+            debugData.segment1 = {
+                tMin,
+                tMax,
+                surfaceBlocked,
+                wallBlocked
+            };
+
+            if (surfaceBlocked || wallBlocked.length) blocked = true;
+        }
+    }
+
+    // Segment 2: target level
+    if (!blocked && toLevel && (tSplit < 1)) {
+        const tMin = tSplit;
+        const tMax = 1;
+
+        const surfaceBlocked = canvas.scene?.testSurfaceCollision(A, B, {
+            type: "sight",
+            mode: "any",
+            level: toLevel,
+            tMin,
+            tMax
+        }) ?? false;
+
+        const wallBlocked = backend.testCollision(A, B, {
+            type: "sight",
+            mode: "any",
+            useThreshold: true,
+            level: toLevel,
+            tMin,
+            tMax
+        }) ?? false;
+
+        debugData.segment2 = {
+            tMin,
+            tMax,
+            surfaceBlocked,
+            wallBlocked
+        };
+
+        if (surfaceBlocked || wallBlocked) blocked = true;
+    }
+
 
     if (debugOn && activeGM) {
-       // console.log(`[${MODULE_ID}]Testing wall-block: A(${A.x}, ${A.y}, ${A.elevation}, ${A.level}) → B(${B.x}, ${B.y}, ${B.elevation}):`, { collisions, surfaceBlocked });
+        console.debug(
+            `[${MODULE_ID}] wallsBlock: `,
+            debugData
+        );
     }
 
-    if (!collisions.length && !surfaceBlocked) {
-        return { blocked: false, A, B };
-    }
-
-    if (!isWallHeightModuleActive()) {
-        return { blocked: true, A, B };
+    if (!isWallHeightModuleActive() || losPolygon) {
+        return { blocked, A, B };
     }
 
     for (const vertex of collisions) {
@@ -202,7 +305,10 @@ function wallsBlock(aCorner, bCorner) {
         if (!Number.isFinite(coverLineZ)) continue;
 
         for (const edge of edgeSet) {
-            const whFlags = edge?.object?.document?.flags?.["wall-height"];
+            const wallDoc = edge?.object?.document;
+            if (!wallDoc) continue;
+
+            const whFlags = wallDoc.flags?.["wall-height"];
             const topRaw = whFlags?.top;
             const bottomRaw = whFlags?.bottom;
 
@@ -213,14 +319,17 @@ function wallsBlock(aCorner, bCorner) {
                 return { blocked: true, A, B };
             }
 
+            const wallBlocks = A.elevation >= wallBottom && A.elevation <= wallTop;
+            const coverBlocks = coverLineZ >= wallBottom && coverLineZ <= wallTop;
+
             if (debugOn && activeGM) {
-                const wallBlock = coverLineZ >= wallBottom && coverLineZ <= wallTop
-                console.log(
+                console.debug(
                     `[${MODULE_ID}] wall-height line check:`,
                     {
                         wall: { id: edge?.object?.document.id, bottom: wallBottom, top: wallTop },
                         coverLineZ,
-                        wallBlock,
+                        wallBlocks,
+                        coverBlocks,
                         tVertex: {
                             x: vertex.x,
                             y: vertex.y
@@ -229,7 +338,7 @@ function wallsBlock(aCorner, bCorner) {
                 );
             }
 
-            if (coverLineZ >= wallBottom && coverLineZ <= wallTop) {
+            if (wallBlocks || coverBlocks) {
                 return { blocked: true, A, B };
             }
         }
@@ -316,14 +425,14 @@ function segIntersectsAABB3D(p, q, b) {
  * @param {boolean} coverCheck                              Whether the centers are being computed for a cover check (true) or a LoS check (false).
  * @returns {Array<{x:number,y:number,elevation:number}>}   The sample centers with elevation.
  */
-export function getTokenSampleCenters(td, ctx, coverCheck = false) {
-    const { grid } = ctx;
+export function getTokenSampleCenters(td, coverCheck = false) {
+    const grid = td?.object?.scene?.grid ?? canvas?.scene.grid ?? null
     const x = td.x
     const y = td.y
     const width = td?.width ?? 0;
     const height = td?.height ?? 0;
     let elevation = Number(td?.elevation ?? 0);
-    const creatureHeight = coverCheck ? getCreatureHeight(td, ctx) * 0.5 : getCreatureHeight(td, ctx);
+    const creatureHeight = coverCheck ? getCreatureHeight(td) * 0.5 : getCreatureHeight(td);
     const steps = coverCheck ? 0 : 2;
     elevation = coverCheck ? (elevation + creatureHeight) : elevation;
 
@@ -526,16 +635,22 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
         targetVisionSource = targetDoc?.getVisionOrigin?.()?.elevation ?? targetDoc?.elevation ?? 0;
 
         attackerSamples = attackerDoc?.getContainmentTestPoints?.()
-            ?? [{ x: attackerDoc.x, y: attackerDoc.y, elevation: attackerDoc?.elevation ?? 0 }];
-        for (const point of attackerSamples) point.elevation = attackerVisionSource;
+            ?? [{ x: attackerDoc.x, y: attackerDoc.y }];
+        for (const point of attackerSamples) {
+            point.elevation = attackerVisionSource;
+            point.level = attackerDoc?.level ?? canvas?.level ?? null;
+        }
 
         targetSamples = targetDoc?.getContainmentTestPoints?.()
-            ?? [{ x: targetDoc.x, y: targetDoc.y, elevation: targetDoc?.elevation ?? 0 }];
-        for (const point of targetSamples) point.elevation = targetVisionSource;
+            ?? [{ x: targetDoc.x, y: targetDoc.y }];
+        for (const point of targetSamples) {
+            point.elevation = targetVisionSource;
+            point.level = targetDoc?.level ?? canvas?.level ?? null;
+        }
     }
     else {
-        attackerSamples = getTokenSampleCenters(attackerDoc, ctx, true);
-        targetSamples = getTokenSampleCenters(targetDoc, ctx, true);
+        attackerSamples = getTokenSampleCenters(attackerDoc, true);
+        targetSamples = getTokenSampleCenters(targetDoc, true);
         attackerVisionSource = targetSamples[0]?.elevation ?? attackerDoc?.elevation ?? 0;
         targetVisionSource = attackerSamples[0]?.elevation ?? targetDoc?.elevation ?? 0;
     }
@@ -545,8 +660,7 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
 
     const isAttackerCircleShape = grid.isGridless && isEllipse(attackerDoc)
     const isTargetCircleShape = grid.isGridless && isEllipse(targetDoc)
-    if (isAttackerCircleShape) attackerSamples = pullOnlyOuterCorners(attackerDoc, attackerSamples, 0.30);
-    if (isTargetCircleShape) targetSamples = pullOnlyOuterCorners(targetDoc, targetSamples, 0.30);
+ 
 
     let best = { reachable: -1, coverLevel: 2, segs: [] };
     const totalLines = grid.isHexagonal ? 6 : (isTargetCircleShape ? 8 : 4);
@@ -658,37 +772,40 @@ export function evaluateLOS(attackerDoc, targetDoc, ctx) {
             y: attackerDoc.y,
             elevation: (attackerDoc?.elevation ?? 0) + (getCreatureHeight(attackerDoc, ctx) * 0.5),
         });
-    origin.level = attackerDoc?.level ?? null;
+
+    origin.level = attackerDoc?.level ?? canvas?.level ?? null;
+    const losPolygon = attackerDoc?.object?.vision?.los ?? null;
 
     if (isWallHeightModuleActive()) origin.elevation = (attackerDoc?.elevation ?? 0) + getCreatureHeight(attackerDoc, ctx);
 
-    const baseTestPoints = isV14() ? targetDoc.getVisibilityTestPoints() : getTokenSampleCenters(targetDoc, ctx);
-    const tolerance = canvas.grid.size / 4;
-    console.log(targetDoc, baseTestPoints)
+    let targetTestPoints = [];
+    if (isV14()) {
+        targetTestPoints = targetDoc.getVisibilityTestPoints();
+    }
+    else {
+        const tolerance = canvas.grid.size / 4;
+        const testPoints = pullOnlyOuterCorners(
+            targetDoc,
+            getTokenSampleCenters(targetDoc)
+        ).flatMap(samplePoint => {
+            const { tests } = canvas.visibility._createVisibilityTestConfig(samplePoint, {
+                tolerance,
+                object: targetDoc.object
+            });
 
-    const testPoints = isV14()
-        ? (() => {
-            const cfg = canvas.visibility._createVisibilityTestConfig(baseTestPoints, {
-                tolerance,
-                object: targetDoc.object
-            });
-            return cfg.tests.map(t => t.point);
-        })()
-        : pullOnlyOuterCorners(targetDoc, baseTestPoints).flatMap(point => {
-            const cfg = canvas.visibility._createVisibilityTestConfig(point, {
-                tolerance,
-                object: targetDoc.object
-            });
-            return cfg.tests.map(t => t.point);
+            return tests.map(({ point }) => point);
         });
 
-    const targetTestPoints = getConstrainedTestPoints(testPoints, targetDoc);
+        targetTestPoints = getConstrainedTestPoints(testPoints, targetDoc);
+    }
+
+    for (const point of targetTestPoints) point.level = targetDoc?.level ?? null;
 
     const targetLosPoints = [];
     let hasLOS = false;
 
     for (const p of targetTestPoints) {
-        const wallResult = wallsBlock(origin, p, attackerDoc, targetDoc);
+        const wallResult = wallsBlock(origin, p, losPolygon);
         targetLosPoints.push({ x: p.x, y: p.y, blocked: wallResult.blocked });
 
         if (!wallResult.blocked) {
@@ -720,7 +837,7 @@ function getConstrainedTestPoints(points, td) {
 
     const { width, height } = td.getSize();
     const boundingBox = new PIXI.Rectangle(td.x, td.y, width, height);
-    const polygon = foundry.canvas.geometry.ClockwiseSweepPolygon.create(origin, { type: "sight", level, boundingBox });
+    const polygon = foundry.canvas.geometry.ClockwiseSweepPolygon.create(origin, { type: "move", level, boundingBox });
     for (let i = points.length - 1; i >= 0; i--) {
         const { x, y } = points[i];
         if (polygon.contains(x, y)) continue;
@@ -734,7 +851,6 @@ function getConstrainedTestPoints(points, td) {
 
 /**
  * For gridless circular tokens, pull four outer corners towards the center.
- * Workaround for https://github.com/foundryvtt/foundryvtt/issues/13830
  * 
  * @param {TokenDocument} tokenDoc 
  * @param {Array<{x:number,y:number}>} points 
