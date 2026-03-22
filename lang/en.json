@@ -185,7 +185,10 @@
         "half": "You gain a <strong>+2</strong> bonus to this Dexterity saving throw from <strong>half cover</strong>.",
         "threeQuarters": "You gain a <strong>+5</strong> bonus to this Dexterity saving throw from <strong>three-quarters cover</strong>.",
         "total": "With <strong>total cover</strong>, you can't be targeted directly."
-      }
+      },
+      "CoverModeChanged": "Cover mode changed",
+      "CoverModeDesired": "Calculated: {desiredCover}",
+      "CoverModeNew": "Set: {newMode}"
     }
   }
 }

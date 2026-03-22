@@ -67,6 +67,12 @@ export const COVER = Object.freeze({
   }),
   I18N: Object.freeze({
     LABEL_PREFIX_KEY: "DND5E.Cover",
+    LABEL: {
+      none: "DND5E.None",
+      half: "EFFECT.DND5E.StatusHalfCover",
+      threeQuarters: "EFFECT.DND5E.StatusThreeQuartersCover",
+      total: "EFFECT.DND5E.StatusTotalCover"
+    },
     HINT_KEYS: Object.freeze({
       Attack: Object.freeze({
         none: "SIMPLE_COVER_5E.CoverHint.Attack.none",
@@ -115,7 +121,6 @@ export const SETTING_KEYS = {
   INSET_TARGET: "insetTarget",
   INSET_OCCLUDER: "insetOccluder",
   COVER_HINTS: "coverHints",
-  ALWAYS_COVER_HINTS: "alwaysCoverHints",
   IGNORE_FRIENDLY: "ignoreFriendly",
 };
 

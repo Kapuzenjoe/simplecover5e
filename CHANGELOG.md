@@ -2,8 +2,6 @@
 
 ## 2.0.0
 
-This release was originally planned as a **Foundry V14-only** update. However, most of the work is already possible in **V13**, so 2.0.0 now ships with **V13 compatibility** while being **V14-ready**.
-
 ### Breaking Changes
 
 - **V14+ only:** Removed the module’s custom **Token Height** support. The module now relies on Foundry’s built-in **Token Depth** setting in Token Configuration. Height is calculated as `token.depth * grid.distance`.
@@ -12,9 +10,9 @@ This release was originally planned as a **Foundry V14-only** update. However, m
 ### Changes
 
 - **Line of Sight (LoS):** When the attacker is a Token with active vision, LoS testing now uses the attacker's `losPolygon`. For the target, Foundry's built-in `getVisibilityTestPoints()` is now used where available; in V13, this behavior is simulated. As a result, when token vision is active, target test points are checked against the attacker's `losPolygon` instead of always relying on custom ray calculations.
-- For clipping Tokens, test points that are unreachable from the Token's center are now filtered out before cover is evaluated.
+- Improved clipping Tokens: test points that are unreachable from the Token's center are now filtered out before cover is evaluated.
 - **3D Cover:**
-  - **Vision Origin:** Cover checks now use the Token's **vision origin** (approximated as half the Token's height), aligning more closely with Foundry's own vision behavior.
+  - Cover and LoS checks now use the Token's **vision origin** (approximated as half the Token's height), aligning more closely with Foundry's own vision behavior.
   - **Additional notes:**
     - Improves forward compatibility with expected **V14 Scene Levels** behavior.
     - Prevents unrealistic "fully blocked" results caused by undersized Tokens when targeting larger creatures.
@@ -30,8 +28,10 @@ This release was originally planned as a **Foundry V14-only** update. However, m
   - **Gridless scenes:** **Distance to Target Space** is intended to match the same result as square/hex grids, at least when the global diagonal setting is **Exact (√2)**.
   - **Gridless scenes with "Distance Between Tokens":** this mode uses the token’s **outer radius**, including rectangular tokens. This is not perfect for every edge case involving rectangular tokens, but avoids disproportionate complexity. (It may be improved further in a future update.)
 - Added support for adjusting the calculated cover status directly in the roll dialog’s cover notes. The active GM also receives a chat message whenever the cover status changes. (#29)
+  - 
 - Changed the cover notes display setting from a toggle to a mode selection: never, only when cover applies, or always. 
 - Cover automation now only applies to Dexterity saving throws.
+- Due to changes in Midi-QOL, SimpleCover5e no longer strictly requires Library Mode to be active when used alongside Midi-QOL (Thanks to @tposney <3). Library Mode is still recommended, with cover evaluation handled by Midi-QOL.
 - General cleanup, bug fixes, and performance improvements.
 
 ## Version 1.4.4

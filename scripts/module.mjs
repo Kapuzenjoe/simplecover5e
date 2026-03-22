@@ -13,7 +13,7 @@ import { initQueries } from "./services/queries.service.mjs";
 import { clearCoverDebug } from "./services/cover.debug.mjs";
 import { onHoverToken, onPreDeleteToken } from "./services/hover.service.mjs";
 import { initApi, readyApi } from "./utils/api.mjs";
-import { onRenderRollConfigurationDialog } from "./services/dialog.service.mjs"
+import { onRenderRollConfigurationDialog, onPostRollConfiguration } from "./services/dialog.service.mjs"
 import { onCreateToken } from "./services/cover.service.mjs";
 
 // === Init Phase ===
@@ -40,7 +40,8 @@ for (const [hook, fn] of [
   ["preDeleteToken", onPreDeleteToken],
   ["createToken", onCreateToken],
   ["dnd5e.buildAttackRollConfig", onBuildAttackRollConfig],
-  ["dnd5e.buildSavingThrowRollConfig", onBuildSavingThrowRollConfig]
+  ["dnd5e.buildSavingThrowRollConfig", onBuildSavingThrowRollConfig],
+  ["dnd5e.postRollConfiguration", onPostRollConfiguration]
 ]) {
   Hooks.on(hook, fn);
 }

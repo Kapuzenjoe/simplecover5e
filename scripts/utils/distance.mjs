@@ -52,16 +52,14 @@ export function measureTokenDistance(sourceToken, targetToken) {
     let sourceCenters = isV14() ? sourceDoc.getContainmentTestPoints() : getTokenSampleCenters(sourceDoc);
     let targetCenters = isV14() ? targetDoc.getContainmentTestPoints() : getTokenSampleCenters(targetDoc);
 
-    if (isV14()) {
-      sourceCenters = sourceCenters.flatMap(point => [
-        { ...point, elevation: getCreatureHeight(sourceDoc) },
-        { ...point, elevation: sourceDoc.elevation }
-      ]);
-      targetCenters = targetCenters.flatMap(point => [
-        { ...point, elevation: getCreatureHeight(targetDoc) },
-        { ...point, elevation: targetDoc.elevation }
-      ]);
-    }
+    sourceCenters = sourceCenters.flatMap(point => [
+      { ...point, elevation: getCreatureHeight(sourceDoc) },
+      { ...point, elevation: sourceDoc.elevation }
+    ]);
+    targetCenters = targetCenters.flatMap(point => [
+      { ...point, elevation: getCreatureHeight(targetDoc) },
+      { ...point, elevation: targetDoc.elevation }
+    ]);
 
     for (const s of sourceCenters) {
       for (const t of targetCenters) {

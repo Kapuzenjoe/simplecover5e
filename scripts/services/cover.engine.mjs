@@ -417,7 +417,7 @@ function segIntersectsAABB3D(p, q, b) {
 }
 
 /**
- * Compute target/attacker sample centers used for cover evaluation.
+ * Compute target/attacker sample centers used for cover evaluation (only for V13).
  * The sampling pattern depends on grid mode and creature size.
  *
  * @param {TokenDocument|Position} td                       The token document or position to sample.
@@ -425,68 +425,83 @@ function segIntersectsAABB3D(p, q, b) {
  * @param {boolean} coverCheck                              Whether the centers are being computed for a cover check (true) or a LoS check (false).
  * @returns {Array<{x:number,y:number,elevation:number}>}   The sample centers with elevation.
  */
-export function getTokenSampleCenters(td, coverCheck = false) {
+export function getTokenSampleCenters(td) {
     const grid = td?.object?.scene?.grid ?? canvas?.scene.grid ?? null
     const x = td.x
     const y = td.y
     const width = td?.width ?? 0;
     const height = td?.height ?? 0;
-    let elevation = Number(td?.elevation ?? 0);
-    const creatureHeight = coverCheck ? getCreatureHeight(td) * 0.5 : getCreatureHeight(td);
-    const steps = coverCheck ? 0 : 2;
-    elevation = coverCheck ? (elevation + creatureHeight) : elevation;
 
     const centers = [];
 
-    if ((width < 1) && (height < 1)) {
+    if ((width <= 1) && (height <= 1)) {
         const center = td.getCenterPoint?.() ?? { x, y };
-        return coverCheck
-            ? [{ x: center.x, y: center.y, elevation: elevation }]
-            : [{ x: center.x, y: center.y, elevation: elevation }, { x: center.x, y: center.y, elevation: elevation + creatureHeight }];
+        return [{ x: center.x, y: center.y }]
     }
 
     if (grid.isSquare) {
         if (Number.isInteger(width) && Number.isInteger(height)) {
             for (let i = 0.5; i < height; i++) {
                 for (let j = 0.5; j < width; j++) {
-                    for (let k = 0; k <= steps; k++) {
-                        centers.push({ x: x + (grid.size * j), y: y + (grid.size * i), elevation: elevation + (creatureHeight * 0.5 * k) });
-                    }
+                    centers.push({ x: x + (grid.size * j), y: y + (grid.size * i) });
                 }
             }
         }
+        return centers
     }
     else if (grid.isHexagonal) {
         const offsets = td.getOccupiedGridSpaceOffsets?.() ?? [];
         for (const o of offsets) {
             const c = grid.getCenterPoint(o);
-            for (let k = 0; k <= steps; k++) {
-                centers.push({ x: c.x, y: c.y, elevation: elevation + (creatureHeight * 0.5 * k) });
-            }
+            centers.push({ x: c.x, y: c.y });
         }
+        return centers
     }
     else {
         const size = td?.getSize();
-        const n = Math.round((size?.height / grid.size) - 1e-6) - 1;
-        const m = Math.round((size?.width / grid.size) - 1e-6) - 1;
-        const padX = (size?.width - (grid.size * m)) / 2;
-        const padY = (size?.height - (grid.size * n)) / 2;
-        const stepX = m ? (size?.width - (padX * 2)) / m : 0;
-        const stepY = n ? (size?.height - (padY * 2)) / n : 0;
-        for (let i = 0; i <= n; i++) {
-            for (let j = 0; j <= m; j++) {
-                for (let k = 0; k <= steps; k++) {
+        const padX = Math.min(grid.sizeX, size.width) / 2;
+        const padY = Math.min(grid.sizeY, size.height) / 2;
+        const [deltaX, deltaY] = grid.isHexagonal ? (grid.columns ? [grid.sizeX * 0.75, grid.sizeY]
+            : [grid.sizeX, grid.sizeY * 0.75]) : [grid.size, grid.size];
+        const innerX = size.width - (padX * 2);
+        const innerY = size.height - (padY * 2);
+        const m = innerX ? Math.max(Math.round((innerX / deltaX) + 1e-6), 1) : 0;
+        const n = innerY ? Math.max(Math.round((innerY / deltaY) + 1e-6), 1) : 0;
+        const stepX = m ? innerX / m : 0;
+        const stepY = n ? innerY / n : 0;
+
+        const center = td.getCenterPoint?.()
+
+        if (grid.isGridless && isEllipse(td)) {
+            const numRings = Math.ceil(Math.min(n, m) / 2);
+            const maxDensity = Math.max((2 * (n + m)).toNearest(4), 4);
+            for (let k = 0; k < numRings; k++) {
+                const radiusX = (innerX / 2) - (stepX * k);
+                const radiusY = (innerY / 2) - (stepY * k);
+                const density = maxDensity - (8 * k);
+                const deltaAngle = Math.PI * 2 / density;
+                for (let s = 0; s < density; s++) {
+                    const angle = deltaAngle * s;
                     centers.push({
-                        x: x + padX + (stepX * j),
-                        y: y + padY + (stepY * i),
-                        elevation: elevation + (creatureHeight * 0.5 * k)
+                        x: center.x + (Math.cos(angle) * radiusX),
+                        y: center.y + (Math.sin(angle) * radiusY)
                     });
                 }
             }
+            return centers;
+        }
+        else {
+            for (let i = 0; i <= n; i++) {
+                for (let j = 0; j <= m; j++) {
+                    centers.push({
+                        x: x + padX + (stepX * j),
+                        y: y + padY + (stepY * i),
+                    });
+                }
+            }
+            return centers;
         }
     }
-
-    return centers;
 }
 
 /**
@@ -592,7 +607,7 @@ function buildTokenCornersForCenter(center, ctx, td, inset) {
     else corners = buildBoxCorners(center, radius, inset);
 
     corners.forEach(c => c.elevation = center?.elevation ?? 0);
-    corners.forEach(c => c.level = center?.level ?? null);
+    if (isV14()) corners.forEach(c => c.level = center?.level ?? null);
 
     return getConstrainedTestPoints(corners, td);
 }
@@ -625,22 +640,22 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
 
     const boxes = new Map(blockingTokens.map(t => [t.id, buildCreaturePrism(t.document, ctx, debugTokenShapes)]));
 
-    let attackerVisionSource = 0;
-    let targetVisionSource = 0;
+    const attackerVisionSource = attackerDoc?.getVisionOrigin?.()?.elevation
+        ?? (attackerDoc?.elevation ?? 0) + (getCreatureHeight(attackerDoc, ctx) * 0.5)
+        ?? 0;
+    const targetVisionSource = targetDoc?.getVisionOrigin?.()?.elevation
+        ?? (targetDoc?.elevation ?? 0) + (getCreatureHeight(targetDoc, ctx) * 0.5)
+        ?? 0;
     let attackerSamples = [];
     let targetSamples = [];
 
     if (isV14()) {
-        attackerVisionSource = attackerDoc?.getVisionOrigin?.()?.elevation ?? attackerDoc?.elevation ?? 0;
-        targetVisionSource = targetDoc?.getVisionOrigin?.()?.elevation ?? targetDoc?.elevation ?? 0;
-
         attackerSamples = attackerDoc?.getContainmentTestPoints?.()
             ?? [{ x: attackerDoc.x, y: attackerDoc.y }];
         for (const point of attackerSamples) {
             point.elevation = attackerVisionSource;
             point.level = attackerDoc?.level ?? canvas?.level ?? null;
         }
-
         targetSamples = targetDoc?.getContainmentTestPoints?.()
             ?? [{ x: targetDoc.x, y: targetDoc.y }];
         for (const point of targetSamples) {
@@ -649,22 +664,22 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
         }
     }
     else {
-        attackerSamples = getTokenSampleCenters(attackerDoc, true);
-        targetSamples = getTokenSampleCenters(targetDoc, true);
-        attackerVisionSource = targetSamples[0]?.elevation ?? attackerDoc?.elevation ?? 0;
-        targetVisionSource = attackerSamples[0]?.elevation ?? targetDoc?.elevation ?? 0;
+        attackerSamples = getTokenSampleCenters(attackerDoc);
+        targetSamples = getTokenSampleCenters(targetDoc);
+        for (const point of attackerSamples) {
+            point.elevation = attackerVisionSource;
+        }
+        for (const point of targetSamples) {
+            point.elevation = targetVisionSource;
+        }
     }
 
     const attackerZ = attackerVisionSource * distancePixels + 0.1;
     const targetZ = targetVisionSource * distancePixels + 0.1;
 
-    const isAttackerCircleShape = grid.isGridless && isEllipse(attackerDoc)
-    const isTargetCircleShape = grid.isGridless && isEllipse(targetDoc)
- 
-
     let best = { reachable: -1, coverLevel: 2, segs: [] };
-    const totalLines = grid.isHexagonal ? 6 : (isTargetCircleShape ? 8 : 4);
-    const threshold = grid.isHexagonal ? 4 : (isTargetCircleShape ? 6 : 3);
+    const totalLines = grid.isHexagonal ? 6 : (grid.isGridless && isEllipse(targetDoc) ? 8 : 4);
+    const threshold = grid.isHexagonal ? 4 : (grid.isGridless && isEllipse(targetDoc) ? 6 : 3);
 
     for (const tCenter of targetSamples) {
         const tgtCorners = buildTokenCornersForCenter(tCenter, ctx, targetDoc, insetTargetPx);
@@ -781,13 +796,11 @@ export function evaluateLOS(attackerDoc, targetDoc, ctx) {
     let targetTestPoints = [];
     if (isV14()) {
         targetTestPoints = targetDoc.getVisibilityTestPoints();
+        for (const point of targetTestPoints) point.level = targetDoc?.level ?? null;
     }
     else {
         const tolerance = canvas.grid.size / 4;
-        const testPoints = pullOnlyOuterCorners(
-            targetDoc,
-            getTokenSampleCenters(targetDoc)
-        ).flatMap(samplePoint => {
+        const testPoints = getTokenSampleCenters(targetDoc).flatMap(samplePoint => {
             const { tests } = canvas.visibility._createVisibilityTestConfig(samplePoint, {
                 tolerance,
                 object: targetDoc.object
@@ -797,9 +810,8 @@ export function evaluateLOS(attackerDoc, targetDoc, ctx) {
         });
 
         targetTestPoints = getConstrainedTestPoints(testPoints, targetDoc);
+        for (const point of targetTestPoints) point.elevation = (targetDoc?.elevation ?? 0) + (getCreatureHeight(targetDoc, ctx) * 0.5);
     }
-
-    for (const point of targetTestPoints) point.level = targetDoc?.level ?? null;
 
     const targetLosPoints = [];
     let hasLOS = false;
@@ -847,32 +859,4 @@ function getConstrainedTestPoints(points, td) {
 
     if (!points.length) points.push(origin);
     return points;
-}
-
-/**
- * For gridless circular tokens, pull four outer corners towards the center.
- * 
- * @param {TokenDocument} tokenDoc 
- * @param {Array<{x:number,y:number}>} points 
- * @param {number} pull 
- * @param {number} eps 
- * @returns {Array<{x:number,y:number}>} 
- */
-function pullOnlyOuterCorners(tokenDoc, points, pull = 0.30, eps = 0.5) {
-    if (!(tokenDoc.parent.grid.isGridless && isEllipse(tokenDoc))) return points;
-    const c = tokenDoc.getCenterPoint();
-    const xs = points.map(p => p.x), ys = points.map(p => p.y);
-    const minX = Math.min(...xs), maxX = Math.max(...xs);
-    const minY = Math.min(...ys), maxY = Math.max(...ys);
-
-    const near = (a, b) => Math.abs(a - b) <= eps;
-    const isCorner = (p) =>
-        (near(p.x, minX) || near(p.x, maxX)) &&
-        (near(p.y, minY) || near(p.y, maxY));
-
-    return points.map(p => isCorner(p) ? ({
-        ...p,
-        x: p.x + pull * (c.x - p.x),
-        y: p.y + pull * (c.y - p.y),
-    }) : p);
 }

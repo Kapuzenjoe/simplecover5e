@@ -30,18 +30,11 @@ async function prepareNotes(dialog) {
     const notes = data.notes ?? [];
     if (!notes.length) return null;
 
-    const coverChoices = {
-        none: game.i18n.localize("DND5E.None"),
-        half: game.i18n.localize("EFFECT.DND5E.StatusHalfCover"),
-        threeQuarters: game.i18n.localize("EFFECT.DND5E.StatusThreeQuartersCover"),
-        total: game.i18n.localize("EFFECT.DND5E.StatusTotalCover"),
-    };
-
     const rendered = await foundry.applications.handlebars.renderTemplate(
         "modules/simplecover5e/templates/dialog-note.hbs",
         {
             notes,
-            coverChoices
+            coverModes: COVER.I18N.LABEL
         }
     );
 
@@ -55,4 +48,42 @@ async function prepareNotes(dialog) {
     const template = document.createElement("template");
     template.innerHTML = enriched.trim();
     return template.content.firstElementChild;
+}
+
+/**
+ * 
+ * @param {BasicRoll[]} rolls                           Rolls that have been constructed but not evaluated.
+ * @param {BasicRollProcessConfiguration} config        Configuration information for the roll.
+ * @param {BasicRollDialogConfiguration} dialog         Configuration for the roll dialog.
+ * @param {BasicRollMessageConfiguration} message       Configuration for the roll message.
+ */
+export async function onPostRollConfiguration(rolls, config, dialog, message) {
+    const messageFlags = message?.data?.flags?.simplecover5e ?? [];
+    if (!messageFlags.length) return;
+    const content = [];
+
+    for (const flag of messageFlags) {
+        if (Object.hasOwn(flag, "newMode") && flag.newMode !== flag.desiredCover) {
+            content.push(`
+                <p><strong>${flag?.targetName || "???"}</strong></p>
+                <p>
+                    ${game.i18n.format("SIMPLE_COVER_5E.CoverHint.CoverModeDesired", { desiredCover: game.i18n.localize(COVER.I18N.LABEL[flag.desiredCover]) })}
+                     <br>
+                    ${game.i18n.format("SIMPLE_COVER_5E.CoverHint.CoverModeNew", { newMode: game.i18n.localize(COVER.I18N.LABEL[flag.newMode]) })}
+                </p>
+            `);
+        }
+    }
+
+    if (!content.length) return;
+
+    const chatData = {
+        user: game.user.id,
+        flavor: game.i18n.localize("SIMPLE_COVER_5E.CoverHint.CoverModeChanged"),
+        whisper: ChatMessage.getWhisperRecipients("GM"),
+        content: content.join("<hr>")
+    };
+
+    ChatMessage.applyRollMode(chatData, "blindroll");
+    await ChatMessage.create(chatData);
 }

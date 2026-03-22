@@ -183,7 +183,10 @@
                 "half": "Du erhältst durch <strong>halbe Deckung</strong> einen <strong>+2</strong>-Bonus auf diesen Geschicklichkeitsrettungswurf.",
                 "threeQuarters": "Du erhältst durch <strong>dreiviertel Deckung</strong> einen <strong>+5</strong>-Bonus auf diesen Geschicklichkeitsrettungswurf.",
                 "total": "Mit <strong>vollständiger Deckung</strong> kannst du nicht direkt als Ziel gewählt werden."
-            }
+            },
+            "CoverModeChanged": "Deckungsmodus geändert",
+            "CoverModeDesired": "Berechnet: {desiredCover}",
+            "CoverModeNew": "Ausgewählt: {newMode}"
         }
     }
 }

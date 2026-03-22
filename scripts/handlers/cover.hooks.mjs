@@ -56,8 +56,8 @@ export function onPreRollAttack(config, dialog, message) {
     const calcCover = out.result?.cover ?? "none";
     const calcBonus = out.result?.bonus;
 
-    const { desiredCover, desiredBonus, currentStatus } = setCoverStatuses(targetActor, calcCover, calcBonus);
-    setAttackCoverBonus({ desiredBonus, currentStatus, targetActor, singleTarget: targets.length === 1, config, message });
+    const { desiredCover, desiredBonus } = setCoverStatuses(targetActor, calcCover, calcBonus);
+    setAttackCoverBonus({ desiredBonus, targetActor, singleTarget: targets.length === 1, config, message });
 
     const coverHintsMode = game.settings?.get?.(MODULE_ID, SETTING_KEYS.COVER_HINTS) ?? "none";
 
@@ -134,6 +134,7 @@ export function onPreRollSavingThrow(config, dialog, message) {
       desiredCover,
       desiredBonus: desiredBonus === null ? "9999" : String(desiredBonus),
       targetId: targetToken.id,
+      targetName: targetToken.name,
       targetActorUuid: actor.uuid
     });
 
@@ -252,34 +253,18 @@ function getSourceChatMessageFromEvent(ev) {
  *
  * @param {object} message     The hook's 'message' arg.
  * @param {string} targetUuid  TokenDocument UUID to match.
- * @param {number} delta       AC delta (+/-).
+ * @param {number|null} newAC      The new AC value.
  */
-function adjustMessageTargetAC(message, targetUuid, delta) {
+function adjustMessageTargetAC(message, targetUuid, newAC) {
   const targets = message?.data?.flags?.dnd5e?.targets;
   if (!Array.isArray(targets)) return;
 
   for (const t of targets) {
     const uuid = t?.uuid ?? t?.tokenUuid ?? null;
     if (!uuid || uuid !== targetUuid) continue;
-    const base = t.ac
-    if (delta === null) {
-      t.ac = null;
-      break;
-    }
-    t.ac = (Number.isFinite(base) ? base : 0) + delta;
+    t.ac = newAC
     break;
   }
-}
-
-/**
- * Get the current cover bonus applied to the actor's AC.
- * @param {Actor5e} actor 
- * @returns {number}  The current cover bonus (0/2/5).
- */
-function getCurrentACCoverBonus(actor) {
-  const v = actor?.system?.attributes?.ac?.cover;
-  const n = Number(v);
-  return Number.isFinite(n) ? n : 0;
 }
 
 /**
@@ -325,11 +310,18 @@ function getCoverStatuses(actor) {
   return { overallStatus, systemStatus, customStatus };
 }
 
+/**
+ * 
+ * @param {Actor5e} actor 
+ * @param {String} calcCover 
+ * @param {Number|null} calcBonus 
+ * @returns 
+ */
 function setCoverStatuses(actor, calcCover, calcBonus) {
   let desiredCover = calcCover;
   let desiredBonus = calcBonus;
 
-  const { overallStatus: currentStatus, systemStatus, customStatus } = getCoverStatuses(actor);
+  const { systemStatus, customStatus } = getCoverStatuses(actor);
 
   if (COVER.ORDER[customStatus] > COVER.ORDER[desiredCover]) {
     ; ({ cover: desiredCover, bonus: desiredBonus } = getIgnoreCover(activity, customStatus));
@@ -345,35 +337,34 @@ function setCoverStatuses(actor, calcCover, calcBonus) {
     }
   }
 
-  return { desiredCover, desiredBonus, currentStatus }
+  return { desiredCover, desiredBonus }
 }
 
-function setAttackCoverBonus({ desiredBonus, currentStatus, targetActor, singleTarget = true, config, message }) {
-  const currentBonus = getCurrentACCoverBonus(targetActor);
-
+/**
+ * 
+ * @param {*} param0 
+ */
+function setAttackCoverBonus({ desiredBonus, targetActor, singleTarget = true, config, message }) {
   if (desiredBonus !== null) {
     const baseAC = targetActor?.system?.attributes?.ac?.value;
-    const delta = desiredBonus - currentBonus;
-    if (delta) {
-      if (currentStatus === "total") adjustMessageTargetAC(message, targetActor.uuid, delta + baseAC);
-      else if (singleTarget) {
-        config.target = Math.max(0, (config.target || 0) + delta);
-        adjustMessageTargetAC(message, targetActor.uuid, delta);
-      }
-      else adjustMessageTargetAC(message, targetActor.uuid, delta);
-    }
-    else if (currentStatus === "total") {
-      adjustMessageTargetAC(message, targetActor.uuid, baseAC);
-      if (singleTarget) config.target = baseAC;
-    }
+    const oldCoverAC = targetActor?.system?.attributes?.ac?.cover || 0;
+    const newAC = baseAC + desiredBonus - oldCoverAC;
+
+    adjustMessageTargetAC(message, targetActor.uuid, newAC);
+    if (singleTarget) config.target = Math.max(0, newAC);
   }
-  else { //total cover
+  else {
     adjustMessageTargetAC(message, targetActor.uuid, null);
     if (singleTarget) config.target = null;
   }
 }
 
-
+/**
+ * 
+ * @param {*} config 
+ * @param {String} desiredBonus 
+ * @param {Number} desiredCover 
+ */
 function setSaveCoverBonus(config, desiredBonus, desiredCover) {
   const roll0 = config.rolls?.[0];
 
@@ -407,7 +398,6 @@ function setSaveCoverBonus(config, desiredBonus, desiredCover) {
  */
 export function onBuildAttackRollConfig(app, config, formData, index) {
   if (!formData?.object) return;
-  console.log(app, config, formData)
 
   const changed = foundry.utils.flattenObject(formData.object);
   const messageFlags = app.message?.data?.flags?.simplecover5e ?? [];
@@ -423,8 +413,12 @@ export function onBuildAttackRollConfig(app, config, formData, index) {
     const targetActor = fromUuidSync(original.targetActorUuid);
     const targets = app.message?.data?.flags?.dnd5e?.targets ?? [];
 
-    const { desiredCover, desiredBonus, currentStatus } = setCoverStatuses(targetActor, mode, COVER.BONUS[mode]);
-    setAttackCoverBonus({ desiredBonus, currentStatus, targetActor, singleTarget: targets.length === 1, config, message: app.message });
+    const { desiredCover, desiredBonus } = setCoverStatuses(targetActor, mode, COVER.BONUS[mode]);
+
+    setAttackCoverBonus({ desiredBonus, targetActor, singleTarget: targets.length === 1, config: config.options, message: app.message });
+    if (desiredBonus === null) app.config.target = null;
+
+    original.newMode = String(desiredCover);
 
     const coverPrefix = `${game.i18n.localize(COVER.I18N.LABEL_PREFIX_KEY)}`;
     const hint = game.i18n.format(
@@ -470,6 +464,9 @@ export function onBuildSavingThrowRollConfig(app, config, formData, index) {
     if (desiredBonus !== "0") {
       config.parts.push(desiredBonus === null ? "9999" : String(desiredBonus));
     }
+
+    original.newMode = String(desiredCover);
+
     const coverPrefix = `${game.i18n.localize(COVER.I18N.LABEL_PREFIX_KEY)}`;
     const hint = game.i18n.localize(COVER.I18N.HINT_KEYS.Save[desiredCover]);
 
