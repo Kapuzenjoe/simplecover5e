@@ -27,11 +27,20 @@
   - Renamed **Source Center to Edge** to **Distance to Target Space**.
   - **Gridless scenes:** **Distance to Target Space** is intended to match the same result as square/hex grids, at least when the global diagonal setting is **Exact (√2)**.
   - **Gridless scenes with "Distance Between Tokens":** this mode uses the token’s **outer radius**, including rectangular tokens. This is not perfect for every edge case involving rectangular tokens, but avoids disproportionate complexity. (It may be improved further in a future update.)
-- Added support for adjusting the calculated cover status directly in the roll dialog’s cover notes. The active GM also receives a chat message whenever the cover status changes. (#29)
-  - 
+- Added support for adjusting the calculated cover status directly in the roll dialog’s cover notes. The active GM also receives a optional chat message whenever the cover status changes. (#29)
+  - The dialog feature currently only works when Library Mode is disabled and has no function wirh midi-qol (It may be improved further in a future update.)
 - Changed the cover notes display setting from a toggle to a mode selection: never, only when cover applies, or always. 
 - Cover automation now only applies to Dexterity saving throws.
-- Due to changes in Midi-QOL, SimpleCover5e no longer strictly requires Library Mode to be active when used alongside Midi-QOL (Thanks to @tposney <3). Library Mode is still recommended, with cover evaluation handled by Midi-QOL.
+- Added object support for `flags.simplecover5e.upgradeCover.all`, `.attack`, and `.save`. These flags now accept `{ upgrade, min, max }` in addition to legacy numeric values (`1` / `2`), which remain fully backward compatible. `upgrade` accepts `1` or `2`, while `min` and `max` accept `none`, `half`, `threeQuarters`, or `total`. (#30)
+  - example for "Enhanced Camouflage" from Ultramodern5E Redux: `flags.simplecover5e.upgradeCover.all ADD { upgrade: 1, min: "half", max: "total" }`
+- Added new `flags.simplecover5e.downgradeCover.all`, `.attack`, and `.save` flags. These flags accept `{ downgrade, min, max }`, where `downgrade` accepts `1` or `2`, and `min` / `max` accept `none`, `half`, `threeQuarters`, or `total`. (#33)
+  - example for "Penetration Shot" from Ultramodern5E Redux: `flags.simplecover5e.downgradeCover.all ADD { downgrade: 1, min: "half", max: "total" }`
+- Added scoped variants for `flags.simplecover5e.ignoreAllCover`, `ignoreThreeQuartersCover`, and `ignoreHalfCover` via `.all`, `.attack`, and `.save` boolean flags. Legacy flags remain supported and continue to behave as attack-only flags for backward compatibility.
+- Refactored cover flag semantics for clearer source/target behavior:
+  - **`upgradeCover`** is a **defensive** flag placed on the actor being protected. It increases that actor’s effective cover when they are the target of an attack or effect.
+  - **`ignore*Cover`** is an **offensive** flag placed on the actor making the attack or effect. It causes the targeted actor’s cover to be ignored.
+  - **`downgradeCover`** is an **offensive** flag placed on the actor making the attack or effect. It reduces the targeted actor’s effective cover instead of ignoring it completely.
+- Due to changes in Midi-QOL, SimpleCover5e no longer strictly requires Library Mode to be active when used alongside Midi-QOL (Thanks to @tposney). Library Mode is still recommended, with cover evaluation handled by Midi-QOL.
 - General cleanup, bug fixes, and performance improvements.
 
 ## Version 1.4.4

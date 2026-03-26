@@ -59,6 +59,7 @@ export const COVER = Object.freeze({
     threeQuarters: 2,
     total: 3
   }),
+  KEYS: Object.freeze(["none", "half", "threeQuarters", "total"]),
   FA_ICONS: Object.freeze({
     none: "",
     half: "fa-solid fa-shield-halved",
@@ -121,6 +122,7 @@ export const SETTING_KEYS = {
   INSET_TARGET: "insetTarget",
   INSET_OCCLUDER: "insetOccluder",
   COVER_HINTS: "coverHints",
+  COVER_HINTS_GM_MESSAGE: "coverHintsGmMessage",
   IGNORE_FRIENDLY: "ignoreFriendly",
 };
 

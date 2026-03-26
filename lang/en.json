@@ -35,6 +35,10 @@
           "Always": "Always"
         }
       },
+      "coverHintsGmMessage": {
+        "Name": "GM Chat Message for Cover Changes",
+        "Hint": "Sends a chat message to the GM when the cover state is changed manually in the roll dialog."
+      },
       "CreaturesHalfOnly": {
         "Name": "Limit Cover from Creatures to 1/2 Cover",
         "Hint": "When enabled, creatures can grant at most Half Cover. As soon as at least one line is blocked purely by creatures, the target gains Half Cover, but never Three-Quarters Cover from creatures alone. Walls continue to follow the standard DMG rules."

@@ -29,12 +29,12 @@ export function measureTokenDistance(sourceToken, targetToken) {
     const targetCenter = targetDoc.getCenterPoint();
 
     const sourceCenters = [
-      { ...sourceCenter, elevation: getCreatureHeight(sourceDoc) },
+      { ...sourceCenter, elevation: sourceDoc.elevation + getCreatureHeight(sourceDoc) },
       { ...sourceCenter }
     ];
 
     const targetCenters = [
-      { ...targetCenter, elevation: getCreatureHeight(targetDoc) },
+      { ...targetCenter, elevation: targetDoc.elevation + getCreatureHeight(targetDoc) },
       { ...targetCenter }
     ];
 
@@ -53,11 +53,11 @@ export function measureTokenDistance(sourceToken, targetToken) {
     let targetCenters = isV14() ? targetDoc.getContainmentTestPoints() : getTokenSampleCenters(targetDoc);
 
     sourceCenters = sourceCenters.flatMap(point => [
-      { ...point, elevation: getCreatureHeight(sourceDoc) },
-      { ...point, elevation: sourceDoc.elevation }
+      { ...point, elevation: sourceDoc.elevation + getCreatureHeight(sourceDoc) },
+      { ...point, elevation: sourceDoc.elevation}
     ]);
     targetCenters = targetCenters.flatMap(point => [
-      { ...point, elevation: getCreatureHeight(targetDoc) },
+      { ...point, elevation: targetDoc.elevation + getCreatureHeight(targetDoc) },
       { ...point, elevation: targetDoc.elevation }
     ]);
 

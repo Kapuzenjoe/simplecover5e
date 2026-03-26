@@ -439,16 +439,6 @@ export function getTokenSampleCenters(td) {
         return [{ x: center.x, y: center.y }]
     }
 
-    if (grid.isSquare) {
-        if (Number.isInteger(width) && Number.isInteger(height)) {
-            for (let i = 0.5; i < height; i++) {
-                for (let j = 0.5; j < width; j++) {
-                    centers.push({ x: x + (grid.size * j), y: y + (grid.size * i) });
-                }
-            }
-        }
-        return centers
-    }
     else if (grid.isHexagonal) {
         const offsets = td.getOccupiedGridSpaceOffsets?.() ?? [];
         for (const o of offsets) {

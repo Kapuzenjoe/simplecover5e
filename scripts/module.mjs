@@ -49,13 +49,20 @@ for (const [hook, fn] of [
 // === Register Flags for DAE ===
 
 Hooks.once("dae.setupComplete", () => {
+  const scopes = ["all", "attack", "save"];
+  const ignoreFlags = ["ignoreAllCover", "ignoreHalfCover", "ignoreThreeQuartersCover"];
+  const rangedFlags = ["upgradeCover", "downgradeCover"];
+
   const fields = [
-    "flags.simplecover5e.ignoreAllCover",
-    "flags.simplecover5e.ignoreHalfCover",
-    "flags.simplecover5e.ignoreThreeQuartersCover",
-    "flags.simplecover5e.upgradeCover.all",
-    "flags.simplecover5e.upgradeCover.attack",
-    "flags.simplecover5e.upgradeCover.save"
+    // ignoreCover flags
+    ...ignoreFlags.flatMap(flag =>
+      scopes.map(scope => `flags.simplecover5e.${flag}.${scope}`)
+    ),
+
+    // upgradeCover / downgradeCover
+    ...rangedFlags.flatMap(flag =>
+      scopes.map(scope => `flags.simplecover5e.${flag}.${scope}`)
+    )
   ];
 
   window.DAE?.addAutoFields?.(fields);

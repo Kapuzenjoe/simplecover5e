@@ -1,4 +1,4 @@
-import { MODULE_ID, COVER } from "../config/constants.config.mjs";
+import { MODULE_ID, COVER, SETTING_KEYS } from "../config/constants.config.mjs";
 
 /**
  * Inject module-provided notes into a rendered Roll Configuration Dialog.
@@ -58,6 +58,8 @@ async function prepareNotes(dialog) {
  * @param {BasicRollMessageConfiguration} message       Configuration for the roll message.
  */
 export async function onPostRollConfiguration(rolls, config, dialog, message) {
+    if (!game.settings.get(MODULE_ID, SETTING_KEYS.COVER_HINTS_GM_MESSAGE)) return;
+
     const messageFlags = message?.data?.flags?.simplecover5e ?? [];
     if (!messageFlags.length) return;
     const content = [];
