@@ -1,45 +1,22 @@
+/**
+ * @import { CoverContext, CoverEvaluationResult, DebugTokenShapes, LosResult, OccluderPrism, Position, TestPoint } from "../types/shared.types.mjs";
+ */
+
 import { MODULE_ID, COVER, SETTING_KEYS } from "../config/constants.config.mjs";
 import { isBlockingCreatureToken, getCreatureHeight, isEllipse, isV14, isWallHeightModuleActive } from "./cover.service.mjs";
 
 /**
- * @typedef {"none"|"half"|"threeQuarters"|"total"} CoverLevel
- *
- * @typedef {object} CoverContext
- * @property {Scene} scene
- * @property {Grid} grid
- * @property {"square"|"circle"} gridlessTokenShape
- * @property {number} halfGridSize
- * @property {number} distancePixels
- * @property {number} insetAttackerPx
- * @property {number} insetTargetPx
- * @property {number} insetOccluderPx
- * @property {Record<string, number>} size
- * @property {Map<string, Array<{minX:number,minY:number,maxX:number,maxY:number,minZ:number,maxZ:number}>>} [creaturePrisms]
- *
- * @typedef {object} LosPoint
- * @property {number} x
- * @property {number} y
- * @property {boolean} blocked
- *
- * @typedef {object} LosResult
- * @property {boolean} hasLOS
- * @property {LosPoint[]} targetLosPoints
- * 
- * @typedef {{x:number, y:number, elevation?:number}} Position
- */
-
-
-/**
  * Build a cover evaluation context for a single pass.
- * The context caches grid measurements and module settings used by the cover and LoS evaluators.
+ * The context caches grid measurements, active-canvas helpers, and module settings used by the cover and LOS evaluators.
  *
- * @param {Scene} scene                           The scene to evaluate.
- * @returns {CoverContext}                        The cover evaluation context.
+ * @param {Scene} scene The scene to evaluate.
+ * @returns {CoverContext} The cover evaluation context.
  */
 export function buildCoverContext(scene) {
     const grid = scene.grid;
     const halfGridSize = grid.size / 2;
     const distancePixels = scene?.dimensions?.distancePixels ?? 1;
+    const activeScene = scene === canvas?.scene;
 
     const insetAttacker = Number(game.settings.get(MODULE_ID, SETTING_KEYS.INSET_ATTACKER) ?? 0);
     const insetTarget = Number(game.settings.get(MODULE_ID, SETTING_KEYS.INSET_TARGET) ?? 0);
@@ -53,6 +30,8 @@ export function buildCoverContext(scene) {
         insetAttackerPx: Math.min(grid.size * 0.3, insetAttacker),
         insetTargetPx: Math.min(grid.size * 0.3, insetTarget),
         insetOccluderPx: Math.min(grid.size * 0.3, insetOccluder),
+        placeables: activeScene ? (canvas?.tokens?.placeables ?? []) : [],
+        level: activeScene ? (canvas?.level ?? null) : null
     };
 }
 
@@ -60,10 +39,10 @@ export function buildCoverContext(scene) {
  * Build one or more 3D occluder prisms for a creature token.
  * The prism shape depends on grid mode and token-shape settings (e.g., gridless circle uses an inscribed AABB).
  *
- * @param {TokenDocument} td                     The token document to build prisms for.
- * @param {CoverContext} ctx                     The cover evaluation context.
- * @param {{ attacker: object[], target: object[], occluders: object[] }[]} debugTokenShapes  Debug shape data for attacker, target, and occluders.
- * @returns {Array<{minX:number,minY:number,maxX:number,maxY:number,minZ:number,maxZ:number}>} The occluder prisms (AABBs) in canvas pixel space.
+ * @param {TokenDocument} td The token document to build prisms for.
+ * @param {CoverContext} ctx The cover evaluation context.
+ * @param {DebugTokenShapes|null} [debugTokenShapes=null] Optional debug shape collector.
+ * @returns {OccluderPrism[]} The occluder prisms in canvas pixel space.
  */
 export function buildCreaturePrism(td, ctx, debugTokenShapes) {
     const { grid, halfGridSize, insetOccluderPx, distancePixels } = ctx;
@@ -153,25 +132,28 @@ export function buildCreaturePrism(td, ctx, debugTokenShapes) {
 
 /**
  * Test whether sight-blocking walls obstruct the segment between two positions.
- * If wall-height is active, the intersection is additionally filtered by wall top/bottom values.
+ * If the Wall Height module is active, the intersection is additionally filtered by wall top and bottom values.
  *
- * @param {{x:number,y:number,elevation:number,level?:string}} aCorner                       The attacker corner.
- * @param {{x:number,y:number,elevation:number,level?:string}} bCorner                                     The target corner.
- * @returns {{blocked:boolean, A:{x:number,y:number,elevation:number}, B:{x:number,y:number,elevation:number}}}   Whether the segment is blocked and the tested inset segment.
+ * @param {{x:number,y:number,elevation:number,level?:string|null}} aCorner The attacker corner.
+ * @param {{x:number,y:number,elevation:number,level?:string|null}} bCorner The target corner.
+ * @param {CoverContext} ctx The cover evaluation context.
+ * @param {PIXI.Polygon|null} [losPolygon=null] A precomputed LOS polygon for the attacker, if available.
+ * @returns {{blocked: boolean, A: TestPoint, B: TestPoint, collisions?: object[]}} A result describing whether the tested segment is blocked.
  */
-function wallsBlock(aCorner, bCorner, losPolygon = null) {
+function wallsBlock(aCorner, bCorner, ctx, losPolygon = null) {
     const A = aCorner
     const B = bCorner
+    const scene = ctx.scene ?? canvas?.scene;
     const backend = CONFIG.Canvas.polygonBackends.sight;
 
     const debugOn = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.DEBUG);
     const activeGM = game.users?.activeGM;
 
-    let fromLevel = A?.level ?? canvas?.level ?? null;
-    if (typeof fromLevel === "string") fromLevel = canvas.scene?.levels?.get(fromLevel) ?? null;
+    let fromLevel = A?.level ?? ctx.level ?? null;
+    if (typeof fromLevel === "string") fromLevel = scene?.levels?.get(fromLevel) ?? null;
 
-    let toLevel = B?.level ?? canvas?.level ?? null;
-    if (typeof toLevel === "string") toLevel = canvas.scene?.levels?.get(toLevel) ?? null;
+    let toLevel = B?.level ?? ctx.level ?? null;
+    if (typeof toLevel === "string") toLevel = scene?.levels?.get(toLevel) ?? null;
 
     toLevel ??= fromLevel;
 
@@ -221,7 +203,7 @@ function wallsBlock(aCorner, bCorner, losPolygon = null) {
             if (losBlocked) blocked = true;
         } else {
 
-            const surfaceBlocked = canvas.scene?.testSurfaceCollision?.(A, B, {
+            const surfaceBlocked = scene?.testSurfaceCollision?.(A, B, {
                 type: "sight",
                 mode: "any",
                 level: fromLevel,
@@ -256,7 +238,7 @@ function wallsBlock(aCorner, bCorner, losPolygon = null) {
         const tMin = tSplit;
         const tMax = 1;
 
-        const surfaceBlocked = canvas.scene?.testSurfaceCollision(A, B, {
+        const surfaceBlocked = scene?.testSurfaceCollision?.(A, B, {
             type: "sight",
             mode: "any",
             level: toLevel,
@@ -348,15 +330,12 @@ function wallsBlock(aCorner, bCorner, losPolygon = null) {
 
 /**
  * Compute the ray height at a wall-intersection vertex along segment A→B.
- * The result is used to compare line height against wall-height top/bottom values.
+ * The result is used to compare line height against Wall Height top and bottom values.
  *
- * @param {{x:number,y:number}} A                The segment start point (inset).
- * @param {{x:number,y:number}} B                The segment end point (inset).
- * @param {{x:number,y:number}} vertex           The intersection vertex on the wall.
- * @param {TokenDocument|Position} attackerDoc   The attacking token document OR a generic position {x,y,elevation?}.
- * @param {TokenDocument} targetDoc              The target token document.
- * @param {CoverContext} ctx                     The cover evaluation context.
- * @returns {{lineZ:number, attZ:number, tgtZ:number}} The interpolated line height and the attacker/target sampling heights.
+ * @param {{x:number,y:number,elevation:number}} A The segment start point.
+ * @param {{x:number,y:number,elevation:number}} B The segment end point.
+ * @param {{x:number,y:number}} vertex The intersection vertex on the wall.
+ * @returns {{coverLineZ:number}} The interpolated line height at the intersection vertex.
  */
 function getLineHeightAtVertex(A, B, vertex) {
     const dx = B.x - A.x;
@@ -381,10 +360,10 @@ function getLineHeightAtVertex(A, B, vertex) {
  * Test whether a 3D segment intersects a 3D axis-aligned bounding box (AABB).
  * This uses Liang–Barsky style clipping and rejects near-zero intersections using a small epsilon.
  *
- * @param {{x:number,y:number,z:number}} p        The segment start point.
- * @param {{x:number,y:number,z:number}} q        The segment end point.
+ * @param {{x:number,y:number,z:number}} p The segment start point.
+ * @param {{x:number,y:number,z:number}} q The segment end point.
  * @param {{minX:number,minY:number,maxX:number,maxY:number,minZ:number,maxZ:number}} b The AABB.
- * @returns {boolean}                             True if the segment intersects the AABB.
+ * @returns {boolean} True if the segment intersects the AABB.
  */
 function segIntersectsAABB3D(p, q, b) {
     let t0 = 0;
@@ -392,6 +371,12 @@ function segIntersectsAABB3D(p, q, b) {
 
     const d = { x: q.x - p.x, y: q.y - p.y, z: q.z - p.z };
 
+    /**
+     * Clip the current segment interval against a single axis plane.
+     * @param {number} pv The projected segment delta on the axis.
+     * @param {number} qv The projected offset from the boundary.
+     * @returns {boolean} True if the clipped interval still intersects the box.
+     */
     function clip(pv, qv) {
         if (pv === 0) return qv >= 0;
         const t = qv / pv;
@@ -417,13 +402,11 @@ function segIntersectsAABB3D(p, q, b) {
 }
 
 /**
- * Compute target/attacker sample centers used for cover evaluation (only for V13).
+ * Compute sample centers used by the v13 cover and LOS evaluators.
  * The sampling pattern depends on grid mode and creature size.
  *
- * @param {TokenDocument|Position} td                       The token document or position to sample.
- * @param {CoverContext} ctx                                The cover evaluation context.
- * @param {boolean} coverCheck                              Whether the centers are being computed for a cover check (true) or a LoS check (false).
- * @returns {Array<{x:number,y:number,elevation:number}>}   The sample centers with elevation.
+ * @param {TokenDocument|Position} td The token document or position to sample.
+ * @returns {Array<{x:number,y:number}>} The sample center points in canvas pixel space.
  */
 export function getTokenSampleCenters(td) {
     const grid = td?.object?.scene?.grid ?? canvas?.scene.grid ?? null
@@ -497,11 +480,11 @@ export function getTokenSampleCenters(td) {
 /**
  * Build inset box corners around a center point.
  * Each corner is moved by `insetPx` towards the center along the diagonal.
- * 
- * @param {{x:number,y:number}} center                             The box center in canvas pixels.
- * @param {number} radius                                          Half of the box edge length in pixels.
- * @param {number} insetPx                                         The inset distance (pixels) towards the center.
- * @returns {Array<{x:number, y:number}>}                          The corners points.
+ *
+ * @param {{x:number,y:number}} center The box center in canvas pixels.
+ * @param {number} radius Half of the box edge length in pixels.
+ * @param {number} insetPx The inset distance in pixels towards the center.
+ * @returns {Array<{x:number, y:number}>} The corner points.
  */
 function buildBoxCorners(center, radius, insetPx) {
     const { x: cx, y: cy } = center;
@@ -519,11 +502,11 @@ function buildBoxCorners(center, radius, insetPx) {
  * Build inset corners for a hex cell at a given center.
  * Each corner is moved by `insetPx` towards the center along the diagonal.
  *
- * @param {{x:number,y:number}} center            The hex cell center in canvas pixels.
- * @param {number} insetPx                        The inset distance (pixels) towards the center.
- * @param {CoverContext} ctx                      The cover evaluation context containing the grid.
- * @param {Grid} grid                             The current scene grid.
- * @returns {Array<{x:number, y:number}>}         The hex corners points.
+ * @param {{x:number,y:number}} center The hex cell center in canvas pixels.
+ * @param {number} radius The effective hex radius in pixels.
+ * @param {number} insetPx The inset distance in pixels.
+ * @param {Grid} grid The current scene grid.
+ * @returns {Array<{x:number, y:number}>} The inset hex corner points.
  */
 function buildHexCorners(center, radius, insetPx, grid) {
     const { x: cx, y: cy } = center;
@@ -547,10 +530,10 @@ function buildHexCorners(center, radius, insetPx, grid) {
  * Build a set of inset "corners" on the circumference of a circle.
  * Each point is moved by `insetPx` towards the center along the radius.
  *
- * @param {{x:number,y:number}} center                          Center of the circle in canvas pixels.
- * @param {number} radius                                       Radius of the circle in pixels.
- * @param {number} insetPx                                      The inset distance (pixels) towards the center.
- * @returns {Array<{x:number, y:number}>}                       The points (clockwise from angle 0°)
+ * @param {{x:number,y:number}} center The circle center in canvas pixels.
+ * @param {number} radius The circle radius in pixels.
+ * @param {number} insetPx The inset distance in pixels towards the center.
+ * @returns {Array<{x:number, y:number}>} The points, clockwise from angle 0 degrees.
  */
 function buildCircleCorners(center, radius, insetPx) {
     const { x: cx, y: cy } = center;
@@ -572,18 +555,25 @@ function buildCircleCorners(center, radius, insetPx) {
 /**
  * Build token test points for a sample center based on grid mode and token shape.
  *
- * @param {{x:number,y:number}} center            The sample center in canvas pixels.
- * @param {CoverContext} ctx                      The cover evaluation context.
- * @param {TokenDocument} td                      The token document.
- * @param {number} insetPx                        The inset distance (pixels) towards the center.
- * @returns {Array<{x:number, y:number}>}         The points for this center.
+ * @param {TestPoint} center The sample center in canvas pixels.
+ * @param {CoverContext} ctx The cover evaluation context.
+ * @param {TokenDocument|Position} td The token document or position being sampled.
+ * @param {number} inset The inset distance in pixels.
+ * @returns {TestPoint[]} The test points for this center.
  */
 function buildTokenCornersForCenter(center, ctx, td, inset) {
     const { halfGridSize, grid } = ctx
     const useCircleShape = grid.isGridless && isEllipse(td);
 
     const externalRadius = td?.object?.externalRadius ?? null
-    if (externalRadius === null) return [{ x: center?.x, y: center?.y }];
+    if (externalRadius === null) {
+        return [{
+            x: center?.x,
+            y: center?.y,
+            elevation: center?.elevation ?? 0,
+            level: isV14() ? (center?.level ?? null) : undefined
+        }];
+    }
 
     const radius = (externalRadius < halfGridSize) ? externalRadius : halfGridSize
 
@@ -606,21 +596,21 @@ function buildTokenCornersForCenter(center, ctx, td, inset) {
  * Evaluate DMG-style cover for an attacker against a target.
  * The evaluator tests rays against sight-blocking walls and creature occluder prisms and returns the best (least blocked) sampling outcome.
  *
- * @param {TokenDocument|Position} attackerDoc    The attacking token document OR a generic position {x,y,elevation?}.
- * @param {TokenDocument} targetDoc               The target token document.
- * @param {CoverContext} ctx                      The cover evaluation context.
- * @param {{debug?:boolean}} [options]            Optional flags (e.g. debug shape output).
- * @returns {{cover: "none"|"half"|"threeQuarters", bonus: 0|2|5|null, debugSegments?:Array, debugTokenShapes?:object}} The cover result and optional debug data.
- *
+ * @param {TokenDocument|Position} attackerDoc The attacking token document or a generic position.
+ * @param {TokenDocument} targetDoc The target token document.
+ * @param {CoverContext} ctx The cover evaluation context.
+ * @param {{debug?:boolean}} [options] Optional flags, such as debug output.
+ * @returns {CoverEvaluationResult} The cover result and optional debug data.
  */
 export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options = {}) {
     const debug = !!options.debug;
     const debugTokenShapes = debug ? { attacker: [], target: [], occluders: [] } : null;
     const { grid, distancePixels, insetAttackerPx, insetTargetPx } = ctx;
     const creaturesHalfOnly = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.CREATURES_HALF_ONLY);
+    const filteredTargetPoints = game.settings?.get?.(MODULE_ID, SETTING_KEYS.FILTERED_TARGET_POINTS) ?? "blocked";
     const ignoreFriendly = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.IGNORE_FRIENDLY);
 
-    const placeables = canvas?.tokens?.placeables ?? [];
+    const placeables = ctx.placeables ?? [];
     const blockingTokens = placeables.filter(t =>
         t.id !== attackerDoc?.id &&
         t.id !== targetDoc?.id &&
@@ -644,13 +634,13 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
             ?? [{ x: attackerDoc.x, y: attackerDoc.y }];
         for (const point of attackerSamples) {
             point.elevation = attackerVisionSource;
-            point.level = attackerDoc?.level ?? canvas?.level ?? null;
+            point.level = attackerDoc?.level ?? ctx.level ?? null;
         }
         targetSamples = targetDoc?.getContainmentTestPoints?.()
             ?? [{ x: targetDoc.x, y: targetDoc.y }];
         for (const point of targetSamples) {
             point.elevation = targetVisionSource;
-            point.level = targetDoc?.level ?? canvas?.level ?? null;
+            point.level = targetDoc?.level ?? ctx.level ?? null;
         }
     }
     else {
@@ -689,7 +679,7 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
                 const segs = [];
 
                 for (const tCorner of tgtCorners) {
-                    const wallResult = wallsBlock(aCorner, tCorner);
+                    const wallResult = wallsBlock(aCorner, tCorner, ctx);
                     const wBlocked = wallResult.blocked;
 
                     const attacker = { x: aCorner.x, y: aCorner.y, z: attackerZ };
@@ -724,25 +714,33 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
                     });
                 }
 
-                const totalBlocked = blockedWalls + blockedCreatures + Math.max(0, totalLines - tgtCorners.length);
-                const reachable = Math.max(0, totalLines - totalBlocked);
+                const missingLines = Math.max(0, totalLines - tgtCorners.length);
+                const filteredBlocked = filteredTargetPoints === "blocked" ? missingLines : 0;
+                const activeLines = filteredTargetPoints === "dynamic" ? tgtCorners.length : totalLines;
+                const threeQuartersThreshold = filteredTargetPoints === "dynamic"
+                    ? Math.max(1, Math.floor(tgtCorners.length * 0.75))
+                    : threshold;
+                console.log("threeQuartersThreshold", threeQuartersThreshold)
+
+                const totalBlocked = blockedWalls + blockedCreatures + filteredBlocked;
+                const reachable = Math.max(0, activeLines - totalBlocked);
 
                 let coverLevel;
                 if (creaturesHalfOnly) {
-                    const effWalls = blockedWalls + Math.max(0, totalLines - tgtCorners.length);
-                    if (effWalls >= threshold) coverLevel = 2;
+                    const effWalls = blockedWalls + filteredBlocked;
+                    if (effWalls >= threeQuartersThreshold) coverLevel = 2;
                     else if (effWalls >= 1) coverLevel = 1;
                     else if (blockedCreatures >= 1) coverLevel = 1;
                     else coverLevel = 0;
                 } else {
-                    if (totalBlocked >= threshold) coverLevel = 2;
+                    if (totalBlocked >= threeQuartersThreshold) coverLevel = 2;
                     else if (totalBlocked >= 1) coverLevel = 1;
                     else coverLevel = 0;
                 }
 
                 if (reachable > best.reachable || (reachable === best.reachable && coverLevel < best.coverLevel)) {
                     best = { reachable, coverLevel, segs };
-                    if (!debug && coverLevel === 0 && totalBlocked === 0 && tgtCorners.length === totalLines) {
+                    if (!debug && coverLevel === 0 && totalBlocked === 0 && activeLines === totalLines) {
                         const cover = "none";
                         const bonus = COVER.BONUS[cover] || 0;
                         return debug ? { cover, bonus, debugSegments: best.segs, debugTokenShapes } : { cover, bonus };
@@ -758,27 +756,33 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
 }
 
 /**
- * Evaluate whether an attacker has line of sight (LoS) to a target, considering walls only.
- * The test samples a 3×3 grid around the target center using Foundry-like tolerance and reports which points are blocked.
+ * Evaluate whether an attacker has line of sight (LOS) to a target, considering walls only.
+ * The test samples target visibility points and reports which points are blocked.
  *
- * @param {TokenDocument|Position} attackerDoc    The attacking token document OR a generic position {x,y,elevation?}.
- * @param {TokenDocument} targetDoc               The target token document.
- * @param {CoverContext} ctx                      The cover evaluation context.
- * @returns {LosResult}                           The LoS result and sampled target points.
+ * @param {TokenDocument|Position} attackerDoc The attacking token document or a generic position.
+ * @param {TokenDocument} targetDoc The target token document.
+ * @param {CoverContext} ctx The cover evaluation context.
+ * @returns {LosResult} The LOS result and sampled target points.
  */
 export function evaluateLOS(attackerDoc, targetDoc, ctx) {
     if (!attackerDoc || !targetDoc) return { hasLOS: true, targetLosPoints: [] };
     const debugOn = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.DEBUG);
 
     const origin = isV14()
-        ? attackerDoc.getVisionOrigin()
+        ? (attackerDoc.getVisionOrigin?.() ?? attackerDoc.getCenterPoint?.() ?? {
+            x: attackerDoc.x,
+            y: attackerDoc.y,
+            elevation: attackerDoc?.elevation ?? 0,
+            level: attackerDoc?.level ?? null
+        })
         : (attackerDoc.getCenterPoint?.() ?? {
             x: attackerDoc.x,
             y: attackerDoc.y,
             elevation: (attackerDoc?.elevation ?? 0) + (getCreatureHeight(attackerDoc, ctx) * 0.5),
         });
 
-    origin.level = attackerDoc?.level ?? canvas?.level ?? null;
+    origin.elevation ??= attackerDoc?.elevation ?? 0;
+    origin.level ??= attackerDoc?.level ?? ctx.level ?? null;
     const losPolygon = attackerDoc?.object?.vision?.los ?? null;
 
     if (isWallHeightModuleActive()) origin.elevation = (attackerDoc?.elevation ?? 0) + getCreatureHeight(attackerDoc, ctx);
@@ -789,9 +793,11 @@ export function evaluateLOS(attackerDoc, targetDoc, ctx) {
         for (const point of targetTestPoints) point.level = targetDoc?.level ?? null;
     }
     else {
-        const tolerance = canvas.grid.size / 4;
+        const tolerance = ctx.grid.size / 4;
+        const visibility = (ctx.scene === canvas?.scene) ? canvas?.visibility : null;
+        if (!visibility) return { hasLOS: true, targetLosPoints: [] };
         const testPoints = getTokenSampleCenters(targetDoc).flatMap(samplePoint => {
-            const { tests } = canvas.visibility._createVisibilityTestConfig(samplePoint, {
+            const { tests } = visibility._createVisibilityTestConfig(samplePoint, {
                 tolerance,
                 object: targetDoc.object
             });
@@ -807,7 +813,7 @@ export function evaluateLOS(attackerDoc, targetDoc, ctx) {
     let hasLOS = false;
 
     for (const p of targetTestPoints) {
-        const wallResult = wallsBlock(origin, p, losPolygon);
+        const wallResult = wallsBlock(origin, p, ctx, losPolygon);
         targetLosPoints.push({ x: p.x, y: p.y, blocked: wallResult.blocked });
 
         if (!wallResult.blocked) {
@@ -823,11 +829,11 @@ export function evaluateLOS(attackerDoc, targetDoc, ctx) {
 }
 
 /**
- * Given a array of test points and a token document, filter out points that are behind sight-blocking walls relative to the token's vision origin.
- * 
- * @param {Array<{x:number,y:number}>} points 
- * @param {TokenDocument} td 
- * @returns {Array<{x:number,y:number}>} 
+ * Filter token test points against the token's constrained movement polygon.
+ *
+ * @param {TestPoint[]} points The points to constrain. Modified in place.
+ * @param {TokenDocument} td The token document that defines the constrained area.
+ * @returns {TestPoint[]} The constrained points array.
  */
 function getConstrainedTestPoints(points, td) {
     const level = td.parent?.levels?.get(td?.level) ?? null;

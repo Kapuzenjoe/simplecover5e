@@ -1,36 +1,52 @@
+/**
+ * @import { CoverLevel, CoverRuleFlagObject } from "../types/shared.types.mjs";
+ */
+
 import { MODULE_ID, COVER, SETTING_KEYS } from "../config/constants.config.mjs";
 
 const EXCLUDED_UNITS = new Set(["self", "touch", "special"]);
 const EXCLUDED_TEMPLATE_TYPES = new Set(["", "radius"]);
-const WAND_OF_THE_WAR_MAGE_IDENTIFIERS = new Set(["1-wand-of-the-war-mage", "wand-of-the-war-mage"]);
+const WAND_OF_THE_WAR_MAGE_IDENTIFIERS = new Set([
+  "1-wand-of-the-war-mage",
+  "wand-of-the-war-mage",
+  "wand-of-the-war-mage-1",
+  "wand-of-the-war-mage-2",
+  "wand-of-the-war-mage-3"
+]);
 
-/*
- 
-Enhanced Camouflage (Infiltrator 17): (cover Upgrade)
-While benefiting from half cover, treat it as three-quarters cover; 
-while benefiting from three-quarters cover, treat it as total cover.
-
-Penetration Shot (Sniper / Marksman): (cover Downgrade)
-Against a target with cover, treat total cover as three-quarters, three-quarters as half, and ignore half-cover.
-
-Low Profile (Sniper): (cover Upgrade)
-While prone, you gain half cover. If you are already behind half-cover, it becomes three-quarters cover;
-if you are behind three-quarters cover, it becomes full cover.
-
-
+/**
+ * Parse a cover-rule flag value from actor data.
+ * Supports booleans, numbers, plain objects, and JSON-like object strings.
+ *
+ * @param {string|number|boolean|CoverRuleFlagObject|null|undefined} value The raw flag value.
+ * @returns {string|number|boolean|CoverRuleFlagObject|null} The parsed flag value.
  */
+const parseFlagValue = value => {
+  if ((value == null) || (value === "")) return null;
+  if (typeof value !== "string") return value;
 
+  const trimmed = value.trim();
+  if (trimmed === "true") return true;
+  if (trimmed === "false") return false;
 
-
+  const number = Number(trimmed);
+  if (!Number.isNaN(number)) return number;
+  try {
+    return JSON.parse(
+      trimmed.replace(/([{,]\s*)([A-Za-z_]\w*)(\s*:)/g, '$1"$2"$3')
+    );
+  } catch {
+    return value;
+  }
+};
 
 /**
  * Resolve the effective cover level for an activity, including ignore-cover rules.
  *
- * @param {Activity5e} activity                                   The activity being evaluated.
- * @param {"none"|"half"|"threeQuarters"|"total"} [cover="none"] The computed/requested cover level.
- * @param {Actor5e|null} [targetActor=null]
- * @returns {{ cover: ("none"|"half"|"threeQuarters"|"total"), bonus: (number|null) }} The effective cover level and its corresponding bonus.
- *
+ * @param {Activity5e} activity The activity being evaluated.
+ * @param {CoverLevel} [cover="none"] The computed or requested cover level.
+ * @param {Actor5e|null} [targetActor=null] The targeted actor, if any.
+ * @returns {{ cover: CoverLevel, bonus: (0|2|5|null) }} The effective cover result.
  */
 export function ignoresCover(activity, cover = "none", targetActor = null) {
   let effectiveCover = cover;
@@ -41,7 +57,7 @@ export function ignoresCover(activity, cover = "none", targetActor = null) {
 
   const item = activity?.item;
   const sourceActor = activity?.actor;
-  const sourceFlags = sourceActor?.flags?.simplecover5e;
+  const sourceFlags = sourceActor?.flags?.[MODULE_ID];
   const items = sourceActor?.items;
   const actionType = activity?.actionType;
   const properties = item?.system?.properties;
@@ -54,14 +70,15 @@ export function ignoresCover(activity, cover = "none", targetActor = null) {
   // ------------------------------------------------------------
   // 1) TARGET: Upgrade Cover
   // ------------------------------------------------------------
-  const upgradeFlags = targetActor?.flags?.simplecover5e?.upgradeCover;
+  const upgradeFlags = targetActor?.flags?.[MODULE_ID]?.upgradeCover;
 
   // `upgradeCover` improves the cover of the actor who has the flag.
   if (upgradeFlags) {
     const current = COVER.ORDER[effectiveCover] ?? COVER.ORDER.none;
     let upgrade = 0;
 
-    for (const value of [upgradeFlags.all, isAttack ? upgradeFlags.attack : isSave ? upgradeFlags.save : null]) {
+    for (const raw of [upgradeFlags.all, isAttack ? upgradeFlags.attack : isSave ? upgradeFlags.save : null]) {
+      const value = parseFlagValue(raw)
       if (value == null) continue;
 
       let parsed = 0;
@@ -88,12 +105,13 @@ export function ignoresCover(activity, cover = "none", targetActor = null) {
   // ------------------------------------------------------------
   if ((isAttack || isSave) && (effectiveCover !== "none")) {
     const current = COVER.ORDER[effectiveCover] ?? COVER.ORDER.none;
-    const downgradeFlags = sourceFlags?.downgradeCover;
+    let downgradeFlags = sourceFlags?.downgradeCover;
     let downgrade = 0;
 
     // `downgradeCover` reduces the target’s cover for actions made by the actor who has the flag.
     if (downgradeFlags) {
-      for (const value of [downgradeFlags.all, isAttack ? downgradeFlags.attack : isSave ? downgradeFlags.save : null]) {
+      for (const raw of [downgradeFlags.all, isAttack ? downgradeFlags.attack : isSave ? downgradeFlags.save : null]) {
+        const value = parseFlagValue(raw)
         if (value == null) continue;
 
         let parsed = 0;

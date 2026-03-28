@@ -6,11 +6,10 @@
     {{#each sizes as |s|}}
     <div class="form-group">
         <label>{{s.label}} ({{../gridUnits}})</label>
-        <input type="number" data-dtype="Number" name="{{../settingKey}}.{{s.key}}" min="0" step="0.5"
-            value="{{s.value}}" placeholder="{{s.default}}" />
+        {{numberInput s.value name=(concat ../settingKey "." s.key) min=0 step=0.5 placeholder=s.default}}
     </div>
     {{/each}}
-    <p class="hint">{{localize "SIMPLE_COVER_5E.Settings.HeightsMenu.BodyHint"}}</p>
+    {{#if hint}}<p class="hint">{{hint}}</p>{{/if}}
     {{else}}
     {{> "dnd5e.fieldlist" fields}}
     {{/if}}

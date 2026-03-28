@@ -1,6 +1,5 @@
 /**
- * @typedef {"none"|"half"|"threeQuarters"|"total"} CoverLevel
- * @typedef {"square"|"gridless"|"hex"} GridMode
+ * @import { CoverLevel } from "../types/shared.types.mjs";
  */
 
 /**
@@ -12,9 +11,9 @@ export const MODULE_ID = "simplecover5e";
 /**
  * Central cover constants.
  *
- * - IDS: maps cover levels ("none"|"half"|"threeQuarters"|"total") to system effect ids (or null for none).
+ * - IDS: maps cover levels to system effect ids (or null for none).
  * - EFFECT_IDS: list of system effect ids used for cover automation.
- * - BONUS: maps cover levels ("none"|"half"|"threeQuarters"|"total") to AC/DEX bonus (null for total cover).
+ * - BONUS: maps cover levels to AC/DEX bonus (null for total cover).
  * - ORDER: numeric ordering for comparing cover levels.
  * - FA_ICONS: Font Awesome class strings per cover level.
  * - I18N: localization keys used for cover labels and roll dialog hints.
@@ -25,12 +24,14 @@ export const MODULE_ID = "simplecover5e";
  *   EFFECT_IDS: Array<[("half"|"threeQuarters"|"total"), string]>,
  *   BONUS: { none: number, half: number, threeQuarters: number, total: (number|null) },
  *   ORDER: { none: number, half: number, threeQuarters: number, total: number },
+ *   KEYS: CoverLevel[],
  *   FA_ICONS: { none: string, half: string, threeQuarters: string, total: string },
  *   I18N: {
  *     LABEL_PREFIX_KEY: string,
+ *     LABEL: { none: string, half: string, threeQuarters: string, total: string },
  *     HINT_KEYS: {
- *       Attack: { half: string, threeQuarters: string, total: string },
- *       Save: { half: string, threeQuarters: string, total: string }
+ *       Attack: { none: string, half: string, threeQuarters: string, total: string },
+ *       Save: { none: string, half: string, threeQuarters: string, total: string }
  *     }
  *   }
  * }}
@@ -121,30 +122,31 @@ export const SETTING_KEYS = {
   INSET_ATTACKER: "insetAttacker",
   INSET_TARGET: "insetTarget",
   INSET_OCCLUDER: "insetOccluder",
+  FILTERED_TARGET_POINTS: "filteredTargetPoints",
   COVER_HINTS: "coverHints",
   COVER_HINTS_GM_MESSAGE: "coverHintsGmMessage",
   IGNORE_FRIENDLY: "ignoreFriendly",
 };
 
 /**
- * Default creature heights in gridSize by size category.
+ * Default creature heights in grid units by size category.
  *
  * @type {Record<string, number>}
  */
-export const DEFAULT_SIZE = {
+export const DEFAULT_SIZE = Object.freeze({
   tiny: 1,
   sm: 3,
   med: 6,
   lg: 12,
   huge: 24,
   grg: 48
-};
+});
 
 /**
  * Base size keys used for iteration and configuration UIs.
  * @type {string[]}
  */
-export const BASE_KEYS = Object.keys(DEFAULT_SIZE);
+export const BASE_KEYS = Object.freeze(Object.keys(DEFAULT_SIZE));
 
 /**
  * Constants related to hover labels and icons used by this module.
@@ -167,3 +169,25 @@ export const COVER_ICON_PATHS = {
   threeQuarters: "systems/dnd5e/icons/svg/statuses/cover-three-quarters.svg",
   total: "systems/dnd5e/icons/svg/statuses/cover-total.svg"
 };
+
+const DAE_FLAG_SCOPES = Object.freeze(["all", "attack", "save"]);
+const DAE_IGNORE_FLAGS = Object.freeze(["ignoreAllCover", "ignoreHalfCover", "ignoreThreeQuartersCover"]);
+const DAE_RANGED_FLAGS = Object.freeze(["upgradeCover", "downgradeCover"]);
+const DAE_FLAGS = Object.freeze([...DAE_IGNORE_FLAGS, ...DAE_RANGED_FLAGS]);
+
+export const FLAGS = Object.freeze(
+  Object.fromEntries(
+    DAE_FLAGS.flatMap(flag =>
+      DAE_FLAG_SCOPES.map(scope => {
+        const baseKey = `SIMPLE_COVER_5E.Flags.${flag}.${scope}`;
+        return [
+          `flags.${MODULE_ID}.${flag}.${scope}`,
+          Object.freeze({
+            name: `${baseKey}.Name`,
+            hint: `${baseKey}.Hint`
+          })
+        ];
+      })
+    )
+  )
+);

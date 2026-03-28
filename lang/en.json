@@ -135,6 +135,15 @@
         "Name": "Occluder Inset (px)",
         "Hint": "Shrinks the occluder bounding box for creatures (default: 3; max: 30% of the current grid size)."
       },
+      "FilteredTargetPoints": {
+        "Name": "Filtered Target Points",
+        "Hint": "Controls how target test points removed by token clipping affect cover evaluation. Default: \"Treat as Blocked\". \"Dynamic Threshold\" keeps the current Half Cover behavior, but grants Three-Quarters Cover when at least three-quarters of the remaining lines are blocked instead of always using the full target shape.",
+        "Options": {
+          "Blocked": "Treat as Blocked",
+          "Clear": "Treat as Clear",
+          "Dynamic": "Dynamic Threshold"
+        }
+      },
       "HeightsMenu": {
         "Name": "Configure Creature Heights",
         "Label": "Creature Heights",
@@ -193,6 +202,78 @@
       "CoverModeChanged": "Cover mode changed",
       "CoverModeDesired": "Calculated: {desiredCover}",
       "CoverModeNew": "Set: {newMode}"
+    },
+    "Flags": {
+      "ignoreAllCover": {
+        "all": {
+          "Name": "Ignore All Cover (All)",
+          "Hint": "Offensive flag: Ignore all target cover for attacks and saving throw effects."
+        },
+        "attack": {
+          "Name": "Ignore All Cover (Attacks)",
+          "Hint": "Offensive flag: Ignore all target cover for attacks only."
+        },
+        "save": {
+          "Name": "Ignore All Cover (Saving Throws)",
+          "Hint": "Offensive flag: Ignore all target cover for saving throw effects only."
+        }
+      },
+      "ignoreHalfCover": {
+        "all": {
+          "Name": "Ignore Half Cover (All)",
+          "Hint": "Offensive flag: Ignore half cover for attacks and saving throw effects."
+        },
+        "attack": {
+          "Name": "Ignore Half Cover (Attacks)",
+          "Hint": "Offensive flag: Ignore half cover for attacks only."
+        },
+        "save": {
+          "Name": "Ignore Half Cover (Saving Throws)",
+          "Hint": "Offensive flag: Ignore half cover for saving throw effects only."
+        }
+      },
+      "ignoreThreeQuartersCover": {
+        "all": {
+          "Name": "Ignore Up to Three-Quarters Cover (All)",
+          "Hint": "Offensive flag: Ignore half and three-quarters cover, for attacks and saving throw effects."
+        },
+        "attack": {
+          "Name": "Ignore Up to Three-Quarters Cover (Attacks)",
+          "Hint": "Offensive flag: Ignore half and three-quarters cover, for attacks only."
+        },
+        "save": {
+          "Name": "Ignore Up to Three-Quarters Cover (Saving Throws)",
+          "Hint": "Offensive flag: Ignore half and three-quarters cover, for saving throw effects only."
+        }
+      },
+      "upgradeCover": {
+        "all": {
+          "Name": "Upgrade Cover (All)",
+          "Hint": "Defensive flag: Increase current cover for attacks and saving throw effects."
+        },
+        "attack": {
+          "Name": "Upgrade Cover (Attacks)",
+          "Hint": "Defensive flag: Increase current cover against attacks only."
+        },
+        "save": {
+          "Name": "Upgrade Cover (Saving Throws)",
+          "Hint": "Defensive flag: Increase current cover against saving throw effects only."
+        }
+      },
+      "downgradeCover": {
+        "all": {
+          "Name": "Downgrade Cover (All)",
+          "Hint": "Offensive flag: Reduce target cover for attacks and saving throw effects."
+        },
+        "attack": {
+          "Name": "Downgrade Cover (Attacks)",
+          "Hint": "Offensive flag: Reduce target cover for attacks only."
+        },
+        "save": {
+          "Name": "Downgrade Cover (Saving Throws)",
+          "Hint": "Offensive flag: Reduce target cover for saving throw effects only."
+        }
+      }
     }
   }
 }

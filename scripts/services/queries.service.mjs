@@ -1,21 +1,23 @@
 import { MODULE_ID } from "../config/constants.config.mjs";
-import { clearCoverDebug } from "../services/cover.debug.mjs";
 
 /**
- * Register module-specific GM query handlers.
+ * Register GM query handlers used by the module.
  *
  * @returns {void}
  */
 export function initQueries() {
     CONFIG.queries ??= {};
+    if (CONFIG.queries[`${MODULE_ID}.toggleCover`]) return;
 
+    /**
+     * Handle the GM-side query used to toggle a cover status effect.
+     * @param {{actorUuid?: string, effectId?: string, enable?: boolean}|null|undefined} data The query payload.
+     * @returns {Promise<{ok: boolean, changed?: boolean, reason?: string}>} The query result.
+     */
     CONFIG.queries[`${MODULE_ID}.toggleCover`] = async (data) => {
         try {
             if (!game.user.isGM) return { ok: false, reason: "not-gm" };
             const { actorUuid, effectId, enable } = data ?? {};
-            if (!actorUuid || !effectId || typeof enable !== "boolean") {
-                return { ok: false, reason: "bad-args" };
-            }
 
             const actor = await fromUuid(actorUuid);
             if (!actor) {
@@ -44,26 +46,15 @@ export function initQueries() {
             return { ok: false, reason: "exception" };
         }
     };
-
-    CONFIG.queries[`${MODULE_ID}.clearDebug`] = async () => {
-        try {
-            if (!game.user.isGM) return { ok: false, reason: "not-gm" };
-            clearCoverDebug();
-            return { ok: true };
-        } catch {
-            return { ok: false, reason: "exception" };
-        }
-    };
 }
 
 /**
- * Toggle a cover status effect on an actor via the active GM.
- * This returns false if no active GM is available or the query fails.
+ * Request the active GM to toggle a cover status effect on an actor.
  *
- * @param {string} actorUuid                 The UUID of the actor to update.
- * @param {string} effectId                  The status effect id to toggle.
- * @param {boolean} enable                   Whether the effect should be enabled.
- * @returns {Promise<boolean>}               True if the GM handled the request successfully.
+ * @param {string} actorUuid The UUID of the actor to update.
+ * @param {string} effectId The status effect ID to toggle.
+ * @param {boolean} enable Whether the effect should be enabled.
+ * @returns {Promise<boolean>} True if the GM handled the request successfully.
  */
 export async function toggleCoverEffectViaGM(actorUuid, effectId, enable) {
     const gm = game.users.activeGM;

@@ -9,38 +9,42 @@
 
 ### Changes
 
-- **Line of Sight (LoS):** When the attacker is a Token with active vision, LoS testing now uses the attacker's `losPolygon`. For the target, Foundry's built-in `getVisibilityTestPoints()` is now used where available; in V13, this behavior is simulated. As a result, when token vision is active, target test points are checked against the attacker's `losPolygon` instead of always relying on custom ray calculations.
-- Improved clipping Tokens: test points that are unreachable from the Token's center are now filtered out before cover is evaluated.
+- **Line of Sight (LoS):** When the attacker is a token with active vision, LoS testing now uses the attacker's `losPolygon`. Target sampling now uses Foundry's built-in `getVisibilityTestPoints()` where available; in V13, this behavior is simulated.
+- Improved token clipping: test points that are unreachable from the token's center are now filtered out before cover is evaluated.
+- Added a new **Engine Rules** setting, **Filtered Target Points**, to control how target test points removed by token clipping affect cover evaluation. (#31)
+  - **Treat as Blocked** (default) preserves the previous behavior and counts filtered target points as blocked.
+  - **Treat as Clear** treats filtered target points as unblocked.
+  - **Dynamic Threshold** keeps the current Half Cover behavior (at least one blocked line), but grants Three-Quarters Cover when at least three-quarters of the remaining valid lines are blocked.
 - **3D Cover:**
-  - Cover and LoS checks now use the Token's **vision origin** (approximated as half the Token's height), aligning more closely with Foundry's own vision behavior.
-  - **Additional notes:**
-    - Improves forward compatibility with expected **V14 Scene Levels** behavior.
-    - Prevents unrealistic "fully blocked" results caused by undersized Tokens when targeting larger creatures.
-    - While the RAW rules do not define an exact ray origin, using the attacker’s and target’s vision origins (approximated as half the Token's height) more closely reflects the PHB wording that cover applies when it obscures at least half of the target, while still acknowledging that some edge cases cannot be represented perfectly.
+  - Cover and LoS checks now use the token's **vision origin** (approximated as half the token's height), aligning more closely with Foundry's own vision behavior.
+  - This improves forward compatibility with expected **V14 Scene Levels** behavior.
+  - This also avoids unrealistic "fully blocked" results caused by undersized tokens when targeting larger creatures.
 - **Gridless scenes:** Token shape now uses `tokenDoc.shape` (`CONST.TOKEN_SHAPES`) instead of a module-specific override.
 - Optimized `buildCreaturePrism` across all grid types for improved performance and accuracy.
 - **Occluder Inset (px)** now scales consistently with the module’s other inset values.
-- Reworked distance calculations, as the previous implementation did not behave as intended:
-  - **Square/hex grids:** distance is now calculated in a way that is comparable to movement distance, without applying movement penalties or extra costs. The check also uses both the token’s bottom elevation and its top elevation(`elevation + height`).
+- Reworked distance calculations:
+  - **Square/hex grids:** distance is now calculated in a way that is comparable to movement distance, without applying movement penalties or extra costs. The check now uses both the token's bottom elevation and top elevation (`elevation + height`).
   - Removed **Center to Center**, as it produced unintuitive results in play. For example, a Huge token attacking a Small token could always end up with a range greater than 5 ft, which does not make sense for gameplay.
   - Renamed **Edge to Edge** to **Distance Between Tokens**.
   - Renamed **Source Center to Edge** to **Distance to Target Space**.
   - **Gridless scenes:** **Distance to Target Space** is intended to match the same result as square/hex grids, at least when the global diagonal setting is **Exact (√2)**.
   - **Gridless scenes with "Distance Between Tokens":** this mode uses the token’s **outer radius**, including rectangular tokens. This is not perfect for every edge case involving rectangular tokens, but avoids disproportionate complexity. (It may be improved further in a future update.)
-- Added support for adjusting the calculated cover status directly in the roll dialog’s cover notes. The active GM also receives a optional chat message whenever the cover status changes. (#29)
-  - The dialog feature currently only works when Library Mode is disabled and has no function wirh midi-qol (It may be improved further in a future update.)
-- Changed the cover notes display setting from a toggle to a mode selection: never, only when cover applies, or always. 
+- Added support for adjusting the calculated cover status directly in the roll dialog’s cover notes. The active GM also receives an optional chat message whenever the cover status changes. (#29)
+  - Also added compatibility with the "Hide NPC Names" mod.
+  - This dialog feature currently only works when Library Mode is disabled.
+  - When using Midi-QOL, disable Library Mode and set Midi-QOL's "Calculate Cover" option to `none` for now.
+- Changed the cover notes display setting from a toggle to a mode selection: `never`, `only when cover applies` or `always`.
 - Cover automation now only applies to Dexterity saving throws.
-- Added object support for `flags.simplecover5e.upgradeCover.all`, `.attack`, and `.save`. These flags now accept `{ upgrade, min, max }` in addition to legacy numeric values (`1` / `2`), which remain fully backward compatible. `upgrade` accepts `1` or `2`, while `min` and `max` accept `none`, `half`, `threeQuarters`, or `total`. (#30)
-  - example for "Enhanced Camouflage" from Ultramodern5E Redux: `flags.simplecover5e.upgradeCover.all ADD { upgrade: 1, min: "half", max: "total" }`
-- Added new `flags.simplecover5e.downgradeCover.all`, `.attack`, and `.save` flags. These flags accept `{ downgrade, min, max }`, where `downgrade` accepts `1` or `2`, and `min` / `max` accept `none`, `half`, `threeQuarters`, or `total`. (#33)
+- Added object support for `flags.simplecover5e.upgradeCover.all`, `.attack`, and `.save`. These flags now accept `{ upgrade, min, max }` in addition to legacy numeric values (`1` / `2`), which remain fully backward compatible. `upgrade` accepts `1` or `2`, while `min` and `max` accept `none`, `half`, `threeQuarters`, or `total` as min/max current Cover. (#30)
+  - example for "Enhanced Camouflage" from Ultramodern5E Redux: `flags.simplecover5e.upgradeCover.all ADD { upgrade: 1, min: "half", max: "threeQuarters" }`
+- Added new `flags.simplecover5e.downgradeCover.all`, `.attack`, and `.save` flags. These flags accept `{ downgrade, min, max }`, where `downgrade` accepts `1` or `2`, and `min` / `max` accept `none`, `half`, `threeQuarters`, or `total` as min/max current Cover. (#32)
   - example for "Penetration Shot" from Ultramodern5E Redux: `flags.simplecover5e.downgradeCover.all ADD { downgrade: 1, min: "half", max: "total" }`
 - Added scoped variants for `flags.simplecover5e.ignoreAllCover`, `ignoreThreeQuartersCover`, and `ignoreHalfCover` via `.all`, `.attack`, and `.save` boolean flags. Legacy flags remain supported and continue to behave as attack-only flags for backward compatibility.
 - Refactored cover flag semantics for clearer source/target behavior:
   - **`upgradeCover`** is a **defensive** flag placed on the actor being protected. It increases that actor’s effective cover when they are the target of an attack or effect.
   - **`ignore*Cover`** is an **offensive** flag placed on the actor making the attack or effect. It causes the targeted actor’s cover to be ignored.
   - **`downgradeCover`** is an **offensive** flag placed on the actor making the attack or effect. It reduces the targeted actor’s effective cover instead of ignoring it completely.
-- Due to changes in Midi-QOL, SimpleCover5e no longer strictly requires Library Mode to be active when used alongside Midi-QOL (Thanks to @tposney). Library Mode is still recommended, with cover evaluation handled by Midi-QOL.
+- Due to changes in Midi-QOL, SimpleCover5e no longer strictly requires Library Mode to be active when used with Midi-QOL (thanks to @tposney).
 - General cleanup, bug fixes, and performance improvements.
 
 ## Version 1.4.4

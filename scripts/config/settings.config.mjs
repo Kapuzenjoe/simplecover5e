@@ -4,6 +4,25 @@ import { clearCoverDebug } from "../services/cover.debug.mjs";
 import { clearCoverStatusEffect, isV14, changeTokenShapeGlobal } from "../services/cover.service.mjs";
 
 /**
+ * Update token shapes on gridless scenes after the related setting changes.
+ *
+ * @returns {Promise<void>} Resolves after matching token shapes have been updated.
+ */
+async function onGridlessTokenShapeChange() {
+  return changeTokenShapeGlobal();
+}
+
+/**
+ * Clear cover debug graphics when debug rendering is disabled.
+ *
+ * @param {boolean} value The new debug setting value.
+ * @returns {void}
+ */
+function onDebugSettingChange(value) {
+  if (value === false) clearCoverDebug();
+}
+
+/**
  * Settings definitions for Simple Cover 5e.
  * These entries are registered under {@link MODULE_ID} by {@link registerSettings}.
  */
@@ -12,6 +31,7 @@ const SETTINGS = [
     key: SETTING_KEYS.COVER_SCOPE,
     name: "SIMPLE_COVER_5E.Settings.CoverScope.Name",
     hint: "SIMPLE_COVER_5E.Settings.CoverScope.Hint",
+    scope: "world",
     type: new foundry.data.fields.StringField({
       choices: {
         all: "SIMPLE_COVER_5E.Settings.CoverScope.Options.All",
@@ -30,6 +50,7 @@ const SETTINGS = [
     key: SETTING_KEYS.ONLY_IN_COMBAT,
     name: "SIMPLE_COVER_5E.Settings.OnlyInCombat.Name",
     hint: "SIMPLE_COVER_5E.Settings.OnlyInCombat.Hint",
+    scope: "world",
     type: new foundry.data.fields.BooleanField({ initial: false }),
     requiresReload: false,
     config: false
@@ -38,6 +59,7 @@ const SETTINGS = [
     key: SETTING_KEYS.RMV_ON_COMBAT,
     name: "SIMPLE_COVER_5E.Settings.RemoveOnCombat.Name",
     hint: "SIMPLE_COVER_5E.Settings.RemoveOnCombat.Hint",
+    scope: "world",
     type: new foundry.data.fields.BooleanField({ initial: true }),
     requiresReload: false,
     config: false
@@ -46,6 +68,7 @@ const SETTINGS = [
     key: SETTING_KEYS.RMV_ON_MOVE,
     name: "SIMPLE_COVER_5E.Settings.RemoveOnMove.Name",
     hint: "SIMPLE_COVER_5E.Settings.RemoveOnMove.Hint",
+    scope: "world",
     type: new foundry.data.fields.BooleanField({ initial: false }),
     requiresReload: false,
     config: false
@@ -54,6 +77,7 @@ const SETTINGS = [
     key: SETTING_KEYS.COVER_HINTS,
     name: "SIMPLE_COVER_5E.Settings.coverHints.Name",
     hint: "SIMPLE_COVER_5E.Settings.coverHints.Hint",
+    scope: "world",
     type: new foundry.data.fields.StringField({
       choices: {
         none: "SIMPLE_COVER_5E.Settings.coverHints.Options.None",
@@ -72,6 +96,7 @@ const SETTINGS = [
     key: SETTING_KEYS.COVER_HINTS_GM_MESSAGE,
     name: "SIMPLE_COVER_5E.Settings.coverHintsGmMessage.Name",
     hint: "SIMPLE_COVER_5E.Settings.coverHintsGmMessage.Hint",
+    scope: "world",
     type: new foundry.data.fields.BooleanField({ initial: false }),
     requiresReload: false,
     config: false
@@ -80,6 +105,7 @@ const SETTINGS = [
     key: SETTING_KEYS.LOS_CHECK,
     name: "SIMPLE_COVER_5E.Settings.losCheck.Name",
     hint: "SIMPLE_COVER_5E.Settings.losCheck.Hint",
+    scope: "world",
     type: new foundry.data.fields.BooleanField({ initial: true }),
     requiresReload: false,
     config: false
@@ -88,6 +114,7 @@ const SETTINGS = [
     key: SETTING_KEYS.CREATURES_HALF_ONLY,
     name: "SIMPLE_COVER_5E.Settings.CreaturesHalfOnly.Name",
     hint: "SIMPLE_COVER_5E.Settings.CreaturesHalfOnly.Hint",
+    scope: "world",
     type: new foundry.data.fields.BooleanField({ initial: false }),
     requiresReload: false,
     config: false
@@ -96,6 +123,7 @@ const SETTINGS = [
     key: SETTING_KEYS.IGNORE_DISTANCE_AOE,
     name: "SIMPLE_COVER_5E.Settings.IgnoreDistanceAOE.Name",
     hint: "SIMPLE_COVER_5E.Settings.IgnoreDistanceAOE.Hint",
+    scope: "world",
     type: new foundry.data.fields.BooleanField({ initial: false }),
     requiresReload: false,
     config: false
@@ -104,6 +132,7 @@ const SETTINGS = [
     key: SETTING_KEYS.IGNORE_ALL_AOE,
     name: "SIMPLE_COVER_5E.Settings.IgnoreAllAOE.Name",
     hint: "SIMPLE_COVER_5E.Settings.IgnoreAllAOE.Hint",
+    scope: "world",
     type: new foundry.data.fields.BooleanField({ initial: false }),
     requiresReload: false,
     config: false
@@ -112,6 +141,7 @@ const SETTINGS = [
     key: SETTING_KEYS.IGNORE_DISTANCE_SPACE,
     name: "SIMPLE_COVER_5E.Settings.IgnoreDistanceSpace.Name",
     hint: "SIMPLE_COVER_5E.Settings.IgnoreDistanceSpace.Hint",
+    scope: "world",
     type: new foundry.data.fields.BooleanField({ initial: false }),
     requiresReload: false,
     config: false
@@ -120,6 +150,7 @@ const SETTINGS = [
     key: SETTING_KEYS.IGNORE_FRIENDLY,
     name: "SIMPLE_COVER_5E.Settings.IgnoreFriendly.Name",
     hint: "SIMPLE_COVER_5E.Settings.IgnoreFriendly.Hint",
+    scope: "world",
     type: new foundry.data.fields.BooleanField({ initial: false }),
     requiresReload: false,
     config: false
@@ -128,6 +159,7 @@ const SETTINGS = [
     key: SETTING_KEYS.CREATURES_PRONE,
     name: "SIMPLE_COVER_5E.Settings.CreaturesProne.Name",
     hint: "SIMPLE_COVER_5E.Settings.CreaturesProne.Hint",
+    scope: "world",
     config: false,
     type: new foundry.data.fields.StringField({
       choices: {
@@ -146,6 +178,7 @@ const SETTINGS = [
     key: SETTING_KEYS.HOVER,
     name: "SIMPLE_COVER_5E.Settings.Hover.Name",
     hint: "SIMPLE_COVER_5E.Settings.Hover.Hint",
+    scope: "world",
     config: true,
     type: new foundry.data.fields.StringField({
       choices: {
@@ -211,13 +244,14 @@ const SETTINGS = [
     key: SETTING_KEYS.GRIDLESS_DISTANCE_MODE,
     name: "SIMPLE_COVER_5E.Settings.GridlessDistanceMode.Name",
     hint: "SIMPLE_COVER_5E.Settings.GridlessDistanceMode.Hint",
+    scope: "world",
     config: false,
     type: new foundry.data.fields.StringField({
       choices: {
         edgeEdge: "SIMPLE_COVER_5E.Settings.GridlessDistanceMode.Options.EdgeEdge",
         edgeToCenter: "SIMPLE_COVER_5E.Settings.GridlessDistanceMode.Options.EdgeToCenter"
       },
-      initial: "EdgeToCenter",
+      initial: "edgeToCenter",
       required: true,
       blank: false,
       trim: true
@@ -228,6 +262,7 @@ const SETTINGS = [
     key: SETTING_KEYS.GRIDLESS_TOKEN_SHAPE,
     name: "SIMPLE_COVER_5E.Settings.GridlessTokenShape.Name",
     hint: "SIMPLE_COVER_5E.Settings.GridlessTokenShape.Hint",
+    scope: "world",
     config: false,
     type: new foundry.data.fields.StringField({
       choices: {
@@ -241,24 +276,23 @@ const SETTINGS = [
       trim: true
     }),
     requiresReload: false,
-    onChange: () => changeTokenShapeGlobal()
+    onChange: onGridlessTokenShapeChange
   },
   {
     key: SETTING_KEYS.DEBUG,
     name: "SIMPLE_COVER_5E.Settings.Debug.Name",
     hint: "SIMPLE_COVER_5E.Settings.Debug.Hint",
+    scope: "world",
     type: new foundry.data.fields.BooleanField({ initial: false }),
+    config: true,
     requiresReload: false,
-    onChange: (value) => {
-      if (value === false) {
-        clearCoverDebug();
-      }
-    }
+    onChange: onDebugSettingChange
   },
   {
     key: SETTING_KEYS.INSET_ATTACKER,
     name: "SIMPLE_COVER_5E.Settings.insetAttacker.Name",
     hint: "SIMPLE_COVER_5E.Settings.insetAttacker.Hint",
+    scope: "world",
     config: false,
     type: new foundry.data.fields.NumberField({
       initial: 1,
@@ -274,6 +308,7 @@ const SETTINGS = [
     key: SETTING_KEYS.INSET_TARGET,
     name: "SIMPLE_COVER_5E.Settings.insetTarget.Name",
     hint: "SIMPLE_COVER_5E.Settings.insetTarget.Hint",
+    scope: "world",
     config: false,
     type: new foundry.data.fields.NumberField({
       initial: 3,
@@ -289,6 +324,7 @@ const SETTINGS = [
     key: SETTING_KEYS.INSET_OCCLUDER,
     name: "SIMPLE_COVER_5E.Settings.insetOccluder.Name",
     hint: "SIMPLE_COVER_5E.Settings.insetOccluder.Hint",
+    scope: "world",
     config: false,
     type: new foundry.data.fields.NumberField({
       initial: 3,
@@ -301,9 +337,29 @@ const SETTINGS = [
     requiresReload: false
   },
   {
+    key: SETTING_KEYS.FILTERED_TARGET_POINTS,
+    name: "SIMPLE_COVER_5E.Settings.FilteredTargetPoints.Name",
+    hint: "SIMPLE_COVER_5E.Settings.FilteredTargetPoints.Hint",
+    scope: "world",
+    config: false,
+    type: new foundry.data.fields.StringField({
+      choices: {
+        blocked: "SIMPLE_COVER_5E.Settings.FilteredTargetPoints.Options.Blocked",
+        clear: "SIMPLE_COVER_5E.Settings.FilteredTargetPoints.Options.Clear",
+        dynamic: "SIMPLE_COVER_5E.Settings.FilteredTargetPoints.Options.Dynamic"
+      },
+      initial: "blocked",
+      required: true,
+      blank: false,
+      trim: true
+    }),
+    requiresReload: false
+  },
+  {
     key: SETTING_KEYS.CREATURE_HEIGHTS,
     name: "SIMPLE_COVER_5E.Settings.CreatureHeights.Name",
     hint: "SIMPLE_COVER_5E.Settings.CreatureHeights.Hint",
+    scope: "world",
     type: new foundry.data.fields.SchemaField({
       tiny: new foundry.data.fields.NumberField({ initial: DEFAULT_SIZE.tiny, required: true, nullable: false, min: 0 }),
       sm: new foundry.data.fields.NumberField({ initial: DEFAULT_SIZE.sm, required: true, nullable: false, min: 0 }),
@@ -319,7 +375,9 @@ const SETTINGS = [
     key: SETTING_KEYS.LIBRARY_MODE,
     name: "SIMPLE_COVER_5E.Settings.LibraryMode.Name",
     hint: "SIMPLE_COVER_5E.Settings.LibraryMode.Hint",
+    scope: "world",
     type: new foundry.data.fields.BooleanField({ initial: false }),
+    config: true,
     requiresReload: true,
   }
 ];
@@ -330,16 +388,8 @@ const SETTINGS = [
  * @returns {void}
  */
 export function registerSettings() {
-  for (const { key, name, hint, scope = "world", type, requiresReload, config = true, onChange } of SETTINGS) {
-    game.settings.register(MODULE_ID, key, {
-      name,
-      hint,
-      scope,
-      config,
-      type,
-      requiresReload,
-      onChange
-    });
+  for (const { key, ...data } of SETTINGS) {
+    game.settings.register(MODULE_ID, key, data);
   }
 
   if (!isV14()) {
@@ -366,17 +416,19 @@ export function registerSettings() {
     name: "SIMPLE_COVER_5E.Settings.AutomationMenu.Name",
     label: "SIMPLE_COVER_5E.Settings.AutomationMenu.Label",
     hint: "SIMPLE_COVER_5E.Settings.AutomationMenu.Hint",
-    icon: "fa fa-cogs",
+    icon: "fa-solid fa-cogs",
     type: SimpleCoverAutomationConfig,
     restricted: true
   });
 }
 
 /**
- * A hook event that fires when the Scene controls are initialized.
+ * Add the module tool to the Token controls for GMs.
+ *
  * @function getSceneControlButtons
  * @memberof hookEvents
- * @param {Record<string, SceneControl>} controls  The SceneControl configurations
+ * @param {Record<string, SceneControl>} controls The current scene control configuration.
+ * @returns {void}
  */
 export function getSceneControlButtons(controls) {
   if (!game.user.isGM) return;

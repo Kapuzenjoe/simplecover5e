@@ -1,3 +1,7 @@
+/**
+ * @import { CoverDebugOptions, DebugPoint, DebugPolygon, DebugSegment } from "../types/shared.types.mjs";
+ */
+
 const DEBUG_Z_INDEX = 1000;
 const DEFAULT_SEGMENT_ALPHA = 0.9;
 const DEFAULT_SEGMENT_WIDTH = 2;
@@ -23,7 +27,7 @@ let debugGraphics = null;
  * Lazily create or return the shared debug PIXI.Graphics instance.
  * The graphics object is attached to the canvas interface and reused between debug draws for performance.
  *
- * @returns {PIXI.Graphics|null}       A reusable graphics instance or null if the canvas is not ready.
+ * @returns {PIXI.Graphics|null} A reusable graphics instance, or null if the canvas is not ready.
  */
 function getDebugGraphics() {
   if (!debugGraphics || debugGraphics.destroyed) {
@@ -53,11 +57,12 @@ export function clearCoverDebug() {
 /**
  * Draw a collection of polygons with a shared style.
  *
- * @param {PIXI.Graphics} g - Graphics object to draw on.
- * @param {TokenPolygon[]} polygons - List of polygons to render.
- * @param {number} color - Line color (0xRRGGBB).
- * @param {number} alpha - Line opacity (0–1).
- * @param {number} width - Line width in pixels.
+ * @param {PIXI.Graphics} g The graphics object to draw on.
+ * @param {DebugPolygon[]} polygons The polygons to render.
+ * @param {number} color The line color.
+ * @param {number} alpha The line opacity.
+ * @param {number} width The line width in pixels.
+ * @returns {void}
  */
 function drawPolygonSet(g, polygons, color, alpha, width) {
   if (!Array.isArray(polygons) || !polygons.length) return;
@@ -78,8 +83,9 @@ function drawPolygonSet(g, polygons, color, alpha, width) {
 /**
  * Draw a single debug segment onto the graphics context.
  *
- * @param {PIXI.Graphics} g - Graphics object to draw on.
- * @param {DebugSegment} segment - Segment configuration to render.
+ * @param {PIXI.Graphics} g The graphics object to draw on.
+ * @param {DebugSegment} segment The segment configuration to render.
+ * @returns {void}
  */
 function drawDebugSegment(g, segment) {
   if (!segment) return;
@@ -101,12 +107,13 @@ function drawDebugSegment(g, segment) {
 /**
  * Draw a set of debug points as circles.
  *
- * @param {PIXI.Graphics} g - Graphics object to draw on.
- * @param {Array<{x:number,y:number}>} points - List of points to draw.
- * @param {number} color - Circle color.
- * @param {number} alpha - Opacity (0–1).
- * @param {number} radius - Circle radius in pixels.
- * @param {number} lineWidth - Outline width in pixels.
+ * @param {PIXI.Graphics} g The graphics object to draw on.
+ * @param {DebugPoint[]} points The points to draw.
+ * @param {number} color The circle color.
+ * @param {number} alpha The point opacity.
+ * @param {number} radius The circle radius in pixels.
+ * @param {number} lineWidth The outline width in pixels.
+ * @returns {void}
  */
 function drawPointSet(g, points, color, alpha, radius, lineWidth) {
   if (!points.length) return;
@@ -124,12 +131,8 @@ function drawPointSet(g, points, color, alpha, radius, lineWidth) {
 
 /**
  * Draw cover debug information onto the canvas.
- * This renders sampled segments, optional token/occluder outlines, and optional LoS sample points.
  *
- * @param {object} [options={}]                            Debug rendering options.
- * @param {DebugSegment[]} [options.segments=[]]           Segments to draw between sample points.
- * @param {TokenShapeDebug} [options.tokenShapes]          Optional token and occluder polygons.
- * @param {Array<{x:number,y:number,blocked:boolean}>} [options.targetLosPoints=[]] Optional LoS sample points.
+ * @param {CoverDebugOptions} [options={}] Debug rendering options.
  * @returns {void}
  */
 export function drawCoverDebug({ segments = [], tokenShapes, targetLosPoints = [] } = {}) {

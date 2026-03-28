@@ -9,7 +9,7 @@
 
     {{#if this.cover}}
     <div class="form-fields">
-      <select name="simplecover5e.{{this.target}}.cover"  data-action="change-note-label">
+      <select name="{{../moduleId}}.{{this.target}}.cover">
         {{selectOptions ../coverModes selected=this.cover localize=true}}
       </select>
     </div>

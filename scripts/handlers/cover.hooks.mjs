@@ -1,11 +1,13 @@
 import { MODULE_ID, COVER, SETTING_KEYS } from "../config/constants.config.mjs";
-import { clearCoverStatusEffect } from "../services/cover.service.mjs";
+import { clearCoverStatusEffect, isMidiQol } from "../services/cover.service.mjs";
 import { getCover, getCoverForTargets, getIgnoreCover, setDialogNote } from "../utils/api.mjs";
 import { clearCoverDebug } from "../services/cover.debug.mjs";
 import { toggleCoverEffectViaGM } from "../services/queries.service.mjs";
 
 /**
- * Register the "ignoreCover" item property on dnd5e.
+ * Register the `ignoreCover` item property on DnD5e items.
+ *
+ * @returns {void}
  */
 export function ignoreCoverProperties() {
   CONFIG.DND5E.itemProperties.ignoreCover = {
@@ -18,13 +20,14 @@ export function ignoreCoverProperties() {
 }
 
 /**
- * A hook event that fires before an attack roll is performed.
+ * Apply cover adjustments before an attack roll is built.
+ *
  * @function dnd5e.preRollAttack
  * @memberof hookEvents
- * @param {BasicRollProcessConfiguration} config Configuration information for the roll.
- * @param {BasicRollDialogConfiguration} dialog Configuration for the roll dialog.
- * @param {BasicRollMessageConfiguration} message Configuration for the roll message.
- * @returns
+ * @param {BasicRollProcessConfiguration} config The pending roll process configuration.
+ * @param {BasicRollDialogConfiguration} dialog The pending roll dialog configuration.
+ * @param {BasicRollMessageConfiguration} message The pending roll message configuration.
+ * @returns {void}
  */
 export function onPreRollAttack(config, dialog, message) {
   if (game.settings.get(MODULE_ID, SETTING_KEYS.LIBRARY_MODE)) return;
@@ -56,18 +59,22 @@ export function onPreRollAttack(config, dialog, message) {
     const calcCover = out.result?.cover ?? "none";
     const calcBonus = out.result?.bonus;
 
-    const { desiredCover, desiredBonus } = setCoverStatuses(targetActor, calcCover, calcBonus);
+    const { desiredCover, desiredBonus } = setCoverStatuses(targetActor, calcCover, calcBonus, activity);
     setAttackCoverBonus({ desiredBonus, targetActor, singleTarget: targets.length === 1, config, message });
 
     const coverHintsMode = game.settings?.get?.(MODULE_ID, SETTING_KEYS.COVER_HINTS) ?? "none";
+
+    const isHideNPCNamesActive = game.modules?.get?.("hide-npc-names")?.active === true;
+    const targetName = isHideNPCNamesActive && game?.hnn ? game.hnn.getReplacementInfo(targetActor).displayName : out.target?.name || "???"; 
 
     if (coverHintsMode === "always" || (coverHintsMode === "conditional" && desiredCover !== "none")) {
       message.data.flags[MODULE_ID].push({
         desiredCover,
         desiredBonus,
         targetId: out.target.id,
-        targetName: out.target?.name || "???",
-        targetActorUuid: targetActor.uuid
+        targetName: targetName,
+        targetActorUuid: targetActor.uuid,
+        activityUuid: activity.uuid
       });
 
       const coverPrefix = `${game.i18n.localize(COVER.I18N.LABEL_PREFIX_KEY)}`;
@@ -87,32 +94,44 @@ export function onPreRollAttack(config, dialog, message) {
   }
 };
 
-/** 
- * A hook event that fires before a saving throw is performed.
+/**
+ * Apply cover adjustments before a dexterity saving throw roll is built.
+ *
  * @function dnd5e.preRollSavingThrow
  * @memberof hookEvents
- * @param {BasicRollProcessConfiguration} config Configuration information for the roll.
- * @param {BasicRollDialogConfiguration} dialog Configuration for the roll dialog.
- * @param {BasicRollMessageConfiguration} message Configuration for the roll message.
- * @returns
+ * @param {BasicRollProcessConfiguration} config The pending roll process configuration.
+ * @param {BasicRollDialogConfiguration} dialog The pending roll dialog configuration.
+ * @param {BasicRollMessageConfiguration} message The pending roll message configuration.
+ * @returns {void}
  */
 export function onPreRollSavingThrow(config, dialog, message) {
   if (game.settings.get(MODULE_ID, SETTING_KEYS.LIBRARY_MODE)) return;
   const onlyInCombat = !!game.settings.get(MODULE_ID, SETTING_KEYS.ONLY_IN_COMBAT);
   if (onlyInCombat && !game?.combats?.active) return;
 
-  const actor = config.subject
+  const actor = config.subject;
   const isDex = config.ability === "dex";
   if (!isDex) return;
 
-  const targetToken = actor.getActiveTokens?.()[0]
+  const targetToken = actor.getActiveTokens?.()[0];
   if (!targetToken) return;
 
-  const srcMsg = getSourceChatMessageFromEvent(config?.event);
-  const activity = srcMsg?.getAssociatedActivity?.();
-  const sourceActor = srcMsg?.speakerActor
-  const sourceToken = sourceActor?.getActiveTokens?.()[0]
-  if (!sourceToken) return;
+  let activity;
+  let sourceActor;
+
+  if (isMidiQol() && config?.midiOptions?.workflowId != null) {
+    activity = config?.midiOptions?.workflow?.activity ?? null;
+    sourceActor = config?.midiOptions?.workflow?.actor ?? null;
+  }
+  else {
+    const messageId = config.event?.target.closest("[data-message-id]")?.dataset.messageId;
+    const srcMsg = messageId ? game.messages.get(messageId) : null;
+    activity = srcMsg?.getAssociatedActivity?.() ?? null;
+    sourceActor = srcMsg?.getAssociatedActor?.() ?? null;
+  }
+
+  const sourceToken = sourceActor?.getActiveTokens?.()[0];
+  if (!sourceToken || !activity || !sourceActor) return;
 
   const losCheck = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.LOS_CHECK);
   if (actor.statuses?.has?.(COVER.IDS.total) && !losCheck) return;
@@ -122,8 +141,8 @@ export function onPreRollSavingThrow(config, dialog, message) {
   const calcCover = result?.cover ?? "none";
   const calcBonus = result?.bonus;
 
-  const { desiredCover, desiredBonus } = setCoverStatuses(actor, calcCover, calcBonus);
-  setSaveCoverBonus(config, desiredBonus, desiredCover)
+  const { desiredCover, desiredBonus } = setCoverStatuses(actor, calcCover, calcBonus, activity);
+  setSaveCoverBonus(config.rolls?.[0], desiredBonus, desiredCover);
 
   message.data.flags[MODULE_ID] = [];
 
@@ -135,7 +154,8 @@ export function onPreRollSavingThrow(config, dialog, message) {
       desiredBonus: desiredBonus === null ? "9999" : String(desiredBonus),
       targetId: targetToken.id,
       targetName: targetToken.name,
-      targetActorUuid: actor.uuid
+      targetActorUuid: actor.uuid,
+      activityUuid: activity.uuid
     });
 
     const coverPrefix = `${game.i18n.localize(COVER.I18N.LABEL_PREFIX_KEY)}`;
@@ -152,11 +172,13 @@ export function onPreRollSavingThrow(config, dialog, message) {
 }
 
 /**
- * Cleanup cover when the combat turn or round changes.
+ * Clear cover when combat turn or round data changes.
+ *
  * @function updateCombat
  * @memberof hookEvents
- * @param {Combat} combat
- * @param {object} update
+ * @param {Combat} combat The combat encounter being updated.
+ * @param {object} update The changed combat data.
+ * @returns {Promise<void>} Resolves after any cover cleanup has finished.
  */
 export async function clearCoverOnUpdateCombat(combat, update) {
   try {
@@ -175,13 +197,15 @@ export async function clearCoverOnUpdateCombat(combat, update) {
 }
 
 /**
- * Cleanup on Token Movement (during active combat).
+ * Clear cover after token movement during active combat.
+ *
  * @function moveToken
  * @memberof hookEvents
- * @param {TokenDocument} token                 The existing TokenDocument which was updated
- * @param {TokenMovementOperation} movement     The movement of the Token
- * @param {DatabaseUpdateOperation} operation   The update operation that contains the movement
- * @param {User} user                           The User that requested the update operation
+ * @param {TokenDocument} token The token document being moved.
+ * @param {TokenMovementOperation} movement The movement data for the token.
+ * @param {DatabaseUpdateOperation} operation The update operation that contains the movement.
+ * @param {User} user The user who requested the movement update.
+ * @returns {Promise<void>} Resolves after any cover cleanup has finished.
  */
 export async function clearCoverOnMovement(token, movement, operation, user) {
   try {
@@ -203,10 +227,12 @@ export async function clearCoverOnMovement(token, movement, operation, user) {
 }
 
 /**
- * Cleanup when a combat is deleted.
+ * Clear cover when a combat encounter is deleted.
+ *
  * @function deleteCombat
  * @memberof hookEvents
- * @param {Combat} combat
+ * @param {Combat} combat The combat encounter being deleted.
+ * @returns {Promise<void>} Resolves after any cover cleanup has finished.
  */
 export async function clearCoverOnDeleteCombat(combat) {
   try {
@@ -225,35 +251,12 @@ export async function clearCoverOnDeleteCombat(combat) {
 }
 
 /**
- * Walk up from the event target to the source chat message element and return the ChatMessage.
- * @param {Event} ev
- * @returns {ChatMessage|null}
- */
-function getSourceChatMessageFromEvent(ev) {
-  if (!ev) return null;
-  const path = typeof ev.composedPath === "function" ? ev.composedPath() : [];
-  const candidates = Array.isArray(path) ? [...path] : [];
-  if (ev.target) candidates.push(ev.target);
-
-  let el = null;
-  for (const n of candidates) {
-    if (!(n instanceof Element)) continue;
-    el = n.closest?.("[data-message-id]") ?? n.closest?.(".chat-message");
-    if (el) break;
-  }
-  if (!el) return null;
-
-  const mid = el.dataset?.messageId ?? el.getAttribute?.("data-message-id");
-  if (!mid) return null;
-  return game.messages?.get?.(mid) ?? null;
-}
-
-/**
- * Adjust the shown AC of a specific target in the pending dnd5e chat message.
+ * Adjust the displayed AC for a specific target in the pending dnd5e roll message.
  *
- * @param {object} message     The hook's 'message' arg.
- * @param {string} targetUuid  TokenDocument UUID to match.
- * @param {number|null} newAC      The new AC value.
+ * @param {BasicRollMessageConfiguration} message The pending roll message configuration.
+ * @param {string} targetUuid The actor UUID to match against `flags.dnd5e.targets`.
+ * @param {number|null} newAC The new AC value.
+ * @returns {void}
  */
 function adjustMessageTargetAC(message, targetUuid, newAC) {
   const targets = message?.data?.flags?.dnd5e?.targets;
@@ -311,13 +314,15 @@ function getCoverStatuses(actor) {
 }
 
 /**
- * 
- * @param {Actor5e} actor 
- * @param {String} calcCover 
- * @param {Number|null} calcBonus 
- * @returns 
+ * Resolve the desired cover state and synchronize module-managed cover effects.
+ *
+ * @param {Actor5e} actor The actor to update.
+ * @param {("none"|"half"|"threeQuarters"|"total")} calcCover The calculated cover level.
+ * @param {0|2|5|null} calcBonus The calculated cover bonus.
+ * @param {Activity5e|null} activity The activity being resolved.
+ * @returns {{ desiredCover: ("none"|"half"|"threeQuarters"|"total"), desiredBonus: (0|2|5|null) }} The desired cover state and bonus after existing cover effects have been considered.
  */
-function setCoverStatuses(actor, calcCover, calcBonus) {
+function setCoverStatuses(actor, calcCover, calcBonus, activity) {
   let desiredCover = calcCover;
   let desiredBonus = calcBonus;
 
@@ -341,8 +346,15 @@ function setCoverStatuses(actor, calcCover, calcBonus) {
 }
 
 /**
- * 
- * @param {*} param0 
+ * Apply the resolved cover bonus to the pending attack roll and message target data.
+ *
+ * @param {object} options The values used to update the pending roll.
+ * @param {0|2|5|null} options.desiredBonus The resolved cover bonus.
+ * @param {Actor5e} options.targetActor The targeted actor.
+ * @param {boolean} [options.singleTarget=true] Whether only one target is being rolled against.
+ * @param {{ target?: number|null }} options.config The process or roll options object to update.
+ * @param {BasicRollMessageConfiguration} options.message The pending message configuration.
+ * @returns {void}
  */
 function setAttackCoverBonus({ desiredBonus, targetActor, singleTarget = true, config, message }) {
   if (desiredBonus !== null) {
@@ -360,60 +372,51 @@ function setAttackCoverBonus({ desiredBonus, targetActor, singleTarget = true, c
 }
 
 /**
- * 
- * @param {*} config 
- * @param {String} desiredBonus 
- * @param {Number} desiredCover 
+ * Apply the resolved cover bonus to a dexterity saving throw roll configuration.
+ *
+ * @param {D20RollConfiguration} rollConfig The roll configuration to update.
+ * @param {0|2|5|null} desiredBonus The resolved cover bonus.
+ * @param {("none"|"half"|"threeQuarters"|"total")} desiredCover The resolved cover level.
+ * @returns {void}
  */
-function setSaveCoverBonus(config, desiredBonus, desiredCover) {
-  const roll0 = config.rolls?.[0];
+function setSaveCoverBonus(rollConfig, desiredBonus, desiredCover) {
+  if (!rollConfig) return;
 
-  const addSaveBonus = (n) => {
-    if (!roll0?.parts) return;
-    roll0.parts.push(String(n));
-  };
-  const removeSaveBonus = () => {
-    if (!roll0?.parts) return;
-    const parts = roll0.parts;
-    const idx = parts.lastIndexOf("@cover");
-    if (idx !== -1) parts.splice(idx, 1);
-  };
-
-  removeSaveBonus();
-  if (desiredCover === "total") {
-    addSaveBonus(9999);
-  }
-  else if (typeof desiredBonus === "number" && Number.isFinite(desiredBonus)) {
-    addSaveBonus(desiredBonus);
-  }
-
+  rollConfig.data ??= {};
+  rollConfig.data.cover = desiredCover === "total" ? 9999 : desiredBonus ?? 0;
 }
 
 /**
- * 
- * @param {RollConfigurationDialog} app		  Roll configuration dialog.
- * @param {BasicRollConfiguration} config		Roll configuration data.
- * @param {[FormDataExtended]} formData	  	Any data entered into the rolling prompt.
- * @param {number} index		                Index of the roll within all rolls being prepared.
+ * Update attack roll configuration when the cover selection changes in the roll dialog.
+ *
+ * @function dnd5e.buildAttackRollConfig
+ * @memberof hookEvents
+ * @param {RollConfigurationDialog} app The roll configuration dialog.
+ * @param {BasicRollConfiguration} config The roll configuration data being updated.
+ * @param {FormDataExtended} [formData] Form data entered into the rolling prompt.
+ * @param {number} index The index of the roll being prepared.
+ * @returns {void}
  */
 export function onBuildAttackRollConfig(app, config, formData, index) {
   if (!formData?.object) return;
 
   const changed = foundry.utils.flattenObject(formData.object);
   const messageFlags = app.message?.data?.flags?.simplecover5e ?? [];
+  const pathPrefix = `${MODULE_ID}.`;
 
   for (const [path, mode] of Object.entries(changed)) {
-    if (!path.startsWith("simplecover5e.") || !path.endsWith(".cover")) continue;
+    if (!path.startsWith(pathPrefix) || !path.endsWith(".cover")) continue;
 
-    const targetId = path.slice("simplecover5e.".length, -".cover".length);
+    const targetId = path.slice(pathPrefix.length, -".cover".length);
 
     const original = messageFlags.find(entry => entry.targetId === targetId);
     if (!original) continue;
 
     const targetActor = fromUuidSync(original.targetActorUuid);
     const targets = app.message?.data?.flags?.dnd5e?.targets ?? [];
+    const activity = fromUuidSync(original.activityUuid)
 
-    const { desiredCover, desiredBonus } = setCoverStatuses(targetActor, mode, COVER.BONUS[mode]);
+    const { desiredCover, desiredBonus } = setCoverStatuses(targetActor, mode, COVER.BONUS[mode], activity);
 
     setAttackCoverBonus({ desiredBonus, targetActor, singleTarget: targets.length === 1, config: config.options, message: app.message });
     if (desiredBonus === null) app.config.target = null;
@@ -437,33 +440,36 @@ export function onBuildAttackRollConfig(app, config, formData, index) {
 }
 
 /**
- * 
- * @param {RollConfigurationDialog} app		  Roll configuration dialog.
- * @param {BasicRollConfiguration} config		Roll configuration data.
- * @param {[FormDataExtended]} formData	  	Any data entered into the rolling prompt.
- * @param {number} index		                Index of the roll within all rolls being prepared.
+ * Update saving throw roll configuration when the cover selection changes in the roll dialog.
+ *
+ * @function dnd5e.buildSavingThrowRollConfig
+ * @memberof hookEvents
+ * @param {RollConfigurationDialog} app The roll configuration dialog.
+ * @param {BasicRollConfiguration} config The roll configuration data being updated.
+ * @param {FormDataExtended} [formData] Form data entered into the rolling prompt.
+ * @param {number} index The index of the roll being prepared.
+ * @returns {void}
  */
 export function onBuildSavingThrowRollConfig(app, config, formData, index) {
   if (!formData?.object) return;
 
   const changed = foundry.utils.flattenObject(formData.object);
   const messageFlags = app.message?.data?.flags?.simplecover5e ?? [];
+  const pathPrefix = `${MODULE_ID}.`;
 
   for (const [path, mode] of Object.entries(changed)) {
-    if (!path.startsWith("simplecover5e.") || !path.endsWith(".cover")) continue;
+    if (!path.startsWith(pathPrefix) || !path.endsWith(".cover")) continue;
 
-    const targetId = path.slice("simplecover5e.".length, -".cover".length);
+    const targetId = path.slice(pathPrefix.length, -".cover".length);
 
     const original = messageFlags.find(entry => entry.targetId === targetId);
     if (!original) continue;
 
     const targetActor = fromUuidSync(original.targetActorUuid)
-    const { desiredCover, desiredBonus, currentStatus } = setCoverStatuses(targetActor, mode, COVER.BONUS[mode]);
+    const activity = fromUuidSync(original.activityUuid)
+    const { desiredCover, desiredBonus } = setCoverStatuses(targetActor, mode, COVER.BONUS[mode], activity);
 
-    config.parts = config.parts.filter(part => part !== String(original.desiredBonus));
-    if (desiredBonus !== "0") {
-      config.parts.push(desiredBonus === null ? "9999" : String(desiredBonus));
-    }
+    setSaveCoverBonus(config, desiredBonus, desiredCover);
 
     original.newMode = String(desiredCover);
 

@@ -5,7 +5,7 @@ import { getCover } from "../utils/api.mjs";
 /**
  * Remove any hover label elements previously attached to a token.
  *
- * @param {Token5e} token                 The token to clean up.
+ * @param {Token5e} token The token to clean up.
  * @returns {void}
  */
 function removeHoverDecorations(token) {
@@ -18,25 +18,28 @@ function removeHoverDecorations(token) {
 }
 
 /**
- * A hook that is called after a Token is deleted.
- * 
+ * Remove hover decorations before a token is deleted.
+ *
  * @function preDeleteToken
  * @memberof hookEvents
- * @param {TokenDocument5e} td      The token being deleted
- * @param {Object} options          Additional options
- * @param {String} userId           The initiating User's ID
+ * @param {TokenDocument5e} td The token document being deleted.
+ * @param {object} options Additional hook options.
+ * @param {string} userId The ID of the user who initiated the deletion.
+ * @returns {void}
  */
 export function onPreDeleteToken(td, options, userId){
   removeHoverDecorations(td?.object)
 }
 
 /**
- * Update hover UI for a token by showing cover and/or distance from the single controlled token.
- * The output is client-side only and controlled by the HOVER setting.
+ * Update the hover UI for a token based on the single controlled token.
+ * The output is client-side only and controlled by the hover setting.
  *
- * @param {Token5e} token                       The hovered token.
- * @param {boolean} hoverState                  True when hover starts; false when hover ends.
- * @returns {Promise<void>}                     Resolves after the label has been updated.
+ * @function hoverToken
+ * @memberof hookEvents
+ * @param {Token5e} token The hovered token.
+ * @param {boolean} hoverState True when hover starts, or false when hover ends.
+ * @returns {Promise<void>} Resolves after the hover label has been updated.
  */
 export async function onHoverToken(token, hoverState) {
   const hoveredToken = token;
@@ -113,7 +116,6 @@ export async function onHoverToken(token, hoverState) {
 
   const measurementHud = document.querySelector("#hud #measurement");
   if (!measurementHud) {
-    console.warn(`${MODULE_ID} | #hud #measurement not found.`);
     removeHoverDecorations(hoveredToken);
     return;
   }

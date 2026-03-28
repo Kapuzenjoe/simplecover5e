@@ -1,3 +1,7 @@
+/**
+ * @import { CoverContext, CoverEvaluationResult, CoverLevel, CoverTargetResult, DialogNoteData, LosResult, Position } from "../types/shared.types.mjs";
+ */
+
 import { MODULE_ID, SETTING_KEYS } from "../config/constants.config.mjs";
 import {
     buildCoverContext,
@@ -9,46 +13,24 @@ import { drawCoverDebug, clearCoverDebug } from "../services/cover.debug.mjs";
 import { measureTokenDistance } from "../utils/distance.mjs";
 
 /**
- * @typedef {"none"|"half"|"threeQuarters"|"total"} CoverLevel
- *
- * @typedef {object} LosPoint
- * @property {number} x
- * @property {number} y
- * @property {boolean} blocked
- *
- * @typedef {object} LosResult
- * @property {boolean} hasLOS
- * @property {LosPoint[]} targetLosPoints
- *
- * @typedef {object} CoverEvaluationResult
- * @property {CoverLevel} cover
- * @property {0|2|5|null} bonus
- * @property {any[]} [debugSegments]
- * @property {any[]} [debugTokenShapes]
- * 
- * @typedef {{x:number, y:number, elevation?:number}} Position
- */
-
-/**
  * Resolve the effective cover level for an activity, including ignore-cover rules.
  *
- * @param {Activity5e} activity                         The activity being evaluated.
- * @param {"none"|"half"|"threeQuarters"|"total"} cover The computed/requested cover level.
- * @param {TokenDocument} targetDoc                     The target TokenDocument.
- * @returns {{ CoverLevel, bonus: (number|null) }} The effective cover level and its corresponding bonus.
- *
+ * @param {Activity5e} activity The activity being evaluated.
+ * @param {CoverLevel} cover The computed/requested cover level.
+ * @param {Actor5e|null} [targetActor=null] The targeted actor.
+ * @returns {{cover: CoverLevel, bonus: (0|2|5|null)}} The effective cover level and its corresponding bonus.
  */
-export function getIgnoreCover(activity, cover, targetDoc = null) {
-    return ignoresCover(activity, cover, targetDoc);
+export function getIgnoreCover(activity, cover, targetActor = null) {
+    return ignoresCover(activity, cover, targetActor);
 }
 
 /**
- * Evaluate line of sight (LoS) from an attacker to a target.
+ * Evaluate line of sight (LOS) from an attacker to a target.
  *
- * @param {TokenDocument|Position} attackerDoc     The attacking token document or a generic position {x,y,elevation?}.
- * @param {TokenDocument} targetDoc                The target TokenDocument.
- * @param {object} ctx                             The cover evaluation context.
- * @returns {LosResult}                            The LoS result and sampled target points.
+ * @param {TokenDocument|Position} attackerDoc The attacking token document or a generic position.
+ * @param {TokenDocument} targetDoc The target token document.
+ * @param {CoverContext|null} [ctx=null] The cover evaluation context.
+ * @returns {LosResult|null} The LOS result and sampled target points.
  */
 function getLOS(attackerDoc, targetDoc, ctx = null) {
     const s = targetDoc?.parent ?? canvas?.scene;
@@ -62,9 +44,9 @@ function getLOS(attackerDoc, targetDoc, ctx = null) {
 /**
  * Measure the minimal 3D distance between two tokens in scene grid units.
  *
- * @param {Token|TokenDocument} sourceToken      The source token or document.
- * @param {Token|TokenDocument} targetToken      The target token or document.
- * @returns {number}                             The minimal distance in grid units (clamped to 0+).
+ * @param {Token|TokenDocument} sourceToken The source token or document.
+ * @param {Token|TokenDocument} targetToken The target token or document.
+ * @returns {number} The minimal distance in grid units.
  */
 function getTokenTokenDistance(sourceToken, targetToken) {
     return measureTokenDistance(sourceToken, targetToken);
@@ -73,25 +55,25 @@ function getTokenTokenDistance(sourceToken, targetToken) {
 /**
  * Build the cover evaluation context.
  *
- * @param {Scene} [scene=canvas.scene]  The scene for which to build the cover context.
- * @returns {object|null}               The cover evaluation context, or null if no scene is available.
+ * @param {Scene} [scene=canvas.scene] The scene for which to build the cover context.
+ * @returns {CoverContext|null} The cover evaluation context, or null if no scene is available.
  */
-function buildContextWithPrisms(scene = canvas?.scene) {
+function buildContext(scene = canvas?.scene) {
     if (!scene) return null;
     return buildCoverContext(scene);
 }
 
 /**
- * Compute cover between a single attacker and a single target, optionally including a wall LoS check.
+ * Compute cover between a single attacker and a single target, optionally including a line-of-sight check.
  *
- * @param {object} [options={}]                             Options controlling the cover evaluation. 
- * @param {Token|TokenDocument|Position} options.attacker   The attacking Token or TokenDocument or a generic position {x,y,elevation?,level?}.
- * @param {Token|TokenDocument} options.target              The target Token or TokenDocument.
- * @param {Scene} [options.scene=canvas.scene]              The scene on which to evaluate cover.
- * @param {boolean|null} [options.debug=null]               Whether to force debug output. Null uses the module Debug setting.
- * @param {boolean} [options.losCheck=false]                Whether to perform a wall line-of-sight check (no LoS => total cover).
- * @param {Activity5e|null} [options.activity=null]         The activity being evaluated for cover.
- * @returns {CoverEvaluationResult|null}                    The computed cover result, or null if inputs are invalid.
+ * @param {object} [options={}] Options controlling the cover evaluation.
+ * @param {Token|TokenDocument|Position} options.attacker The attacking token, token document, or generic position.
+ * @param {Token|TokenDocument} options.target The target token or token document.
+ * @param {Scene} [options.scene=canvas.scene] The scene on which to evaluate cover.
+ * @param {boolean|null} [options.debug=null] Whether to force debug output. Null uses the module debug setting.
+ * @param {boolean} [options.losCheck=false] Whether to perform a wall line-of-sight check.
+ * @param {Activity5e|null} [options.activity=null] The activity being evaluated for cover.
+ * @returns {CoverEvaluationResult|null} The computed cover result, or null if inputs are invalid.
  */
 export function getCover({ attacker, target, scene = canvas?.scene, debug = null, losCheck = false, activity = null } = {}) {
     if (!attacker || !target || !scene) return null;
@@ -105,7 +87,7 @@ export function getCover({ attacker, target, scene = canvas?.scene, debug = null
 
     if (debugOn && game.users.activeGM) clearCoverDebug();
 
-    const ctx = buildContextWithPrisms(scene);
+    const ctx = buildContext(scene);
     if (!ctx) return null;
 
     const result = evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, { debug: debugOn })
@@ -136,16 +118,16 @@ export function getCover({ attacker, target, scene = canvas?.scene, debug = null
 }
 
 /**
- * Compute cover between a single attacker and multiple targets, optionally including a wall LoS check.
+ * Compute cover between a single attacker and multiple targets, optionally including a line-of-sight check.
  *
- * @param {object} [options={}]                             Options controlling the cover evaluation.
- * @param {Token|TokenDocument|Position} options.attacker   The attacking Token or TokenDocument or a generic position {x,y,elevation?,level?}.
- * @param {Token[]|TokenDocument[]|null} [options.targets]  Explicit targets; defaults to the user's current targets.
- * @param {Scene} [options.scene=canvas.scene]              The scene on which to evaluate cover.
- * @param {boolean|null} [options.debug=null]               Whether to force debug output. Null uses the module Debug setting.
- * @param {boolean} [options.losCheck=false]                Whether to perform a wall line-of-sight check (no LoS => total cover).
- * @param {Activity5e|null} [options.activity=null]         The activity being evaluated for cover.
- * @returns {Array<{ target: Token|TokenDocument, result: CoverEvaluationResult, los: LosResult }>} The per-target cover results.
+ * @param {object} [options={}] Options controlling the cover evaluation.
+ * @param {Token|TokenDocument|Position} options.attacker The attacking token, token document, or generic position.
+ * @param {Token[]|TokenDocument[]|null} [options.targets] Explicit targets, or the user's current targets.
+ * @param {Scene} [options.scene=canvas.scene] The scene on which to evaluate cover.
+ * @param {boolean|null} [options.debug=null] Whether to force debug output. Null uses the module debug setting.
+ * @param {boolean} [options.losCheck=false] Whether to perform a wall line-of-sight check.
+ * @param {Activity5e|null} [options.activity=null] The activity being evaluated for cover.
+ * @returns {CoverTargetResult[]} The per-target cover results.
  */
 export function getCoverForTargets({ attacker, targets = null, scene = canvas?.scene, debug = null, losCheck = false, activity = null } = {}) {
     if (!attacker || !scene) return [];
@@ -158,7 +140,7 @@ export function getCoverForTargets({ attacker, targets = null, scene = canvas?.s
 
     if (debugOn && game.users.activeGM) clearCoverDebug();
 
-    const ctx = buildContextWithPrisms(scene);
+    const ctx = buildContext(scene);
     if (!ctx) return [];
 
     const list = targets
@@ -206,13 +188,8 @@ export function getCoverForTargets({ attacker, targets = null, scene = canvas?.s
 /**
  * Add a note (icon + label + hint) to the next Roll Configuration Dialog for this roll workflow.
  *
- * @param {object} dialogConfig                 The dialog configuration object provided by DnD5e pre-roll V2 hooks.
- * @param {object} [note={}]                    The note definition.
- * @param {string} [note.cover]                 The calculated Cover.
- * @param {string} [note.target]                The Target ID.
- * @param {string} [note.icon=""]               A Font Awesome class string, e.g. `"fa-solid fa-circle-info"`.
- * @param {string} [note.label=""]              The note label text, e.g. `"Half Cover"`.
- * @param {string} [note.hint=""]               The hint HTML/text, e.g. `"+2 to save rolls."`.
+ * @param {BasicRollDialogConfiguration|RollConfigurationDialog} dialogConfig The dialog configuration object.
+ * @param {DialogNoteData} [note={}] The note definition.
  * @returns {void}
  */
 export function setDialogNote(dialogConfig, { cover, target, icon = "", label = "", hint = "" } = {}) {
@@ -253,14 +230,11 @@ function getLibraryMode() {
 /**
  * Enable or disable library mode for this module.
  *
- * @param {boolean} enabled   The desired library mode state.
+ * @param {boolean} enabled The desired library mode state.
  * @returns {Promise<boolean>} True if the setting was updated; otherwise false.
  */
 async function setLibraryMode(enabled) {
-    if (!game.user.isGM) {
-        console.warn(`[${MODULE_ID}] setLibraryMode: Only a GM may change library mode.`);
-        return false;
-    }
+    if (!game.user.isGM) return false;
     await game.settings.set(MODULE_ID, SETTING_KEYS.LIBRARY_MODE, !!enabled);
     return true;
 }
@@ -290,10 +264,10 @@ export function initApi() {
 }
 
 /**
-* Fire the module-ready API hook.
-*
-* @returns {void}
-*/
+ * Fire the module-ready API hook.
+ *
+ * @returns {void}
+ */
 export function readyApi() {
     const api = game.modules.get(MODULE_ID)?.api;
     if (!api) return;

@@ -1,10 +1,14 @@
+/**
+ * @import { Position } from "../types/shared.types.mjs";
+ */
+
 import { MODULE_ID, SETTING_KEYS, COVER, BASE_KEYS } from "../config/constants.config.mjs";
 
 /**
- * Check whether a token/actor is player-owned.
+ * Check whether a token or actor has a player owner.
  *
- * @param {{ token?: Token5e, actor?: Actor5e }} param0               The token/actor pair to evaluate.
- * @returns {boolean}                                                True if the token/actor has a player owner.
+ * @param {{token?: Token5e, actor?: Actor5e}} data The token and actor pair to evaluate.
+ * @returns {boolean} True if the token or actor has a player owner.
  */
 function isPlayerOwned({ token, actor }) {
   if (token?.hasPlayerOwner !== undefined) return token.hasPlayerOwner;
@@ -15,9 +19,9 @@ function isPlayerOwned({ token, actor }) {
  * Resolve token/actor pairs for a cover update scope.
  * Supported scopes: "all", "combatants", and "players" (player-owned combatants).
  *
- * @param {Combat|null} combat                     The active combat, if any.
- * @param {"all"|"combatants"|"players"} scope     The selection scope.
- * @returns {Array<{ token: TokenDocument|null, actor: Actor|null }>} The resolved token/actor pairs.
+ * @param {Combat|null} combat The active combat, if any.
+ * @param {"all"|"combatants"|"players"} scope The selection scope.
+ * @returns {Array<{token: TokenDocument|null, actor: Actor|null}>} The resolved token and actor pairs.
  */
 function resolveTokensForScope(combat, scope) {
   const scene = canvas?.scene
@@ -51,8 +55,8 @@ function resolveTokensForScope(combat, scope) {
  * Clear all cover status effects for the configured scope.
  * This is typically called when combat state changes or at end-of-turn boundaries.
  *
- * @param {Combat|null} combat                      The active combat, if any.
- * @returns {Promise<void>}                         Resolves when all toggles have settled.
+ * @param {Combat|null} combat The active combat, if any.
+ * @returns {Promise<void>} Resolves when all status toggles have settled.
  */
 export async function clearCoverStatusEffect(combat) {
 
@@ -77,11 +81,11 @@ export async function clearCoverStatusEffect(combat) {
 }
 
 /**
- * Determine whether a token should be treated as a blocking creature for cover and LoS occlusion.
- * Hidden, invisible, dead, or ethereal creatures are ignored.
+ * Determine whether a token should be treated as a blocking creature for cover and line-of-sight (LOS) occlusion.
+ * Hidden, dead, ethereal, or non-visible creatures are ignored.
  *
- * @param {Token5e} token                           The token to evaluate.
- * @returns {boolean}                               True if the token is considered blocking; otherwise false.
+ * @param {Token5e} token The token to evaluate.
+ * @returns {boolean} True if the token is considered blocking.
  */
 export function isBlockingCreatureToken(token) {
   if (!token) return false;
@@ -108,11 +112,11 @@ export function isBlockingCreatureToken(token) {
 }
 
 /**
- * Get the creature height in gridSize for a token document.
- * If wall-height is active, the token's LoS height is used when available.
+ * Get the creature height in grid distance units for a token document.
+ * If the Wall Height module is active, the token's line-of-sight height is used when available.
  *
- * @param {TokenDocument|Position} td             The token document OR a generic position {x,y,elevation?}.
- * @returns {number}                              The creature height in grid distance units or 0.
+ * @param {TokenDocument|Position} td The token document or a generic position.
+ * @returns {number} The creature height in grid distance units, or 0.
  */
 export function getCreatureHeight(td) {
   if (!td?.actor) return 0;
@@ -137,6 +141,9 @@ export function getCreatureHeight(td) {
       if (diff > 0) {
         height = Math.ceil(diff * 100) / 100;
       }
+    }
+    else {
+      height = savedCreatureHeights[sizeKey] || 0;
     }
   }
   else {
@@ -167,17 +174,18 @@ export function getCreatureHeight(td) {
 
 /**
  * Check whether the current Foundry version is 14 or higher.
- * 
- * @returns {boolean}       true if the current Foundry version is 14 or higher. 
+ *
+ * @returns {boolean} True if the current Foundry version is 14 or higher.
  */
 export function isV14() {
   return game.release.generation >= 14;
 }
 
 /**
- * Check if a token has an ellipse shape.
- * @param {TokenDocument} tokenDoc 
- * @returns {boolean} 
+ * Check whether a token uses an ellipse shape.
+ *
+ * @param {TokenDocument|Position} tokenDoc The token document or generic position to evaluate.
+ * @returns {boolean} True if the token uses an ellipse shape.
  */
 export function isEllipse(tokenDoc) {
   return (
@@ -187,26 +195,35 @@ export function isEllipse(tokenDoc) {
 };
 
 /**
- * Check whether the wall-height module is active.
+ * Check whether the Wall Height module is active.
  *
- * @returns {boolean}                              True if the wall-height module is currently active.
+ * @returns {boolean} True if the Wall Height module is currently active.
  */
 export function isWallHeightModuleActive() {
   return game.modules?.get?.("wall-height")?.active === true;
 }
 
-/** 
- * Sets the shape of newly created tokens on gridless scenes to match the configured setting.
- * 
+/**
+ * Check whether the Midi-QoL module is active.
+ *
+ * @returns {boolean} True if the Midi-QoL module is currently active.
+ */
+export function isMidiQol() {
+  return game.modules?.get?.("midi-qol")?.active === true;
+}
+
+/**
+ * Update a newly created token shape on a gridless scene to match the current setting.
+ *
  * @function createToken
  * @memberof hookEvents
- * @param {TokenDocument5e} td      The token being deleted
- * @param {Object} options          Additional options
- * @param {String} userId           The initiating User's ID
+ * @param {TokenDocument5e} td The created token document.
+ * @param {object} options Additional workflow options.
+ * @param {string} userId The initiating user's ID.
+ * @returns {Promise<void>} Resolves after the token has been updated when needed.
  */
 export async function onCreateToken(td, options, userId) {
-  if (!td?.shape) return
-  if (!td?.scene?.grid?.isGridless) return
+  if (!td?.parent?.grid?.isGridless) return
   if (!game.user.isGM) return
 
   const shapeMode = game.settings.get(MODULE_ID, SETTING_KEYS.GRIDLESS_TOKEN_SHAPE);
@@ -226,6 +243,8 @@ export async function onCreateToken(td, options, userId) {
 
 /**
  * Globally update token shapes on all gridless scenes to match the configured setting.
+ *
+ * @returns {Promise<void>} Resolves after matching token shapes have been updated.
  */
 export async function changeTokenShapeGlobal() {
   if (!game.user.isGM) return

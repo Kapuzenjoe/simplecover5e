@@ -155,7 +155,7 @@
                     "Engine": "Engine Regeln"
                 }
             },
-            "automationMenu": {
+            "AutomationMenu": {
                 "Name": "Deckungsautomation",
                 "Label": "Deckungsautomation konfigurieren",
                 "Hint": "Lege fest, wie Simple Cover 5e Automationen durchführt und welche Informationen in Wurf-Dialogen angezeigt werden. Wenn der Library Mode aktiv ist, sind alle Automationen deaktiviert und dieses Menü ist gesperrt.",

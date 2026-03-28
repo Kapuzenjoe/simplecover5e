@@ -6,9 +6,9 @@ import { getTokenSampleCenters } from "../services/cover.engine.mjs";
  * Measure the minimal 3D distance between two tokens in scene grid units.
  * Uses Foundry's grid measurement (including diagonal rules) and optionally adjusts distances in gridless modes.
  *
- * @param {Token|TokenDocument} sourceToken      The source token or document.
- * @param {Token|TokenDocument} targetToken      The target token or document.
- * @returns {number}                             The minimal distance in grid units (clamped to 0+).
+ * @param {Token|TokenDocument} sourceToken The source token or document.
+ * @param {Token|TokenDocument} targetToken The target token or document.
+ * @returns {number} The minimal distance in grid units, clamped to 0 or greater.
  */
 export function measureTokenDistance(sourceToken, targetToken) {
   const sourceDoc = sourceToken.document ?? sourceToken;
@@ -17,6 +17,8 @@ export function measureTokenDistance(sourceToken, targetToken) {
   const scene = sourceDoc.parent;
   const grid = scene.grid;
   const mode = game.settings.get(MODULE_ID, SETTING_KEYS.GRIDLESS_DISTANCE_MODE) ?? "edgeToCenter";
+  const sourceHeight = getCreatureHeight(sourceDoc);
+  const targetHeight = getCreatureHeight(targetDoc);
 
   let minDistance = Infinity;
 
@@ -29,12 +31,12 @@ export function measureTokenDistance(sourceToken, targetToken) {
     const targetCenter = targetDoc.getCenterPoint();
 
     const sourceCenters = [
-      { ...sourceCenter, elevation: sourceDoc.elevation + getCreatureHeight(sourceDoc) },
+      { ...sourceCenter, elevation: sourceDoc.elevation + sourceHeight },
       { ...sourceCenter }
     ];
 
     const targetCenters = [
-      { ...targetCenter, elevation: targetDoc.elevation + getCreatureHeight(targetDoc) },
+      { ...targetCenter, elevation: targetDoc.elevation + targetHeight },
       { ...targetCenter }
     ];
 
@@ -53,11 +55,11 @@ export function measureTokenDistance(sourceToken, targetToken) {
     let targetCenters = isV14() ? targetDoc.getContainmentTestPoints() : getTokenSampleCenters(targetDoc);
 
     sourceCenters = sourceCenters.flatMap(point => [
-      { ...point, elevation: sourceDoc.elevation + getCreatureHeight(sourceDoc) },
+      { ...point, elevation: sourceDoc.elevation + sourceHeight },
       { ...point, elevation: sourceDoc.elevation}
     ]);
     targetCenters = targetCenters.flatMap(point => [
-      { ...point, elevation: targetDoc.elevation + getCreatureHeight(targetDoc) },
+      { ...point, elevation: targetDoc.elevation + targetHeight },
       { ...point, elevation: targetDoc.elevation }
     ]);
 
