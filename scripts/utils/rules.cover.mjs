@@ -71,6 +71,7 @@ export function ignoresCover(activity, cover = "none", targetActor = null) {
   // 1) TARGET: Upgrade Cover
   // ------------------------------------------------------------
   const upgradeFlags = targetActor?.flags?.[MODULE_ID]?.upgradeCover;
+  const targetStatuses = targetActor?.statuses;
 
   // `upgradeCover` improves the cover of the actor who has the flag.
   if (upgradeFlags) {
@@ -80,6 +81,10 @@ export function ignoresCover(activity, cover = "none", targetActor = null) {
     for (const raw of [upgradeFlags.all, isAttack ? upgradeFlags.attack : isSave ? upgradeFlags.save : null]) {
       const value = parseFlagValue(raw)
       if (value == null) continue;
+      if (typeof value?.condition === "string"
+        && value.condition.trim() !== ""
+        && !targetStatuses?.has(value.condition)
+      ) continue;
 
       let parsed = 0;
       if (typeof value !== "object") {
@@ -89,7 +94,7 @@ export function ignoresCover(activity, cover = "none", targetActor = null) {
         const min = COVER.ORDER[value.min ?? "none"] ?? COVER.ORDER.none;
         const max = COVER.ORDER[value.max ?? "total"] ?? COVER.ORDER.total;
         if ((current < Math.min(min, max)) || (current > Math.max(min, max))) continue;
-        parsed = Number(value.upgrade);
+        parsed = Number(value.steps);
       }
 
       if ((parsed === 1) || (parsed === 2)) upgrade = Math.max(upgrade, parsed);
@@ -105,6 +110,7 @@ export function ignoresCover(activity, cover = "none", targetActor = null) {
   // ------------------------------------------------------------
   if ((isAttack || isSave) && (effectiveCover !== "none")) {
     const current = COVER.ORDER[effectiveCover] ?? COVER.ORDER.none;
+    const sourceStatuses = sourceActor?.statuses;
     let downgradeFlags = sourceFlags?.downgradeCover;
     let downgrade = 0;
 
@@ -113,6 +119,10 @@ export function ignoresCover(activity, cover = "none", targetActor = null) {
       for (const raw of [downgradeFlags.all, isAttack ? downgradeFlags.attack : isSave ? downgradeFlags.save : null]) {
         const value = parseFlagValue(raw)
         if (value == null) continue;
+        if (typeof value?.condition === "string"
+          && value.condition.trim() !== ""
+          && !sourceStatuses?.has(value.condition)
+        ) continue;
 
         let parsed = 0;
         if (typeof value !== "object") {
@@ -122,7 +132,7 @@ export function ignoresCover(activity, cover = "none", targetActor = null) {
           const min = COVER.ORDER[value.min ?? "half"] ?? COVER.ORDER.half;
           const max = COVER.ORDER[value.max ?? "total"] ?? COVER.ORDER.total;
           if ((current < Math.min(min, max)) || (current > Math.max(min, max))) continue;
-          parsed = Number(value.downgrade);
+          parsed = Number(value.steps);
         }
 
         if ((parsed === 1) || (parsed === 2)) downgrade = Math.max(downgrade, parsed);

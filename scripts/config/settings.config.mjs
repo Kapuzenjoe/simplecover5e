@@ -333,7 +333,7 @@ const SETTINGS = [
       min: 0,
       integer: true
     }),
-    default: 3,
+    default: 6,
     requiresReload: false
   },
   {

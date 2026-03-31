@@ -35,10 +35,11 @@
   - When using Midi-QOL, disable Library Mode and set Midi-QOL's "Calculate Cover" option to `none` for now.
 - Changed the cover notes display setting from a toggle to a mode selection: `never`, `only when cover applies` or `always`.
 - Cover automation now only applies to Dexterity saving throws.
-- Added object support for `flags.simplecover5e.upgradeCover.all`, `.attack`, and `.save`. These flags now accept `{ upgrade, min, max }` in addition to legacy numeric values (`1` / `2`), which remain fully backward compatible. `upgrade` accepts `1` or `2`, while `min` and `max` accept `none`, `half`, `threeQuarters`, or `total` as min/max current Cover. (#30)
-  - example for "Enhanced Camouflage" from Ultramodern5E Redux: `flags.simplecover5e.upgradeCover.all ADD { upgrade: 1, min: "half", max: "threeQuarters" }`
-- Added new `flags.simplecover5e.downgradeCover.all`, `.attack`, and `.save` flags. These flags accept `{ downgrade, min, max }`, where `downgrade` accepts `1` or `2`, and `min` / `max` accept `none`, `half`, `threeQuarters`, or `total` as min/max current Cover. (#32)
-  - example for "Penetration Shot" from Ultramodern5E Redux: `flags.simplecover5e.downgradeCover.all ADD { downgrade: 1, min: "half", max: "total" }`
+- Added object support for `flags.simplecover5e.upgradeCover.all`, `.attack`, and `.save`. These flags now accept `{ steps, min, max, condition? }` in addition to legacy numeric values (`1` / `2`), which remain fully backward compatible. `steps` accepts `1` or `2`, while `min` and `max` accept `none`, `half`, `threeQuarters`, or `total` as min/max current Cover. With `condition`, you can specify an optional status the target actor must have for the upgrade effect to apply. (#30)
+  - example for "Enhanced Camouflage" from Ultramodern5E Redux: `flags.simplecover5e.upgradeCover.all ADD { steps: 1, min: "half", max: "threeQuarters" }`
+  - example for "Low Profile" from Ultramodern5E Redux: `flags.simplecover5e.upgradeCover.all ADD { steps: 1, min: "none", max: "threeQuarters", condition: "prone" }`
+- Added new `flags.simplecover5e.downgradeCover.all`, `.attack`, and `.save` flags. These flags accept `{ steps, min, max,condition? }`, where `steps` accepts `1` or `2`, and `min` / `max` accept `none`, `half`, `threeQuarters`, or `total` as min/max current Cover. With `condition`, you can specify an optional status the source actor must have for the upgrade effect to apply. (#32)
+  - example for "Penetration Shot" from Ultramodern5E Redux: `flags.simplecover5e.downgradeCover.all ADD { steps: 1, min: "half", max: "total" }`
 - Added scoped variants for `flags.simplecover5e.ignoreAllCover`, `ignoreThreeQuartersCover`, and `ignoreHalfCover` via `.all`, `.attack`, and `.save` boolean flags. Legacy flags remain supported and continue to behave as attack-only flags for backward compatibility.
 - Refactored cover flag semantics for clearer source/target behavior:
   - **`upgradeCover`** is a **defensive** flag placed on the actor being protected. It increases that actor’s effective cover when they are the target of an attack or effect.

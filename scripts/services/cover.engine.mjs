@@ -720,7 +720,6 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
                 const threeQuartersThreshold = filteredTargetPoints === "dynamic"
                     ? Math.max(1, Math.floor(tgtCorners.length * 0.75))
                     : threshold;
-                console.log("threeQuartersThreshold", threeQuartersThreshold)
 
                 const totalBlocked = blockedWalls + blockedCreatures + filteredBlocked;
                 const reachable = Math.max(0, activeLines - totalBlocked);

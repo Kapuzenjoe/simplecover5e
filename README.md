@@ -1,7 +1,8 @@
 # Simple Cover 5e
 
-![Static Badge](https://img.shields.io/badge/Foundry-v13-informational)
+![Static Badge](https://img.shields.io/badge/Foundry-v13--14-informational)
 ![Static Badge](https://img.shields.io/badge/Dnd5e-v5.2-informational)
+![Static Badge](https://img.shields.io/badge/Dnd5e-v5.3-informational)
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/peterlankton86911)
 
@@ -11,15 +12,15 @@
 
 - Uses a DMG-style line-of-effect approach:
   - **Square grid**: choose an optimal attacker corner and trace to the target’s four (inset) corners.
-  - **Gridless (Square mode)**: tokens are treated as squares; cover is evaluated by tracing to four (inset) corners of each sampled target cell, similar to a square grid.
-  - **Gridless (Circle mode)**: tokens are treated as circular footprints; cover is evaluated using a fixed set of sample points within the token footprint (size-dependent), and corner samples are taken from an 8-point inset ring on the circumference.
+  - **Gridless (Square Shape)**: tokens are treated as squares; cover is evaluated by tracing to four (inset) corners of each sampled target cell, similar to a square grid.
+  - **Gridless (Circle Shape)**: tokens are treated as circular footprints; cover is evaluated using a fixed set of sample points within the token footprint (size-dependent), and corner samples are taken from an 8-point inset ring on the circumference.
   - **Hex**: choose an optimal attacker corner and trace to the target hex’s inset corner samples.
 - Cover thresholds:
-  - **Square / Gridless (Square mode)**: if **1–2** lines are blocked, the target gains **Half Cover**; if **3** lines are blocked, the target gains **Three-Quarters Cover**.
+  - **Square / Gridless (Square Shape)**: if **1–2** lines are blocked, the target gains **Half Cover**; if **3** lines are blocked, the target gains **Three-Quarters Cover**.
   - **Hex**: if **1–3** lines are blocked, the target gains **Half Cover**; if **4+** lines are blocked, the target gains **Three-Quarters Cover**.
-  - **Gridless (Circle mode)**: uses an 8-sample perimeter; if **1–5** lines are blocked, the target gains **Half Cover**; if **6+** lines are blocked, the target gains **Three-Quarters Cover**.
+  - **Gridless (Circle Shape)**: uses an 8-sample perimeter; if **1–5** lines are blocked, the target gains **Half Cover**; if **6+** lines are blocked, the target gains **Three-Quarters Cover**.
 - Blocking tokens are treated as 3D prisms with configurable heights by creature size. When the **Wall Height** module is active, creature heights are taken from that module instead of these defaults. Non-blocking creatures (hidden tokens, ethereal/dead creatures, or creatures with 0 max HP) are ignored when evaluating cover.
-- In **gridless Circle mode**, blocking creatures use a slightly smaller internal square AABB as their blocking footprint, sized to sit safely inside the circular radius.
+- For **gridless Circle Shapes**, blocking creatures use a slightly smaller internal square AABB as their blocking footprint, sized to sit safely inside the circular radius.
 - Effects are pushed directly into the roll (target AC / save DC adjustments) and synchronized with token status effects.
 - On **gridless** scenes, larger tokens are evaluated using multiple sample centers (virtual sub-cells / multi-sample layouts) to approximate multi-square behavior where no RAW gridless procedure exists.
 - (Optional) A token hover helper can display cover icons and/or a distance label near the hovered token, styled similarly to the core distance ruler and configurable in position and offset.

@@ -133,7 +133,7 @@
       },
       "insetOccluder": {
         "Name": "Occluder Inset (px)",
-        "Hint": "Shrinks the occluder bounding box for creatures (default: 3; max: 30% of the current grid size)."
+        "Hint": "Shrinks the occluder bounding box for creatures (default: 6; max: 30% of the current grid size)."
       },
       "FilteredTargetPoints": {
         "Name": "Filtered Target Points",
