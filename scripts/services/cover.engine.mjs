@@ -632,16 +632,31 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
     if (isV14()) {
         attackerSamples = attackerDoc?.getContainmentTestPoints?.()
             ?? [{ x: attackerDoc.x, y: attackerDoc.y }];
-        for (const point of attackerSamples) {
-            point.elevation = attackerVisionSource;
-            point.level = attackerDoc?.level ?? ctx.level ?? null;
-        }
         targetSamples = targetDoc?.getContainmentTestPoints?.()
             ?? [{ x: targetDoc.x, y: targetDoc.y }];
-        for (const point of targetSamples) {
-            point.elevation = targetVisionSource;
-            point.level = targetDoc?.level ?? ctx.level ?? null;
-        }
+
+        const attackerCenterPoint = attackerDoc?.getCenterPoint?.() ?? null;
+        const targetCenterPoint = targetDoc?.getCenterPoint?.() ?? null;
+
+        const prepareSamples = (samples, doc, elevation, centerPoint) => {
+            const size = doc?.width;
+            const removeCenter = centerPoint
+                && doc?.width === doc?.height
+                && Number.isInteger(size)
+                && size % 2 === 0
+                && size >= 2;
+
+            return samples
+                .filter(point => !removeCenter || !(point.x === centerPoint.x && point.y === centerPoint.y))
+                .map(point => ({
+                    ...point,
+                    elevation,
+                    level: doc?.level ?? ctx.level ?? null
+                }));
+        };
+
+        attackerSamples = prepareSamples(attackerSamples, attackerDoc, attackerVisionSource, attackerCenterPoint);
+        targetSamples = prepareSamples(targetSamples, targetDoc, targetVisionSource, targetCenterPoint);
     }
     else {
         attackerSamples = getTokenSampleCenters(attackerDoc);
@@ -844,7 +859,7 @@ function getConstrainedTestPoints(points, td) {
 
     const { width, height } = td.getSize();
     const boundingBox = new PIXI.Rectangle(td.x, td.y, width, height);
-    const polygon = foundry.canvas.geometry.ClockwiseSweepPolygon.create(origin, { type: "move", level, boundingBox });
+    const polygon = foundry.canvas.geometry.ClockwiseSweepPolygon.create(origin, { type: "sight", level, boundingBox });
     for (let i = points.length - 1; i >= 0; i--) {
         const { x, y } = points[i];
         if (polygon.contains(x, y)) continue;

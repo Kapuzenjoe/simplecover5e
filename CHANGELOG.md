@@ -4,7 +4,7 @@
 
 ### Breaking Changes
 
-- **V14+ only:** Removed the module’s custom **Token Height** support. The module now relies on Foundry’s built-in **Token Depth** setting in Token Configuration. Height is calculated as `token.depth * grid.distance`.
+- **V14+ only:** Removed the module’s custom **Token Height** support. The module now relies on Foundry’s built-in **Token Depth** setting in Token Configuration. Height is calculated as `Z (token.dept) * grid.distance`.
 - **Gridless Token Default Shape:** This optional setting now defines the **default token shape for gridless scenes**. It is applied to all tokens on gridless scenes as a workaround for **[dnd5e#6739](https://github.com/foundryvtt/dnd5e/issues/6739)**.
 
 ### Changes
