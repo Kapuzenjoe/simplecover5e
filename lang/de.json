@@ -1,5 +1,13 @@
 {
     "SIMPLE_COVER_5E": {
+        "ItemProperties": {
+            "IgnoreCover": {
+                "Label": "Ignoriert Deckung"
+            }
+        },
+        "Notifications": {
+            "CreatureHeightsReset": "Simple Cover 5e: Kreaturenhöhen wurden auf die Standardwerte zurückgesetzt."
+        },
         "Settings": {
             "CoverScope": {
                 "Name": "Geltungsbereich für das Entfernen von Deckung",
@@ -91,12 +99,16 @@
             },
             "GridlessTokenShape": {
                 "Name": "Standard Figurform in gitterlosen Szenen",
-                "Hint": "Wenn aktiviert, werden alle Figuren in gitterlosen Szenen automatisch auf die ausgewählte Form gesetzt.",
+                "Hint": "Wenn aktiviert, werden neu erstellte Figuren in gitterlosen Szenen automatisch auf die ausgewählte Form gesetzt.",
                 "Options": {
                     "None": "Keine Änderung",
                     "Square": "Quadrate",
                     "Circle": "Kreise"
                 }
+            },
+            "GridlessTokenShapeUpdateExisting": {
+                "Name": "Form auch auf bestehende Figuren anwenden",
+                "Hint": "Wenn aktiviert, werden beim Ändern der Standardform auch bestehende Figuren auf allen gitterlosen Szenen aktualisiert."
             },
             "CreaturesProne": {
                 "Name": "Anpassung der Körperhöhe bei Liegend",
@@ -129,7 +141,7 @@
             },
             "insetOccluder": {
                 "Name": "Verdeckung-Einrückung (px)",
-                "Hint": "Verkleinert die Verdeckungsbegrenzungsbox für Kreaturen (Standard: 3; Max: 30% der aktuellen Rastergröße)."
+                "Hint": "Verkleinert die Verdeckungsbegrenzungsbox für Kreaturen (Standard: 6; Max: 30% der aktuellen Rastergröße)."
             },
             "HeightsMenu": {
                 "Name": "Kreaturenhöhen",
@@ -175,14 +187,16 @@
         },
         "CoverHint": {
             "Attack": {
-                "half": "Das Ziel erhält durch <strong>halbe Deckung</strong> einen <strong>+2</strong>-Bonus auf die RK.",
-                "threeQuarters": "Das Ziel erhält durch <strong>dreiviertel Deckung</strong> einen <strong>+5</strong>-Bonus auf die RK.",
-                "total": "Das Ziel hat <strong>vollständige Deckung</strong> und kann nicht direkt als Ziel gewählt werden."
+                "none": "{tokenName}: keine Deckung.",
+                "half": "{tokenName}: halbe Deckung, <strong>+2</strong> RK.",
+                "threeQuarters": "{tokenName}: dreiviertel Deckung, <strong>+5</strong> RK.",
+                "total": "{tokenName}: vollständige Deckung, kann nicht direkt anvisiert werden."
             },
             "Save": {
-                "half": "Du erhältst durch <strong>halbe Deckung</strong> einen <strong>+2</strong>-Bonus auf diesen Geschicklichkeitsrettungswurf.",
-                "threeQuarters": "Du erhältst durch <strong>dreiviertel Deckung</strong> einen <strong>+5</strong>-Bonus auf diesen Geschicklichkeitsrettungswurf.",
-                "total": "Mit <strong>vollständiger Deckung</strong> kannst du nicht direkt als Ziel gewählt werden."
+                "none": "Keine Deckung.",
+                "half": "<strong>+2</strong> auf diesen Geschicklichkeitsrettungswurf.",
+                "threeQuarters": "<strong>+5</strong> auf diesen Geschicklichkeitsrettungswurf.",
+                "total": "Kann nicht direkt anvisiert werden."
             },
             "CoverModeChanged": "Deckungsmodus geändert",
             "CoverModeDesired": "Berechnet: {desiredCover}",

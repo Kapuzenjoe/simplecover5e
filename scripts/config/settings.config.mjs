@@ -9,6 +9,7 @@ import { clearCoverStatusEffect, isV14, changeTokenShapeGlobal } from "../servic
  * @returns {Promise<void>} Resolves after matching token shapes have been updated.
  */
 async function onGridlessTokenShapeChange() {
+  if (!game.settings.get(MODULE_ID, SETTING_KEYS.GRIDLESS_TOKEN_SHAPE_UPDATE_EXISTING)) return;
   return changeTokenShapeGlobal();
 }
 
@@ -279,6 +280,15 @@ const SETTINGS = [
     onChange: onGridlessTokenShapeChange
   },
   {
+    key: SETTING_KEYS.GRIDLESS_TOKEN_SHAPE_UPDATE_EXISTING,
+    name: "SIMPLE_COVER_5E.Settings.GridlessTokenShapeUpdateExisting.Name",
+    hint: "SIMPLE_COVER_5E.Settings.GridlessTokenShapeUpdateExisting.Hint",
+    scope: "world",
+    config: false,
+    type: new foundry.data.fields.BooleanField({ initial: false }),
+    requiresReload: false
+  },
+  {
     key: SETTING_KEYS.DEBUG,
     name: "SIMPLE_COVER_5E.Settings.Debug.Name",
     hint: "SIMPLE_COVER_5E.Settings.Debug.Hint",
@@ -327,7 +337,7 @@ const SETTINGS = [
     scope: "world",
     config: false,
     type: new foundry.data.fields.NumberField({
-      initial: 3,
+      initial: 6,
       required: true,
       nullable: false,
       min: 0,

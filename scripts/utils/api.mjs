@@ -12,6 +12,17 @@ import { ignoresCover } from "../utils/rules.cover.mjs";
 import { drawCoverDebug, clearCoverDebug } from "../services/cover.debug.mjs";
 import { measureTokenDistance } from "../utils/distance.mjs";
 
+const coverOverrides = new Map();
+
+function getCoverOverrideKey(activity, targetDoc) {
+    const activityUuid = activity?.uuid ?? "";
+    const targetActorUuid = targetDoc?.actor?.uuid ?? "";
+    const targetId = targetDoc?.id ?? "";
+
+    if (!activityUuid || (!targetActorUuid && !targetId)) return null;
+    return `${activityUuid}:${targetActorUuid}:${targetId}`;
+}
+
 /**
  * Resolve the effective cover level for an activity, including ignore-cover rules.
  *
@@ -64,6 +75,82 @@ function buildContext(scene = canvas?.scene) {
 }
 
 /**
+ * Store a transient cover override for the current roll workflow.
+ * Internal helper only. This is not added to the public module API.
+ *
+ * @param {Activity5e|null} activity The owning activity.
+ * @param {Token|TokenDocument} target The affected target.
+ * @param {{cover: CoverLevel, bonus: (0|2|5|null)}} override The final cover override.
+ * @returns {void}
+ */
+export function setCoverOverride(activity, target, { cover = "none", bonus = 0 } = {}) {
+    const targetDoc = target?.document ?? target;
+    const key = getCoverOverrideKey(activity, targetDoc);
+    if (!key) return;
+
+    coverOverrides.set(key, { cover, bonus });
+}
+
+/**
+ * Clear transient cover overrides for one activity, or for one specific target on that activity.
+ * Internal helper only. This is not added to the public module API.
+ *
+ * @param {Activity5e|null} activity The owning activity.
+ * @param {Token|TokenDocument|null} [target=null] Optional single target to clear.
+ * @returns {void}
+ */
+export function clearCoverOverride(activity, target = null) {
+    const activityUuid = activity?.uuid ?? "";
+    if (!activityUuid) return;
+
+    if (target) {
+        const targetDoc = target?.document ?? target;
+        const key = getCoverOverrideKey(activity, targetDoc);
+        if (key) coverOverrides.delete(key);
+        return;
+    }
+
+    for (const key of coverOverrides.keys()) {
+        if (key.startsWith(`${activityUuid}:`)) {
+            coverOverrides.delete(key);
+        }
+    }
+}
+
+function resolveCoverResult(attackerDoc, targetDoc, activity, result) {
+    let finalResult = result;
+
+    if (activity) {
+        const { cover: desiredCover, bonus: desiredBonus } = getIgnoreCover(activity, finalResult?.cover ?? "none", targetDoc?.actor);
+        finalResult.cover = desiredCover;
+        finalResult.bonus = desiredBonus;
+    }
+
+    const overrideKey = getCoverOverrideKey(activity, targetDoc);
+    const override = overrideKey ? coverOverrides.get(overrideKey) : null;
+
+    if (activity) {
+        const payload = {
+            attacker: attackerDoc,
+            target: targetDoc,
+            activity,
+            result: finalResult
+        };
+        Hooks.callAll("simplecover5e.resolveCover", payload);
+        finalResult = payload.result ?? finalResult;
+    }
+
+    if (overrideKey) {
+        if (override) {
+            finalResult.cover = override.cover ?? finalResult.cover;
+            if (Object.hasOwn(override, "bonus")) finalResult.bonus = override.bonus;
+        }
+    }
+
+    return finalResult;
+}
+
+/**
  * Compute cover between a single attacker and a single target, optionally including a line-of-sight check.
  *
  * @param {object} [options={}] Options controlling the cover evaluation.
@@ -101,20 +188,16 @@ export function getCover({ attacker, target, scene = canvas?.scene, debug = null
         }
     }
 
-    if (activity) {
-        const { cover: desiredCover, bonus: desiredBonus } = getIgnoreCover(activity, result?.cover ?? "none", targetDoc?.actor);
-        result.cover = desiredCover;
-        result.bonus = desiredBonus;
-    }
+    const finalResult = resolveCoverResult(attackerDoc, targetDoc, activity, result);
 
-    if (debugOn && result.debugSegments?.length && game.users.activeGM) {
+    if (debugOn && finalResult.debugSegments?.length && game.users.activeGM) {
         drawCoverDebug({
-            segments: result.debugSegments ?? [],
-            tokenShapes: result.debugTokenShapes,
+            segments: finalResult.debugSegments ?? [],
+            tokenShapes: finalResult.debugTokenShapes,
             targetLosPoints: los.targetLosPoints
         });
     }
-    return result;
+    return finalResult;
 }
 
 /**
@@ -163,13 +246,9 @@ export function getCoverForTargets({ attacker, targets = null, scene = canvas?.s
             }
         }
 
-        if (activity) {
-            const { cover: desiredCover, bonus: desiredBonus } = getIgnoreCover(activity, result?.cover ?? "none", targetDoc?.actor);
-            result.cover = desiredCover;
-            result.bonus = desiredBonus;
-        }
+        const finalResult = resolveCoverResult(attackerDoc, targetDoc, activity, result);
 
-        out.push({ target: t, result, los });
+        out.push({ target: t, result: finalResult, los });
     }
 
     if (debugOn && out.length && game.users.activeGM) {

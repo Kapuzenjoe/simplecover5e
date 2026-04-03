@@ -31,7 +31,25 @@ async function prepareNotes(dialog) {
     const data = dialog?.options?.[MODULE_ID];
     if (!data || data.rendered) return null;
 
-    const notes = data.notes ?? [];
+    const rawNotes = data.notes ?? [];
+    const notes = await Promise.all(rawNotes.map(async note => {
+        const icon = String(note?.icon ?? "");
+        const isIconPath = /[/.](svg|png|webp|jpg|jpeg|gif)$/i.test(icon) || icon.includes("/");
+        const enrichedHint = await foundry.applications.ux.TextEditor.enrichHTML(String(note?.hint ?? ""), {
+            async: true,
+            secrets: true
+        });
+        const content = document.createElement("template");
+        content.innerHTML = enrichedHint.trim();
+        return {
+            ...note,
+            iconPath: isIconPath ? icon : "",
+            iconClass: isIconPath ? "" : icon,
+            hint: content.content.childElementCount === 1 && content.content.firstElementChild?.tagName === "P"
+                ? content.content.firstElementChild.innerHTML
+                : enrichedHint
+        };
+    }));
     if (!notes.length) return null;
 
     const rendered = await foundry.applications.handlebars.renderTemplate(
@@ -43,15 +61,10 @@ async function prepareNotes(dialog) {
         }
     );
 
-    const enriched = await foundry.applications.ux.TextEditor.enrichHTML(rendered, {
-        async: true,
-        secrets: true
-    });
-
     data.rendered = true;
 
     const template = document.createElement("template");
-    template.innerHTML = enriched.trim();
+    template.innerHTML = rendered.trim();
     return template.content.firstElementChild;
 }
 
@@ -67,13 +80,35 @@ async function prepareNotes(dialog) {
  * @returns {Promise<void>} Resolves after any GM summary message has been created.
  */
 export async function onPostRollConfiguration(rolls, config, dialog, message) {
+    const isTotalCoverSave =
+        config?.ability === "dex"
+        && rolls?.some?.(roll => roll?.options?.[MODULE_ID]?.totalCover === true);
+
+    if (
+        isTotalCoverSave
+        && !game.settings.get(MODULE_ID, SETTING_KEYS.LIBRARY_MODE)
+        && config?.midiOptions?.workflowId == null
+    ) {
+        config.evaluate = false;
+        message.create = false;
+        ui.notifications.info(game.i18n.localize(COVER.I18N.HINT_KEYS.Save.total));
+        return;
+    }
+
     if (!game.settings.get(MODULE_ID, SETTING_KEYS.COVER_HINTS_GM_MESSAGE)) return;
 
-    const messageFlags = message?.data?.flags?.[MODULE_ID] ?? [];
+    const messageFlags = message?.data?.flags?.[MODULE_ID]?.notes ?? [];
     if (!messageFlags.length) return;
+    if (!messageFlags.some(flag => Object.hasOwn(flag, "newMode") && flag.newMode !== flag.desiredCover)) return;
+}
+
+export function onRenderChatMessage(chatMessage, html) {
+    if (!game.user.isGM) return;
+    const messageFlags = chatMessage?.flags?.[MODULE_ID]?.notes ?? [];
+    if (!messageFlags.length) return;
+
     const content = [];
     const escapeHTML = foundry.utils.escapeHTML;
-
     for (const flag of messageFlags) {
         if (Object.hasOwn(flag, "newMode") && flag.newMode !== flag.desiredCover) {
             content.push(`
@@ -86,16 +121,20 @@ export async function onPostRollConfiguration(rolls, config, dialog, message) {
             `);
         }
     }
-
     if (!content.length) return;
 
-    const chatData = {
-        user: game.user.id,
-        flavor: game.i18n.localize("SIMPLE_COVER_5E.CoverHint.CoverModeChanged"),
-        whisper: ChatMessage.getWhisperRecipients("GM"),
-        content: content.join("<hr>")
-    };
+    const anchor =
+        html.querySelector(".midi-qol-attack-roll, .midi-qol-saves-display, .message-content")
+        ?? html.querySelector(".message-content")
+        ?? html;
+    if (!anchor) return;
 
-    ChatMessage.applyRollMode(chatData, "blindroll");
-    await ChatMessage.create(chatData);
+    const hr = document.createElement("hr");
+    const wrapper = document.createElement("div");
+    wrapper.innerHTML = `
+        <p><strong>${game.i18n.localize("SIMPLE_COVER_5E.CoverHint.CoverModeChanged")}</strong></p>
+        ${content.join("<hr>")}
+    `;
+
+    anchor.append(hr, wrapper);
 }

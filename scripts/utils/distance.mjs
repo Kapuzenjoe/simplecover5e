@@ -1,5 +1,5 @@
 import { MODULE_ID, SETTING_KEYS } from "../config/constants.config.mjs";
-import { getCreatureHeight, isV14 } from "../services/cover.service.mjs";
+import { getCreatureHeight, getTokenExternalRadius, isV14 } from "../services/cover.service.mjs";
 import { getTokenSampleCenters } from "../services/cover.engine.mjs";
 
 /**
@@ -24,8 +24,8 @@ export function measureTokenDistance(sourceToken, targetToken) {
 
   if (grid.isGridless && mode === "edgeEdge") {
     const distancePixels = scene?.dimensions?.distancePixels ?? 1;
-    const sourceRadius = sourceDoc.object?.externalRadius ?? 0;
-    const targetRadius = targetDoc.object?.externalRadius ?? 0;
+    const sourceRadius = getTokenExternalRadius(sourceDoc) ?? 0;
+    const targetRadius = getTokenExternalRadius(targetDoc) ?? 0;
 
     const sourceCenter = sourceDoc.getCenterPoint();
     const targetCenter = targetDoc.getCenterPoint();

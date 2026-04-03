@@ -24,7 +24,11 @@ function isPlayerOwned({ token, actor }) {
  * @returns {Array<{token: TokenDocument|null, actor: Actor|null}>} The resolved token and actor pairs.
  */
 function resolveTokensForScope(combat, scope) {
-  const scene = canvas?.scene
+  const combatScene =
+    combat?.combatants?.find(c => c?.token?.parent)?.token?.parent
+    ?? (typeof combat?.scene === "string" ? game.scenes.get(combat.scene) : combat?.scene)
+    ?? null;
+  const scene = combatScene ?? canvas?.scene;
 
   let targets = [];
 
@@ -62,6 +66,12 @@ export async function clearCoverStatusEffect(combat) {
 
   const scope = game.settings.get(MODULE_ID, SETTING_KEYS.COVER_SCOPE);
   const targets = resolveTokensForScope(combat, scope);
+  const hasCover = targets.some(({ actor }) =>
+    actor?.statuses?.has?.(COVER.IDS.half)
+    || actor?.statuses?.has?.(COVER.IDS.threeQuarters)
+    || actor?.statuses?.has?.(COVER.IDS.total)
+  );
+  if (!hasCover) return;
 
   const ids = Object.values(COVER.IDS).filter(Boolean);
   const jobs = [];
@@ -82,19 +92,18 @@ export async function clearCoverStatusEffect(combat) {
 
 /**
  * Determine whether a token should be treated as a blocking creature for cover and line-of-sight (LOS) occlusion.
- * Hidden, dead, ethereal, or non-visible creatures are ignored.
+ * Hidden, dead, or ethereal creatures are ignored.
  *
- * @param {Token5e} token The token to evaluate.
+ * @param {Token5e|TokenDocument5e} token The token or token document to evaluate.
  * @returns {boolean} True if the token is considered blocking.
  */
 export function isBlockingCreatureToken(token) {
   if (!token) return false;
 
-  const doc = token.document;
+  const doc = token.document ?? token;
   if (!doc || doc.hidden) return false;
-  if (!token.visible) return false;
 
-  const actor = token.actor;
+  const actor = doc.actor ?? token.actor;
   if (!actor) return true;
 
   const statuses = actor?.statuses;
@@ -179,6 +188,23 @@ export function getCreatureHeight(td) {
  */
 export function isV14() {
   return game.release.generation >= 14;
+}
+
+/**
+ * Resolve the external token radius in pixels from document data.
+ *
+ * @param {Token|TokenDocument|Position} token The token, token document, or generic position.
+ * @returns {number|null} The external radius in pixels, or null if it cannot be determined.
+ */
+export function getTokenExternalRadius(token) {
+  const doc = token?.document ?? token;
+  const size = doc?.getSize?.();
+  if (!size) return null;
+
+  const { width, height } = size;
+  if (!Number.isFinite(width) || !Number.isFinite(height)) return null;
+
+  return Math.min(width, height) / 2;
 }
 
 /**

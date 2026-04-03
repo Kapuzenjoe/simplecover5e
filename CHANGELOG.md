@@ -1,5 +1,30 @@
 # Changelog
 
+## 2.1.0
+
+### Changes
+
+- **Midi-QOL integration:** greatly improved compatibility when Midi-QOL is configured to use `simplecover5e` for cover calculation.
+  - Cover notes and manual cover selection in the roll dialog now remain available during Midi-managed workflows.
+  - Manual cover changes made in the roll dialog are now fed back into `api.getCover()`, allowing Midi-QOL to respect the selected cover state for attack rolls.
+  - For delegated Midi-QOL workflows, Simple Cover 5e now avoids applying parallel mechanical AC / save updates and system cover automation on its own.
+  - Transient cover overrides are now cleaned up when a Midi-QOL workflow completes.
+- **Roll dialog cover notes:** simplified and shortened the cover hint text for attacks and Dexterity saving throws.
+- **GM cover-change hint:** the optional GM-only cover-change summary is now attached to the existing roll chat card instead of creating a separate blind-roll chat message.
+- **Saving throw workflow:** improved source token resolution for saving throws.
+  - For DnD5e 5.3+, the saving throw target now prefers the current speaker token.
+  - For Midi-QOL save workflows, Simple Cover 5e now aligns more closely with Midi-QOL’s own cover origin handling by preferring `coverOrigin`, then template center, then the workflow token.
+- **Total Cover (Dexterity saves):** removed the old `9999` save-bonus workaround. Total Cover is no longer represented as a fake numeric cover bonus.
+- **System cover status detection:** replaced hardcoded DnD5e effect document ids with runtime resolution via `CONFIG.statusEffects`.
+- **Creature occluders:** blocking creature tokens are now resolved from the current scene document data instead of active canvas placeables.
+  - Hidden tokens are now excluded based on `TokenDocument.hidden`, matching Foundry’s actual visibility toggle more closely.
+- **Gridless Token Default Shape:** changing this setting now only affects newly created tokens by default.
+  - Added a separate **Apply Gridless Shape to Existing Tokens** option to explicitly update existing tokens on gridless scenes when the setting changes.
+- **Movement cleanup:** cover removal on movement now runs on the recorded end of movement instead of intermediate movement steps, reducing redundant updates.
+- **Distance / token geometry:** token outer radius is now resolved centrally from document data and reused consistently across cover and distance calculations.
+- Fixed a bug where hidden NPC names were not respected consistently in attack cover hints.
+- General cleanup, smaller bug fixes, and performance improvements.
+
 ## 2.0.0
 
 ### Breaking Changes

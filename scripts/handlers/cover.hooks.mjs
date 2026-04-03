@@ -1,6 +1,6 @@
-import { MODULE_ID, COVER, SETTING_KEYS } from "../config/constants.config.mjs";
+import { MODULE_ID, COVER, COVER_ICON_PATHS, SETTING_KEYS } from "../config/constants.config.mjs";
 import { clearCoverStatusEffect, isMidiQol } from "../services/cover.service.mjs";
-import { getCover, getCoverForTargets, getIgnoreCover, setDialogNote } from "../utils/api.mjs";
+import { clearCoverOverride, getCover, getCoverForTargets, getIgnoreCover, setCoverOverride, setDialogNote } from "../utils/api.mjs";
 import { clearCoverDebug } from "../services/cover.debug.mjs";
 import { toggleCoverEffectViaGM } from "../services/queries.service.mjs";
 
@@ -10,13 +10,65 @@ import { toggleCoverEffectViaGM } from "../services/queries.service.mjs";
  * @returns {void}
  */
 export function ignoreCoverProperties() {
+  const labelKey = "SIMPLE_COVER_5E.ItemProperties.IgnoreCover.Label";
   CONFIG.DND5E.itemProperties.ignoreCover = {
-    label: "Ignores Cover",
+    label: game.i18n.has(labelKey) ? game.i18n.localize(labelKey) : "Ignores Cover",
     abbreviation: "iC" // Workaround for https://github.com/foundryvtt/dnd5e/issues/6378
   };
   CONFIG.DND5E.validProperties.weapon.add("ignoreCover");
   CONFIG.DND5E.validProperties.spell.add("ignoreCover");
   CONFIG.DND5E.validProperties.feat.add("ignoreCover");
+}
+
+/**
+ * Resolve a token placeable from chat speaker data.
+ *
+ * @param {object} speaker The chat speaker data.
+ * @returns {Token5e|null} The resolved token placeable, if available.
+ */
+function getSpeakerToken(speaker) {
+  if (!speaker?.scene || !speaker?.token) return null;
+  const scene = game.scenes.get(speaker.scene);
+  return scene?.tokens.get(speaker.token)?.object ?? null;
+}
+
+/**
+ * Resolve the source chat message for a saving throw workflow.
+ *
+ * @param {BasicRollProcessConfiguration} config The pending roll process configuration.
+ * @returns {ChatMessage5e|null} The resolved source chat message, if any.
+ */
+function resolveSourceMessage(config) {
+  const messageId =
+    config?.sourceMessageId ??
+    config?.event?.target?.closest?.("[data-message-id]")?.dataset.messageId;
+
+  const baseMessage = messageId ? game.messages.get(messageId) : null;
+  return baseMessage?.getOriginatingMessage?.() ?? baseMessage;
+}
+
+function isDelegatedCover(config) {
+  if (game.settings.get(MODULE_ID, SETTING_KEYS.LIBRARY_MODE)) return true;
+  if (!isMidiQol() || config?.midiOptions?.workflowId == null) return false;
+
+  const midi = game.modules?.get?.("midi-qol")?.api ?? globalThis.MidiQOL;
+  const coverCalculation =
+    midi?.currentConfigSettings?.optionalRules?.coverCalculation ??
+    midi?.configSettings?.()?.optionalRules?.coverCalculation;
+
+  return coverCalculation === "simplecover5e";
+}
+
+function getSaveCoverHint(desiredCover) {
+  return game.i18n.localize(COVER.I18N.HINT_KEYS.Save[desiredCover]);
+}
+
+function getCoverMessageNotes(message) {
+  message.data ??= {};
+  message.data.flags ??= {};
+  message.data.flags[MODULE_ID] ??= {};
+  message.data.flags[MODULE_ID].notes ??= [];
+  return message.data.flags[MODULE_ID].notes;
 }
 
 /**
@@ -30,18 +82,20 @@ export function ignoreCoverProperties() {
  * @returns {void}
  */
 export function onPreRollAttack(config, dialog, message) {
-  if (game.settings.get(MODULE_ID, SETTING_KEYS.LIBRARY_MODE)) return;
   const onlyInCombat = !!game.settings.get(MODULE_ID, SETTING_KEYS.ONLY_IN_COMBAT);
   if (onlyInCombat && !game?.combats?.active) return;
+  const delegated = isDelegatedCover(config);
 
   const actor = config.subject?.actor
   if (!actor) return;
   const attackerToken =
+    getSpeakerToken(message?.data?.speaker) ??
     actor?.token?.object ??
     actor?.getActiveTokens?.()[0] ??
     canvas.tokens?.controlled?.[0] ?? null;
   if (!attackerToken) return;
   const activity = config.subject ?? null;
+  clearCoverOverride(activity);
 
   const targets = Array.from(game.user?.targets ?? [])
     .filter(t => t?.document && !t.document.actor?.defeated);
@@ -49,18 +103,19 @@ export function onPreRollAttack(config, dialog, message) {
 
   const losCheck = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.LOS_CHECK);
   const resultArray = getCoverForTargets({ attacker: attackerToken, targets: targets, scene: attackerToken.scene, losCheck: losCheck, activity: activity });
-  message.data.flags[MODULE_ID] = [];
+  const messageNotes = getCoverMessageNotes(message);
+  messageNotes.length = 0;
 
   for (const out of resultArray) {
     const targetActor = out.target?.actor
     if (!targetActor) continue;
-    if (targetActor.statuses?.has?.(COVER.IDS.total) && !losCheck) continue;
-
     const calcCover = out.result?.cover ?? "none";
     const calcBonus = out.result?.bonus;
 
-    const { desiredCover, desiredBonus } = setCoverStatuses(targetActor, calcCover, calcBonus, activity);
-    setAttackCoverBonus({ desiredBonus, targetActor, singleTarget: targets.length === 1, config, message });
+    const { desiredCover, desiredBonus } = setCoverStatuses(targetActor, calcCover, calcBonus, activity, !delegated);
+    if (!delegated) {
+      setAttackCoverBonus({ desiredBonus, targetActor, singleTarget: targets.length === 1, config, message });
+    }
 
     const coverHintsMode = game.settings?.get?.(MODULE_ID, SETTING_KEYS.COVER_HINTS) ?? "none";
 
@@ -68,7 +123,7 @@ export function onPreRollAttack(config, dialog, message) {
     const targetName = isHideNPCNamesActive && game?.hnn ? game.hnn.getReplacementInfo(targetActor).displayName : out.target?.name || "???"; 
 
     if (coverHintsMode === "always" || (coverHintsMode === "conditional" && desiredCover !== "none")) {
-      message.data.flags[MODULE_ID].push({
+      messageNotes.push({
         desiredCover,
         desiredBonus,
         targetId: out.target.id,
@@ -80,13 +135,13 @@ export function onPreRollAttack(config, dialog, message) {
       const coverPrefix = `${game.i18n.localize(COVER.I18N.LABEL_PREFIX_KEY)}`;
       const hint = game.i18n.format(
         COVER.I18N.HINT_KEYS.Attack[desiredCover],
-        { tokenName: out.target?.name || "???" }
+        { tokenName: targetName }
       );
 
       setDialogNote(dialog, {
         cover: desiredCover,
         target: out.target.id,
-        icon: COVER.FA_ICONS[desiredCover],
+        icon: COVER_ICON_PATHS[desiredCover] ?? "",
         label: coverPrefix,
         hint: hint
       });
@@ -105,53 +160,102 @@ export function onPreRollAttack(config, dialog, message) {
  * @returns {void}
  */
 export function onPreRollSavingThrow(config, dialog, message) {
-  if (game.settings.get(MODULE_ID, SETTING_KEYS.LIBRARY_MODE)) return;
   const onlyInCombat = !!game.settings.get(MODULE_ID, SETTING_KEYS.ONLY_IN_COMBAT);
   if (onlyInCombat && !game?.combats?.active) return;
+  const delegated = isDelegatedCover(config);
 
   const actor = config.subject;
   const isDex = config.ability === "dex";
   if (!isDex) return;
 
-  const targetToken = actor.getActiveTokens?.()[0];
+  const targetToken =
+    getSpeakerToken(message?.data?.speaker) ??
+    actor?.token?.object ??
+    actor.getActiveTokens?.()[0] ??
+    null;
   if (!targetToken) return;
 
   let activity;
   let sourceActor;
+  let srcMsg = null;
+  let source = null;
+  let sourceScene = targetToken.scene ?? targetToken?.document?.parent ?? canvas?.scene;
 
   if (isMidiQol() && config?.midiOptions?.workflowId != null) {
-    activity = config?.midiOptions?.workflow?.activity ?? null;
-    sourceActor = config?.midiOptions?.workflow?.actor ?? null;
+    const workflow = config?.midiOptions?.workflow;
+    activity = workflow?.activity ?? null;
+    sourceActor = workflow?.actor ?? null;
+
+    const origin = workflow?.workflowOptions?.coverOrigin;
+    if (origin) {
+      source = {
+        x: origin.x,
+        y: origin.y,
+        elevation: origin.elevation ?? workflow?.token?.document?.elevation ?? 0,
+        disposition: workflow?.token?.document?.disposition ?? sourceActor?.token?.disposition ?? null,
+        getCenterPoint() {
+          return { x: origin.x, y: origin.y };
+        }
+      };
+    }
+    else if (workflow?.template) {
+      const center = foundry.utils.duplicate(workflow.template.center);
+      const dimensions = canvas.dimensions;
+      if (workflow.template.document.t === "rect") {
+        center.x += (workflow.template.document.width ?? 1) / (dimensions?.distance ?? 5) / 2 * (dimensions?.size ?? 100);
+        center.y += (workflow.template.document.width ?? 1) / (dimensions?.distance ?? 5) / 2 * (dimensions?.size ?? 100);
+      }
+
+      source = {
+        x: center.x,
+        y: center.y,
+        elevation: workflow.template.document.elevation ?? workflow?.token?.document?.elevation ?? 0,
+        disposition: workflow?.token?.document?.disposition ?? sourceActor?.token?.disposition ?? null,
+        getCenterPoint() {
+          return { x: center.x, y: center.y };
+        }
+      };
+    }
+    else {
+      source = workflow?.token ?? null;
+      sourceScene = source?.scene ?? source?.document?.parent ?? sourceScene;
+    }
   }
   else {
-    const messageId = config.event?.target.closest("[data-message-id]")?.dataset.messageId;
-    const srcMsg = messageId ? game.messages.get(messageId) : null;
+    srcMsg = resolveSourceMessage(config);
     activity = srcMsg?.getAssociatedActivity?.() ?? null;
     sourceActor = srcMsg?.getAssociatedActor?.() ?? null;
   }
+  clearCoverOverride(activity);
 
-  const sourceToken = sourceActor?.getActiveTokens?.()[0];
-  if (!sourceToken || !activity || !sourceActor) return;
+  source ??=
+    getSpeakerToken(srcMsg?.speaker) ??
+    sourceActor?.token?.object ??
+    sourceActor?.getActiveTokens?.()[0] ??
+    null;
+  sourceScene = source?.scene ?? source?.document?.parent ?? sourceScene;
+  if (!source || !activity || !sourceScene) return;
 
   const losCheck = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.LOS_CHECK);
-  if (actor.statuses?.has?.(COVER.IDS.total) && !losCheck) return;
-
-  const result = getCover({ attacker: sourceToken, target: targetToken, scene: sourceToken.scene, losCheck: losCheck, activity: activity });
+  const result = getCover({ attacker: source, target: targetToken, scene: sourceScene, losCheck: losCheck, activity: activity });
 
   const calcCover = result?.cover ?? "none";
   const calcBonus = result?.bonus;
 
-  const { desiredCover, desiredBonus } = setCoverStatuses(actor, calcCover, calcBonus, activity);
-  setSaveCoverBonus(config.rolls?.[0], desiredBonus, desiredCover);
+  const { desiredCover, desiredBonus } = setCoverStatuses(actor, calcCover, calcBonus, activity, !delegated);
+  if (!delegated) {
+    setSaveCoverBonus(config.rolls?.[0], desiredBonus, desiredCover);
+  }
 
-  message.data.flags[MODULE_ID] = [];
+  const messageNotes = getCoverMessageNotes(message);
+  messageNotes.length = 0;
 
   const coverHintsMode = game.settings?.get?.(MODULE_ID, SETTING_KEYS.COVER_HINTS) ?? "none";
 
   if (coverHintsMode === "always" || (coverHintsMode === "conditional" && desiredCover !== "none")) {
-    message.data.flags[MODULE_ID].push({
+    messageNotes.push({
       desiredCover,
-      desiredBonus: desiredBonus === null ? "9999" : String(desiredBonus),
+      desiredBonus,
       targetId: targetToken.id,
       targetName: targetToken.name,
       targetActorUuid: actor.uuid,
@@ -159,12 +263,12 @@ export function onPreRollSavingThrow(config, dialog, message) {
     });
 
     const coverPrefix = `${game.i18n.localize(COVER.I18N.LABEL_PREFIX_KEY)}`;
-    const hint = game.i18n.localize(COVER.I18N.HINT_KEYS.Save[desiredCover]);
+    const hint = getSaveCoverHint(desiredCover);
 
     setDialogNote(dialog, {
       cover: desiredCover,
       target: targetToken.id,
-      icon: COVER.FA_ICONS[desiredCover],
+      icon: COVER_ICON_PATHS[desiredCover] ?? "",
       label: coverPrefix,
       hint: hint
     });
@@ -197,17 +301,14 @@ export async function clearCoverOnUpdateCombat(combat, update) {
 }
 
 /**
- * Clear cover after token movement during active combat.
+ * Clear cover after token movement has been recorded during active combat.
  *
- * @function moveToken
+ * @function recordToken
  * @memberof hookEvents
- * @param {TokenDocument} token The token document being moved.
- * @param {TokenMovementOperation} movement The movement data for the token.
- * @param {DatabaseUpdateOperation} operation The update operation that contains the movement.
- * @param {User} user The user who requested the movement update.
+ * @param {TokenDocument} token The token document whose movement was recorded.
  * @returns {Promise<void>} Resolves after any cover cleanup has finished.
  */
-export async function clearCoverOnMovement(token, movement, operation, user) {
+export async function clearCoverOnMovement(token) {
   try {
     if (game.settings.get(MODULE_ID, SETTING_KEYS.LIBRARY_MODE)) return;
     if (!game.users.activeGM?.isSelf) return;
@@ -271,6 +372,23 @@ function adjustMessageTargetAC(message, targetUuid, newAC) {
 }
 
 /**
+ * Resolve the current system cover status effects from CONFIG.statusEffects.
+ *
+ * @returns {{level: ("half"|"threeQuarters"|"total"), statusId: string, effectId: string|null}[]} The known cover statuses.
+ */
+function getSystemCoverEffects() {
+  return [
+    ["total", COVER.IDS.total],
+    ["threeQuarters", COVER.IDS.threeQuarters],
+    ["half", COVER.IDS.half]
+  ].map(([level, statusId]) => ({
+    level,
+    statusId,
+    effectId: CONFIG.statusEffects?.[statusId]?._id ?? null
+  }));
+}
+
+/**
  * Determine cover-related statuses for an actor.
  *
  * - overallStatus: The highest cover status currently present on the actor.
@@ -290,17 +408,26 @@ function getCoverStatuses(actor) {
           : "none";
 
   const effects = actor?.appliedEffects ?? [];
+  const systemCoverEffects = getSystemCoverEffects();
 
   let systemStatus = "none";
-  for (const [level, id] of COVER.EFFECT_IDS) {
-    if (effects.some(e => e?.id === id)) { systemStatus = level; break; }
+  for (const { level, statusId, effectId } of systemCoverEffects) {
+    const isMatch = effectId
+      ? effects.some(e => e?.id === effectId)
+      : effects.some(e => (e?.statuses?.size === 1) && e?.statuses?.has?.(statusId));
+    if (isMatch) {
+      systemStatus = level;
+      break;
+    }
   }
-
-  const systemEffectSet = new Set(COVER.EFFECT_IDS.map(([, id]) => id));
 
   let customStatus = "none";
   for (const e of effects) {
-    if (systemEffectSet.has(e?.id)) continue;
+    const isSystemEffect = systemCoverEffects.some(({ statusId, effectId }) =>
+      (effectId && e?.id === effectId)
+      || (!effectId && (e?.statuses?.size === 1) && e?.statuses?.has?.(statusId))
+    );
+    if (isSystemEffect) continue;
 
     const s = e?.statuses;
     if (!s?.has) continue;
@@ -322,7 +449,7 @@ function getCoverStatuses(actor) {
  * @param {Activity5e|null} activity The activity being resolved.
  * @returns {{ desiredCover: ("none"|"half"|"threeQuarters"|"total"), desiredBonus: (0|2|5|null) }} The desired cover state and bonus after existing cover effects have been considered.
  */
-function setCoverStatuses(actor, calcCover, calcBonus, activity) {
+function setCoverStatuses(actor, calcCover, calcBonus, activity, applyAutomation = true) {
   let desiredCover = calcCover;
   let desiredBonus = calcBonus;
 
@@ -332,13 +459,18 @@ function setCoverStatuses(actor, calcCover, calcBonus, activity) {
     ; ({ cover: desiredCover, bonus: desiredBonus } = getIgnoreCover(activity, customStatus));
   }
 
-  if (COVER.ORDER[calcCover] > COVER.ORDER[customStatus]) {
-    if (calcCover !== systemStatus) {
-      toggleCoverEffectViaGM(actor.uuid, COVER.IDS[calcCover], true);
-    }
-  } else {
-    if (systemStatus !== "none") {
-      toggleCoverEffectViaGM(actor.uuid, COVER.IDS[systemStatus], false);
+  if (applyAutomation) {
+    if (COVER.ORDER[calcCover] > COVER.ORDER[customStatus]) {
+      if (calcCover !== systemStatus) {
+        if (systemStatus !== "none") {
+          toggleCoverEffectViaGM(actor.uuid, COVER.IDS[systemStatus], false);
+        }
+        toggleCoverEffectViaGM(actor.uuid, COVER.IDS[calcCover], true);
+      }
+    } else {
+      if (systemStatus !== "none") {
+        toggleCoverEffectViaGM(actor.uuid, COVER.IDS[systemStatus], false);
+      }
     }
   }
 
@@ -383,7 +515,16 @@ function setSaveCoverBonus(rollConfig, desiredBonus, desiredCover) {
   if (!rollConfig) return;
 
   rollConfig.data ??= {};
-  rollConfig.data.cover = desiredCover === "total" ? 9999 : desiredBonus ?? 0;
+  rollConfig.options ??= {};
+  rollConfig.options[MODULE_ID] ??= {};
+  rollConfig.options[MODULE_ID].totalCover = desiredCover === "total";
+
+  if (desiredCover === "total") {
+    delete rollConfig.data.cover;
+    return;
+  }
+
+  rollConfig.data.cover = desiredBonus ?? 0;
 }
 
 /**
@@ -399,9 +540,10 @@ function setSaveCoverBonus(rollConfig, desiredBonus, desiredCover) {
  */
 export function onBuildAttackRollConfig(app, config, formData, index) {
   if (!formData?.object) return;
+  const delegated = isDelegatedCover(app.config);
 
   const changed = foundry.utils.flattenObject(formData.object);
-  const messageFlags = app.message?.data?.flags?.simplecover5e ?? [];
+  const messageFlags = app.message?.data?.flags?.simplecover5e?.notes ?? [];
   const pathPrefix = `${MODULE_ID}.`;
 
   for (const [path, mode] of Object.entries(changed)) {
@@ -416,10 +558,15 @@ export function onBuildAttackRollConfig(app, config, formData, index) {
     const targets = app.message?.data?.flags?.dnd5e?.targets ?? [];
     const activity = fromUuidSync(original.activityUuid)
 
-    const { desiredCover, desiredBonus } = setCoverStatuses(targetActor, mode, COVER.BONUS[mode], activity);
-
-    setAttackCoverBonus({ desiredBonus, targetActor, singleTarget: targets.length === 1, config: config.options, message: app.message });
-    if (desiredBonus === null) app.config.target = null;
+    const { desiredCover, desiredBonus } = setCoverStatuses(targetActor, mode, COVER.BONUS[mode], activity, !delegated);
+    if (!delegated) {
+      setAttackCoverBonus({ desiredBonus, targetActor, singleTarget: targets.length === 1, config: config.options, message: app.message });
+      if (desiredBonus === null) app.config.target = null;
+    }
+    setCoverOverride(activity, { id: targetId, actor: { uuid: original.targetActorUuid } }, {
+      cover: desiredCover,
+      bonus: desiredBonus
+    });
 
     original.newMode = String(desiredCover);
 
@@ -432,7 +579,7 @@ export function onBuildAttackRollConfig(app, config, formData, index) {
     setDialogNote(app, {
       cover: desiredCover,
       target: targetId,
-      icon: COVER.FA_ICONS[desiredCover],
+      icon: COVER_ICON_PATHS[desiredCover] ?? "",
       label: coverPrefix,
       hint: hint
     });
@@ -452,9 +599,10 @@ export function onBuildAttackRollConfig(app, config, formData, index) {
  */
 export function onBuildSavingThrowRollConfig(app, config, formData, index) {
   if (!formData?.object) return;
+  const delegated = isDelegatedCover(app.config);
 
   const changed = foundry.utils.flattenObject(formData.object);
-  const messageFlags = app.message?.data?.flags?.simplecover5e ?? [];
+  const messageFlags = app.message?.data?.flags?.simplecover5e?.notes ?? [];
   const pathPrefix = `${MODULE_ID}.`;
 
   for (const [path, mode] of Object.entries(changed)) {
@@ -467,19 +615,24 @@ export function onBuildSavingThrowRollConfig(app, config, formData, index) {
 
     const targetActor = fromUuidSync(original.targetActorUuid)
     const activity = fromUuidSync(original.activityUuid)
-    const { desiredCover, desiredBonus } = setCoverStatuses(targetActor, mode, COVER.BONUS[mode], activity);
-
-    setSaveCoverBonus(config, desiredBonus, desiredCover);
+    const { desiredCover, desiredBonus } = setCoverStatuses(targetActor, mode, COVER.BONUS[mode], activity, !delegated);
+    if (!delegated) {
+      setSaveCoverBonus(config, desiredBonus, desiredCover);
+    }
+    setCoverOverride(activity, { id: targetId, actor: { uuid: original.targetActorUuid } }, {
+      cover: desiredCover,
+      bonus: desiredBonus
+    });
 
     original.newMode = String(desiredCover);
 
     const coverPrefix = `${game.i18n.localize(COVER.I18N.LABEL_PREFIX_KEY)}`;
-    const hint = game.i18n.localize(COVER.I18N.HINT_KEYS.Save[desiredCover]);
+    const hint = getSaveCoverHint(desiredCover);
 
     setDialogNote(app, {
       cover: desiredCover,
       target: targetId,
-      icon: COVER.FA_ICONS[desiredCover],
+      icon: COVER_ICON_PATHS[desiredCover] ?? "",
       label: coverPrefix,
       hint: hint
     });

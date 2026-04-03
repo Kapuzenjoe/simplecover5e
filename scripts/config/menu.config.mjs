@@ -227,7 +227,8 @@ export class SimpleCoverCreatureHeightsConfig extends SimpleCoverBaseConfigApp {
         event.preventDefault();
 
         await game.settings.set(MODULE_ID, SETTING_KEYS.CREATURE_HEIGHTS, foundry.utils.duplicate(DEFAULT_SIZE));
-        ui.notifications.info("SimpleCover5e: Creature heights reset to defaults.");
+        const messageKey = "SIMPLE_COVER_5E.Notifications.CreatureHeightsReset";
+        ui.notifications.info(game.i18n.has(messageKey) ? game.i18n.localize(messageKey) : "SimpleCover5e: Creature heights reset to defaults.");
 
         this.render();
     }
@@ -274,7 +275,8 @@ export class SimpleCoverVariantConfig extends SimpleCoverBaseConfigApp {
             legend: "SIMPLE_COVER_5E.Settings.VariantMenu.Groups.Measurement",
             keys: [
                 SETTING_KEYS.GRIDLESS_DISTANCE_MODE,
-                SETTING_KEYS.GRIDLESS_TOKEN_SHAPE
+                SETTING_KEYS.GRIDLESS_TOKEN_SHAPE,
+                SETTING_KEYS.GRIDLESS_TOKEN_SHAPE_UPDATE_EXISTING
             ]
         },
         engine: {

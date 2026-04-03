@@ -1,7 +1,8 @@
-<fieldset data-simplecover5e="dialog-notes">
+<fieldset class="simplecover5e-dialog-notes" data-simplecover5e="dialog-notes">
   <legend>{{localize "SIMPLE_COVER_5E.Dialog.Legend"}}</legend>
 
   {{#each notes}}
+  <div class="simplecover5e-dialog-note">
   <div class="form-group">
     <label>
       {{this.label}}
@@ -14,13 +15,17 @@
       </select>
     </div>
     {{/if}}
-
-    <p class="hint">
-      {{#if this.icon}}
-      <i class="{{this.icon}}" title="{{this.label}}"></i>
+  </div>
+  <div class="hint">
+    {{#if this.iconPath}}
+    <img class="icon" src="{{this.iconPath}}" alt="" loading="lazy" width="16" height="16">
+    {{else}}
+      {{#if this.iconClass}}
+      <i class="{{this.iconClass}}" title="{{this.label}}"></i>
       {{/if}}
-      {{{this.hint}}}
-    </p>
+    {{/if}}
+    {{{this.hint}}}
+  </div>
   </div>
   {{/each}}
 </fieldset>

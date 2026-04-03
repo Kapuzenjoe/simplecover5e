@@ -12,20 +12,16 @@ export const MODULE_ID = "simplecover5e";
  * Central cover constants.
  *
  * - IDS: maps cover levels to system effect ids (or null for none).
- * - EFFECT_IDS: list of system effect ids used for cover automation.
  * - BONUS: maps cover levels to AC/DEX bonus (null for total cover).
  * - ORDER: numeric ordering for comparing cover levels.
- * - FA_ICONS: Font Awesome class strings per cover level.
  * - I18N: localization keys used for cover labels and roll dialog hints.
  *
  * @readonly
  * @type {{
  *   IDS: { none: null, half: string, threeQuarters: string, total: string },
- *   EFFECT_IDS: Array<[("half"|"threeQuarters"|"total"), string]>,
  *   BONUS: { none: number, half: number, threeQuarters: number, total: (number|null) },
  *   ORDER: { none: number, half: number, threeQuarters: number, total: number },
  *   KEYS: CoverLevel[],
- *   FA_ICONS: { none: string, half: string, threeQuarters: string, total: string },
  *   I18N: {
  *     LABEL_PREFIX_KEY: string,
  *     LABEL: { none: string, half: string, threeQuarters: string, total: string },
@@ -43,11 +39,6 @@ export const COVER = Object.freeze({
     threeQuarters: "coverThreeQuarters",
     total: "coverTotal"
   }),
-  EFFECT_IDS: Object.freeze([
-    ["total", "dnd5ecoverTotal0"],
-    ["threeQuarters", "dnd5ecoverThreeQ"],
-    ["half", "dnd5ecoverHalf00"]
-  ]),
   BONUS: Object.freeze({
     none: 0,
     half: 2,
@@ -61,12 +52,6 @@ export const COVER = Object.freeze({
     total: 3
   }),
   KEYS: Object.freeze(["none", "half", "threeQuarters", "total"]),
-  FA_ICONS: Object.freeze({
-    none: "",
-    half: "fa-solid fa-shield-halved",
-    threeQuarters: "fa-solid fa-shield-quartered",
-    total: "fa-solid fa-shield"
-  }),
   I18N: Object.freeze({
     LABEL_PREFIX_KEY: "DND5E.Cover",
     LABEL: {
@@ -118,6 +103,7 @@ export const SETTING_KEYS = {
   HOVER_LABEL_X_OFFSET: "hoverLabelXOffset",
   GRIDLESS_DISTANCE_MODE: "gridlessDistanceMode",
   GRIDLESS_TOKEN_SHAPE: "gridlessTokenShape",
+  GRIDLESS_TOKEN_SHAPE_UPDATE_EXISTING: "gridlessTokenShapeUpdateExisting",
   CREATURES_PRONE: "proneCreatures",
   INSET_ATTACKER: "insetAttacker",
   INSET_TARGET: "insetTarget",

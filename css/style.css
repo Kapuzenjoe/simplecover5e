@@ -1,3 +1,18 @@
+.simplecover5e-dialog-note + .simplecover5e-dialog-note {
+  margin-top: 0.5rem;
+}
+
+.simplecover5e-dialog-notes .hint {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.25rem 0 0;
+}
+
+.simplecover5e-dialog-notes .hint p {
+  margin: 0;
+}
+
 #measurement .waypoint-label.hover-distance-label {
   flex-direction: column;
   align-items: center;

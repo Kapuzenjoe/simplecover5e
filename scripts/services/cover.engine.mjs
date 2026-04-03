@@ -3,11 +3,11 @@
  */
 
 import { MODULE_ID, COVER, SETTING_KEYS } from "../config/constants.config.mjs";
-import { isBlockingCreatureToken, getCreatureHeight, isEllipse, isV14, isWallHeightModuleActive } from "./cover.service.mjs";
+import { getTokenExternalRadius, isBlockingCreatureToken, getCreatureHeight, isEllipse, isV14, isWallHeightModuleActive } from "./cover.service.mjs";
 
 /**
  * Build a cover evaluation context for a single pass.
- * The context caches grid measurements, active-canvas helpers, and module settings used by the cover and LOS evaluators.
+ * The context caches grid measurements and module settings used by the cover and LOS evaluators.
  *
  * @param {Scene} scene The scene to evaluate.
  * @returns {CoverContext} The cover evaluation context.
@@ -30,7 +30,6 @@ export function buildCoverContext(scene) {
         insetAttackerPx: Math.min(grid.size * 0.3, insetAttacker),
         insetTargetPx: Math.min(grid.size * 0.3, insetTarget),
         insetOccluderPx: Math.min(grid.size * 0.3, insetOccluder),
-        placeables: activeScene ? (canvas?.tokens?.placeables ?? []) : [],
         level: activeScene ? (canvas?.level ?? null) : null
     };
 }
@@ -52,7 +51,7 @@ export function buildCreaturePrism(td, ctx, debugTokenShapes) {
 
     const zMax = zMin + (height * distancePixels);
     const prisms = [];
-    const radius = td?.object?.externalRadius ?? 0;
+    const radius = getTokenExternalRadius(td) ?? 0;
     const { x, y } = td.getCenterPoint();
     const insetToCenter = insetOccluderPx / Math.SQRT2;
 
@@ -565,7 +564,7 @@ function buildTokenCornersForCenter(center, ctx, td, inset) {
     const { halfGridSize, grid } = ctx
     const useCircleShape = grid.isGridless && isEllipse(td);
 
-    const externalRadius = td?.object?.externalRadius ?? null
+    const externalRadius = getTokenExternalRadius(td);
     if (externalRadius === null) {
         return [{
             x: center?.x,
@@ -610,15 +609,15 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
     const filteredTargetPoints = game.settings?.get?.(MODULE_ID, SETTING_KEYS.FILTERED_TARGET_POINTS) ?? "blocked";
     const ignoreFriendly = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.IGNORE_FRIENDLY);
 
-    const placeables = ctx.placeables ?? [];
-    const blockingTokens = placeables.filter(t =>
-        t.id !== attackerDoc?.id &&
-        t.id !== targetDoc?.id &&
-        (!ignoreFriendly || attackerDoc?.disposition !== t?.document?.disposition) &&
-        isBlockingCreatureToken(t)
+    const tokenDocs = ctx.scene?.tokens?.contents ?? [];
+    const blockingTokenDocs = tokenDocs.filter(td =>
+        td.id !== attackerDoc?.id &&
+        td.id !== targetDoc?.id &&
+        (!ignoreFriendly || attackerDoc?.disposition !== td?.disposition) &&
+        isBlockingCreatureToken(td)
     );
 
-    const boxes = new Map(blockingTokens.map(t => [t.id, buildCreaturePrism(t.document, ctx, debugTokenShapes)]));
+    const boxes = new Map(blockingTokenDocs.map(td => [td.id, buildCreaturePrism(td, ctx, debugTokenShapes)]));
 
     const attackerVisionSource = attackerDoc?.getVisionOrigin?.()?.elevation
         ?? (attackerDoc?.elevation ?? 0) + (getCreatureHeight(attackerDoc, ctx) * 0.5)

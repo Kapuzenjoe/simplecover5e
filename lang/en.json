@@ -1,5 +1,13 @@
 {
   "SIMPLE_COVER_5E": {
+    "ItemProperties": {
+      "IgnoreCover": {
+        "Label": "Ignores Cover"
+      }
+    },
+    "Notifications": {
+      "CreatureHeightsReset": "Simple Cover 5e: Creature heights reset to defaults."
+    },
     "Settings": {
       "CoverScope": {
         "Name": "Cover Removal Scope",
@@ -95,12 +103,16 @@
       },
       "GridlessTokenShape": {
         "Name": "Gridless Token Default Shape",
-        "Hint": "When enabled, all tokens on gridless scenes will be automatically set to the selected shape.",
+        "Hint": "When enabled, newly created tokens on gridless scenes will be automatically set to the selected shape.",
         "Options": {
           "None": "No change",
           "Square": "Rectangle",
           "Circle": "Ellipse"
         }
+      },
+      "GridlessTokenShapeUpdateExisting": {
+        "Name": "Apply Gridless Shape to Existing Tokens",
+        "Hint": "When enabled, changing the gridless token shape setting also updates existing tokens on all gridless scenes."
       },
       "CreaturesProne": {
         "Name": "Prone Creature Height Adjustment",
@@ -188,16 +200,16 @@
     },
     "CoverHint": {
       "Attack": {
-        "none": "{tokenName} has no cover.",
-        "half": "{tokenName} gains a <strong>+2</strong> bonus to AC from <strong>half cover</strong>.",
-        "threeQuarters": "{tokenName} gains a <strong>+5</strong> bonus to AC from <strong>three-quarters cover</strong>.",
-        "total": "{tokenName} has <strong>total cover</strong> and can't be targeted directly.."
+        "none": "{tokenName}: no cover.",
+        "half": "{tokenName}: half cover, <strong>+2</strong> AC.",
+        "threeQuarters": "{tokenName}: three-quarters cover, <strong>+5</strong> AC.",
+        "total": "{tokenName}: total cover, can't be targeted directly."
       },
       "Save": {
-        "none": "You have no cover.",
-        "half": "You gain a <strong>+2</strong> bonus to this Dexterity saving throw from <strong>half cover</strong>.",
-        "threeQuarters": "You gain a <strong>+5</strong> bonus to this Dexterity saving throw from <strong>three-quarters cover</strong>.",
-        "total": "With <strong>total cover</strong>, you can't be targeted directly."
+        "none": "No cover.",
+        "half": "<strong>+2</strong> to this Dexterity saving throw.",
+        "threeQuarters": "<strong>+5</strong> to this Dexterity saving throw.",
+        "total": "Can't be targeted directly."
       },
       "CoverModeChanged": "Cover mode changed",
       "CoverModeDesired": "Calculated: {desiredCover}",
