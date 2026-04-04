@@ -83,8 +83,10 @@ function getCoverMessageNotes(message) {
  */
 export function onPreRollAttack(config, dialog, message) {
   const onlyInCombat = !!game.settings.get(MODULE_ID, SETTING_KEYS.ONLY_IN_COMBAT);
+  const coverHintsMode = game.settings?.get?.(MODULE_ID, SETTING_KEYS.COVER_HINTS) ?? "none";
   if (onlyInCombat && !game?.combats?.active) return;
   const delegated = isDelegatedCover(config);
+  if (delegated && coverHintsMode === "none") return;
 
   const actor = config.subject?.actor
   if (!actor) return;
@@ -117,10 +119,8 @@ export function onPreRollAttack(config, dialog, message) {
       setAttackCoverBonus({ desiredBonus, targetActor, singleTarget: targets.length === 1, config, message });
     }
 
-    const coverHintsMode = game.settings?.get?.(MODULE_ID, SETTING_KEYS.COVER_HINTS) ?? "none";
-
     const isHideNPCNamesActive = game.modules?.get?.("hide-npc-names")?.active === true;
-    const targetName = isHideNPCNamesActive && game?.hnn ? game.hnn.getReplacementInfo(targetActor).displayName : out.target?.name || "???"; 
+    const targetName = isHideNPCNamesActive && game?.hnn ? game.hnn.getReplacementInfo(targetActor).displayName : out.target?.name || "???";
 
     if (coverHintsMode === "always" || (coverHintsMode === "conditional" && desiredCover !== "none")) {
       messageNotes.push({
@@ -161,8 +161,10 @@ export function onPreRollAttack(config, dialog, message) {
  */
 export function onPreRollSavingThrow(config, dialog, message) {
   const onlyInCombat = !!game.settings.get(MODULE_ID, SETTING_KEYS.ONLY_IN_COMBAT);
+  const coverHintsMode = game.settings?.get?.(MODULE_ID, SETTING_KEYS.COVER_HINTS) ?? "none";
   if (onlyInCombat && !game?.combats?.active) return;
   const delegated = isDelegatedCover(config);
+  if (delegated && coverHintsMode === "none") return;
 
   const actor = config.subject;
   const isDex = config.ability === "dex";
@@ -249,8 +251,6 @@ export function onPreRollSavingThrow(config, dialog, message) {
 
   const messageNotes = getCoverMessageNotes(message);
   messageNotes.length = 0;
-
-  const coverHintsMode = game.settings?.get?.(MODULE_ID, SETTING_KEYS.COVER_HINTS) ?? "none";
 
   if (coverHintsMode === "always" || (coverHintsMode === "conditional" && desiredCover !== "none")) {
     messageNotes.push({
@@ -541,6 +541,8 @@ function setSaveCoverBonus(rollConfig, desiredBonus, desiredCover) {
 export function onBuildAttackRollConfig(app, config, formData, index) {
   if (!formData?.object) return;
   const delegated = isDelegatedCover(app.config);
+  const coverHintsMode = game.settings?.get?.(MODULE_ID, SETTING_KEYS.COVER_HINTS) ?? "none";
+  if (delegated && coverHintsMode === "none") return;
 
   const changed = foundry.utils.flattenObject(formData.object);
   const messageFlags = app.message?.data?.flags?.simplecover5e?.notes ?? [];
@@ -600,6 +602,8 @@ export function onBuildAttackRollConfig(app, config, formData, index) {
 export function onBuildSavingThrowRollConfig(app, config, formData, index) {
   if (!formData?.object) return;
   const delegated = isDelegatedCover(app.config);
+  const coverHintsMode = game.settings?.get?.(MODULE_ID, SETTING_KEYS.COVER_HINTS) ?? "none";
+  if (delegated && coverHintsMode === "none") return;
 
   const changed = foundry.utils.flattenObject(formData.object);
   const messageFlags = app.message?.data?.flags?.simplecover5e?.notes ?? [];
