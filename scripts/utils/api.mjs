@@ -11,6 +11,7 @@ import {
 import { ignoresCover } from "../utils/rules.cover.mjs";
 import { drawCoverDebug, clearCoverDebug } from "../services/cover.debug.mjs";
 import { measureTokenDistance } from "../utils/distance.mjs";
+import { isLibraryMode } from "../services/cover.service.mjs";
 
 const coverOverrides = new Map();
 
@@ -64,17 +65,6 @@ function getTokenTokenDistance(sourceToken, targetToken) {
 }
 
 /**
- * Build the cover evaluation context.
- *
- * @param {Scene} [scene=canvas.scene] The scene for which to build the cover context.
- * @returns {CoverContext|null} The cover evaluation context, or null if no scene is available.
- */
-function buildContext(scene = canvas?.scene) {
-    if (!scene) return null;
-    return buildCoverContext(scene);
-}
-
-/**
  * Store a transient cover override for the current roll workflow.
  * Internal helper only. This is not added to the public module API.
  *
@@ -117,7 +107,7 @@ export function clearCoverOverride(activity, target = null) {
     }
 }
 
-function resolveCoverResult(attackerDoc, targetDoc, activity, result) {
+function resolveCoverResult(targetDoc, activity, result) {
     let finalResult = result;
 
     if (activity) {
@@ -128,17 +118,6 @@ function resolveCoverResult(attackerDoc, targetDoc, activity, result) {
 
     const overrideKey = getCoverOverrideKey(activity, targetDoc);
     const override = overrideKey ? coverOverrides.get(overrideKey) : null;
-
-    if (activity) {
-        const payload = {
-            attacker: attackerDoc,
-            target: targetDoc,
-            activity,
-            result: finalResult
-        };
-        Hooks.callAll("simplecover5e.resolveCover", payload);
-        finalResult = payload.result ?? finalResult;
-    }
 
     if (overrideKey) {
         if (override) {
@@ -174,7 +153,7 @@ export function getCover({ attacker, target, scene = canvas?.scene, debug = null
 
     if (debugOn && game.users.activeGM) clearCoverDebug();
 
-    const ctx = buildContext(scene);
+    const ctx = buildCoverContext(scene);
     if (!ctx) return null;
 
     const result = evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, { debug: debugOn })
@@ -188,7 +167,7 @@ export function getCover({ attacker, target, scene = canvas?.scene, debug = null
         }
     }
 
-    const finalResult = resolveCoverResult(attackerDoc, targetDoc, activity, result);
+    const finalResult = resolveCoverResult(targetDoc, activity, result);
 
     if (debugOn && finalResult.debugSegments?.length && game.users.activeGM) {
         drawCoverDebug({
@@ -223,7 +202,7 @@ export function getCoverForTargets({ attacker, targets = null, scene = canvas?.s
 
     if (debugOn && game.users.activeGM) clearCoverDebug();
 
-    const ctx = buildContext(scene);
+    const ctx = buildCoverContext(scene);
     if (!ctx) return [];
 
     const list = targets
@@ -246,7 +225,7 @@ export function getCoverForTargets({ attacker, targets = null, scene = canvas?.s
             }
         }
 
-        const finalResult = resolveCoverResult(attackerDoc, targetDoc, activity, result);
+        const finalResult = resolveCoverResult(targetDoc, activity, result);
 
         out.push({ target: t, result: finalResult, los });
     }
@@ -278,15 +257,16 @@ export function setDialogNote(dialogConfig, { cover, target, icon = "", label = 
     const data = (dialogConfig.options[MODULE_ID] ??= {});
     data.notes ??= [];
 
+    const targetId = target == null ? null : String(target);
     const noteData = {
         cover: cover ?? null,
-        target: String(target) ?? null,
+        target: targetId,
         icon: String(icon ?? ""),
         label: String(label ?? ""),
         hint: String(hint ?? "")
     };
 
-    const existingIndex = data.notes.findIndex(note => String(note.target) === String(target) && note.target != null);
+    const existingIndex = targetId === null ? -1 : data.notes.findIndex(note => note.target === targetId);
 
     if (existingIndex !== -1) {
         data.notes[existingIndex] = noteData;
@@ -303,7 +283,7 @@ export function setDialogNote(dialogConfig, { cover, target, icon = "", label = 
  * @returns {boolean} True if library mode is enabled.
  */
 function getLibraryMode() {
-    return !!game.settings.get(MODULE_ID, SETTING_KEYS.LIBRARY_MODE);
+    return isLibraryMode();
 }
 
 /**

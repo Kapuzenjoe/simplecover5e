@@ -1,6 +1,5 @@
 import { MODULE_ID, SETTING_KEYS } from "../config/constants.config.mjs";
-import { getCreatureHeight, getTokenExternalRadius, isV14 } from "../services/cover.service.mjs";
-import { getTokenSampleCenters } from "../services/cover.engine.mjs";
+import { getCreatureHeight, getTokenExternalRadius } from "../services/cover.service.mjs";
 
 /**
  * Measure the minimal 3D distance between two tokens in scene grid units.
@@ -51,8 +50,8 @@ export function measureTokenDistance(sourceToken, targetToken) {
     minDistance = minDistance - externalAdjust;
   }
   else {
-    let sourceCenters = isV14() ? sourceDoc.getContainmentTestPoints() : getTokenSampleCenters(sourceDoc);
-    let targetCenters = isV14() ? targetDoc.getContainmentTestPoints() : getTokenSampleCenters(targetDoc);
+    let sourceCenters = sourceDoc.getContainmentTestPoints();
+    let targetCenters = targetDoc.getContainmentTestPoints();
 
     sourceCenters = sourceCenters.flatMap(point => [
       { ...point, elevation: sourceDoc.elevation + sourceHeight },

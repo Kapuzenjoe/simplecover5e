@@ -24,23 +24,17 @@ export function initQueries() {
                 console.warn(`[${MODULE_ID}] toggleCover: actor not found for uuid`, actorUuid);
                 return { ok: false, reason: "no-actor" };
             }
-            const hasStatus = !!actor.statuses?.has?.(effectId);
-
-            if (enable && hasStatus) {
-                return { ok: true, changed: false };
-            }
-            if (!enable && !hasStatus) {
-                return { ok: true, changed: false };
-            }
+            const before = !!actor.statuses?.has?.(effectId);
 
             if (typeof actor.toggleStatusEffect === "function") {
-                await actor.toggleStatusEffect(effectId, { overlay: false });
+                await actor.toggleStatusEffect(effectId, { active: !!enable, overlay: false });
             } else {
                 console.warn(`[${MODULE_ID}] toggleCover: actor has no toggleStatusEffect`, actor);
                 return { ok: false, reason: "no-toggle" };
             }
 
-            return { ok: true, changed: true };
+            const after = !!actor.statuses?.has?.(effectId);
+            return { ok: true, changed: before !== after };
         } catch (err) {
             console.warn(`[${MODULE_ID}] query toggleCover failed:`, err, data);
             return { ok: false, reason: "exception" };

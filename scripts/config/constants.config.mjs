@@ -95,7 +95,6 @@ export const SETTING_KEYS = {
   IGNORE_ALL_AOE: "IgnoreAllAOE",
   IGNORE_DISTANCE_SPACE: "IgnoreDistanceSpace",
   DEBUG: "debugCover",
-  CREATURE_HEIGHTS: "creatureHeights",
   HOVER: "hover",
   LIBRARY_MODE: "libraryMode",
   HOVER_LABEL_POSITION: "hoverLabelPosition",
@@ -115,36 +114,13 @@ export const SETTING_KEYS = {
 };
 
 /**
- * Default creature heights in grid units by size category.
- *
- * @type {Record<string, number>}
- */
-export const DEFAULT_SIZE = Object.freeze({
-  tiny: 1,
-  sm: 3,
-  med: 6,
-  lg: 12,
-  huge: 24,
-  grg: 48
-});
-
-/**
- * Base size keys used for iteration and configuration UIs.
- * @type {string[]}
- */
-export const BASE_KEYS = Object.freeze(Object.keys(DEFAULT_SIZE));
-
-/**
  * Constants related to hover labels and icons used by this module.
  *
  * @readonly
- * @type {{DISTANCE_LABEL_PROP:string, DISTANCE_LABEL_NAME:string, COVER_ICON_PROP:string, COVER_ICON_NAME:string}}
+ * @type {{DISTANCE_LABEL_PROP:string}}
  */
 export const HOVER = {
-  DISTANCE_LABEL_PROP: `_${MODULE_ID}HoverDistanceLabel`,
-  DISTANCE_LABEL_NAME: `${MODULE_ID}-hover-distance-label`,
-  COVER_ICON_PROP: `_${MODULE_ID}HoverCoverIcon`,
-  COVER_ICON_NAME: `${MODULE_ID}-hover-cover-icon`
+  DISTANCE_LABEL_PROP: `_${MODULE_ID}HoverDistanceLabel`
 };
 
 /**

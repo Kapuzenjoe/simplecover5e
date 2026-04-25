@@ -1,206 +1,270 @@
 {
-    "SIMPLE_COVER_5E": {
-        "ItemProperties": {
-            "IgnoreCover": {
-                "Label": "Ignoriert Deckung"
-            }
-        },
-        "Notifications": {
-            "CreatureHeightsReset": "Simple Cover 5e: Kreaturenhöhen wurden auf die Standardwerte zurückgesetzt."
-        },
-        "Settings": {
-            "CoverScope": {
-                "Name": "Geltungsbereich für das Entfernen von Deckung",
-                "Hint": "Wähle, welche Figuren betroffen sind, wenn Deckung entfernt wird: alle Figur in der Szene, nur Teilnehmer im Kampf oder nur spielereigene Figur.",
-                "Options": {
-                    "All": "Alle Figuren in der Szene",
-                    "Combatants": "Nur Teilnehmer im Kampf",
-                    "Player": "Nur spielereigene Figur"
-                }
-            },
-            "OnlyInCombat": {
-                "Name": "Deckung nur im Kampf berechnen",
-                "Hint": "Wenn aktiviert, wird die automatische Deckung-Berechnung nur durchgeführt, solange eine Kampfbegegnung aktiv ist."
-            },
-            "RemoveOnCombat": {
-                "Name": "Deckung bei Kampfaktualisierungen entfernen",
-                "Hint": "Entfernt den Deckungsstatus automatisch bei Änderungen im Kampf (Zug/Runde/Initiative) unter Berücksichtigung des ausgewählten Geltungsbereichs für das Entfernen von Deckung."
-            },
-            "RemoveOnMove": {
-                "Name": "Deckung bei Figur-Bewegung entfernen",
-                "Hint": "Entfernt den Deckungsstatus automatisch, wenn sich ein Figur während eines aktiven Kampfes bewegt, unter Berücksichtigung des ausgewählten Geltungsbereichs für das Entfernen von Deckung."
-            },
-            "losCheck": {
-                "Name": "Wand Sichtlinen Prüfung",
-                "Hint": "Wenn aktiviert, prüft das Modul auch die Sichtlinie gegen sichtlichen blockierenden Wänden. Dies kann genutzt werden, um Fälle zu erkennen, in denen das Ziel vollständig von Wänden blockiert ist."
-            },
-            "coverHints": {
-                "Name": "Deckungshinweise in Wurfdialogen",
-                "Hint": "Lege fest, ob in Angriffs- und Rettungswurfdialogen Deckungshinweise angezeigt werden sollen.",
-                "Options": {
-                    "None": "Nie",
-                    "Conditional": "Nur bei berechneter Deckung.",
-                    "Always": "Immer"
-                }
-            },
-            "CreaturesHalfOnly": {
-                "Name": "Deckung durch Kreaturen auf Halbe Deckung begrenzen",
-                "Hint": "Wenn aktiviert, können Kreaturen maximal Halbe Deckung gewähren. Sobald mindestens eine Linie ausschließlich durch Kreaturen blockiert wird, erhält das Ziel Halbe Deckung, aber niemals Dreiviertel Deckung allein durch Kreaturen. Wände folgen weiterhin den normalen DMG-Regeln."
-            },
-            "IgnoreFriendly": {
-                "Name": "Deckung durch befreundete Figuren ignorieren",
-                "Hint": "Wenn aktiviert, ignorieren Deckungsprüfungen alle Figuren, die dem Angreifer freundlich gesinnt sind."
-            },
-            "IgnoreAllAOE": {
-                "Name": "Deckung bei allen Flächeneffekten ignorieren",
-                "Hint": "Überspringt Deckungsprüfungen, sobald die Aktivität irgendeine Flächen-Schablone definiert. Wenn eine Schablone vorhanden ist, wird für diesen Wurf keine Deckung berechnet."
-            },
-            "IgnoreDistanceAOE": {
-                "Name": "Deckung bei Flächeneffekten auf Distanz ignorieren",
-                "Hint": "Überspringt Deckungsprüfungen für Aktivitäten, die einen Wirkbereich auf Distanz erzeugen (z. B. Feuerball). Dies gilt, wenn die Aktivität eine Bereich-Schablone und eine Reichweite größer als 1 sowie mit Reichweiteneinheiten ungleich Selbst/Berührung/Spezial verwendet."
-            },
-            "IgnoreDistanceSpace": {
-                "Name": "Deckung bei Zielwahl 'Space' auf Distanz ignorieren",
-                "Hint": "Überspringt Deckungsprüfungen, wenn die Aktivität einen Punkt im Raum auf Distanz anvisiert (Reichweite > 1 und Ziel-Typ ist \"space\"). Das wird häufig bei Beschwörungs-Features/-Zaubern verwendet, bei denen der eigentliche Angriff/Effekt von der beschworenen Kreatur ausgeht. Deckung sollte dann von der Beschwörung aus berechnet werden, nicht vom ursprünglichen Feature/Zauber."
-            },
-            "Hover": {
-                "Name": "Hover-Deckung-Anzeige",
-                "Hint": "Steuert, ob und wie Deckung-Informationen und Entfernungen beim Hovern einer Figur angezeigt werden.",
-                "Options": {
-                    "Off": "Deaktiviert",
-                    "CoverOnly": "Nur Deckung-Icons",
-                    "CoverAndDistance": "Deckung-Icons und Entfernung"
-                }
-            },
-            "HoverLabelPosition": {
-                "Name": "Position des Hover-Labels",
-                "Hint": "Wähle, wo das Hover-Label relativ zum Ziel-Figur verankert wird.",
-                "Options": {
-                    "Above": "Über der Figur",
-                    "On": "Zentriert auf der Figur",
-                    "Below": "Unter der Figur"
-                }
-            },
-            "HoverLabelYOffset": {
-                "Name": "Vertikaler Versatz des Hover-Labels",
-                "Hint": "Zusätzlicher vertikaler Versatz (in Pixeln), der auf die Position des Hover-Labels angewendet wird. Positive Werte bewegen das Label nach unten, negative nach oben."
-            },
-            "HoverLabelXOffset": {
-                "Name": "Horizontaler Versatz des Hover-Labels",
-                "Hint": "Zusätzlicher horizontaler Versatz (in Pixeln), der auf die Position des Hover-Labels angewendet wird. Positive Werte bewegen das Label nach rechts, negative nach links."
-            },
-            "GridlessDistanceMode": {
-                "Name": "Entfernungsmodus auf gitterlosen Szenen",
-                "Hint": "Wähle, wie Entfernungen in rasterlosen Szenen gemessen werden. \"Abstand zwischen Tokens\" misst den kürzesten Abstand zwischen den Figuren Begrenzungen. \"Abstand bis zum Zielfeld\" soll dem Ergebnis auf Quadrat-/Hexrastern mit der globalen Diagonalen-Einstellung \"Exakt (√2)\" entsprechen.",
-                "Options": {
-                    "EdgeEdge": "Abstand zwischen Tokens",
-                    "EdgeToCenter": "Abstand bis zum Zielfeld"
-                }
-            },
-            "GridlessTokenShape": {
-                "Name": "Standard Figurform in gitterlosen Szenen",
-                "Hint": "Wenn aktiviert, werden neu erstellte Figuren in gitterlosen Szenen automatisch auf die ausgewählte Form gesetzt.",
-                "Options": {
-                    "None": "Keine Änderung",
-                    "Square": "Quadrate",
-                    "Circle": "Kreise"
-                }
-            },
-            "GridlessTokenShapeUpdateExisting": {
-                "Name": "Form auch auf bestehende Figuren anwenden",
-                "Hint": "Wenn aktiviert, werden beim Ändern der Standardform auch bestehende Figuren auf allen gitterlosen Szenen aktualisiert."
-            },
-            "CreaturesProne": {
-                "Name": "Anpassung der Körperhöhe bei Liegend",
-                "Hint": "Steuert, wie liegende Kreaturen beim Erzeugen ihres 3D-Prismas für Deckungsberechnungen behandelt werden. Wenn das Modul \"Wall Height\" aktiv ist, fällt „Eine Größenkategorie kleiner behandeln“ auf halbe Höhe zurück.",
-                "Options": {
-                    "None": "Keine Anpassung",
-                    "LowerSize": "Eine Größenkategorie kleiner behandeln",
-                    "Half": "Nur halb so groß behandeln"
-                }
-            },
-            "Debug": {
-                "Name": "Deckung-Debug-Linien anzeigen",
-                "Hint": "Zeichnet Hilfslinien während der Deckung-Berechnung zwischen Figuren (zum Debugging/Fehlerbeheben)."
-            },
-            "LibraryMode": {
-                "Name": "[VORSICHT] Bibliotheksmodus aktivieren",
-                "Hint": "Der Bibliotheksmodus deaktiviert die Deckungs-Automatisierungsfunktionen von SimpleCover5e. Aktiviere ihn nur, wenn du den Bibliotheksmodus ausdrücklich benötigst oder wenn ein anderes Modul die Automatisierung für dich übernimmt (z. B. Midi-QOL). Einige Module können den Bibliotheksmodus automatisch aktivieren. Dokumentation: https://github.com/Kapuzenjoe/simplecover5e/wiki/API-(Library-Mode)."
-            },
-            "CreatureHeights": {
-                "Name": "Standard-Kreaturenhöhen",
-                "Hint": "Standard-Kreaturenhöhen (in Rastereinheiten) je Größenkategorie, die für die 3D-Deckungsberechnung verwendet werden. Wenn das Modul \"Wall Height\" aktiv ist, werden diese Vorgaben ignoriert und stattdessen die Höhen aus diesem Modul übernommen."
-            },
-            "insetAttacker": {
-                "Name": "Angreifer-Einrückung (px)",
-                "Hint": "Verschiebt die Messpunkte des Angreifers von der Roh-Ecke in Richtung Figur-Zentrum (Standard: 1; Max: 30% der aktuellen Rastergröße)."
-            },
-            "insetTarget": {
-                "Name": "Ziel-Einrückung (px)",
-                "Hint": "Verschiebt die Messpunkte des Ziels von der Roh-Ecke in Richtung Figur-Zentrum (Standard: 3; Max: 30% der aktuellen Rastergröße)."
-            },
-            "insetOccluder": {
-                "Name": "Verdeckung-Einrückung (px)",
-                "Hint": "Verkleinert die Verdeckungsbegrenzungsbox für Kreaturen (Standard: 6; Max: 30% der aktuellen Rastergröße)."
-            },
-            "HeightsMenu": {
-                "Name": "Kreaturenhöhen",
-                "Label": "Kreaturenhöhen konfigurieren",
-                "Hint": "Passe die Standardhöhen (in Rastereinheiten) für jede Kreaturengröße an, die bei der Deckungsberechnung verwendet werden. Wenn das Modul \"Wall Height\" aktiv ist, werden diese Vorgaben ignoriert und stattdessen die Höhen aus diesem Modul übernommen.",
-                "Legend": "Kreaturenhöhen",
-                "BodyHint": "Lege die Standardhöhe (in Rastereinheiten) für jede Kreaturengröße fest. Diese Werte werden verwendet, wenn Figuren für Deckung als 3D-Prismen behandelt werden. Wenn das Modul \"Wall Height\" aktiv ist, werden diese Vorgaben ignoriert und stattdessen die Höhen aus diesem Modul übernommen.",
-                "Buttons": {
-                    "Save": "Speichern",
-                    "Reset": "Zurücksetzen"
-                }
-            },
-            "VariantMenu": {
-                "Name": "Deckungs- & Messregeln",
-                "Label": "Deckungs- & Messregeln konfigurieren",
-                "Hint": "Lege fest, wie Simple Cover 5e Deckung berechnet und Entfernungen misst.",
-                "Buttons": {
-                    "Save": "Speichern"
-                },
-                "Groups": {
-                    "General": "Deckungsregeln",
-                    "Measurement": "Messregeln",
-                    "Engine": "Engine Regeln"
-                }
-            },
-            "AutomationMenu": {
-                "Name": "Deckungsautomation",
-                "Label": "Deckungsautomation konfigurieren",
-                "Hint": "Lege fest, wie Simple Cover 5e Automationen durchführt und welche Informationen in Wurf-Dialogen angezeigt werden. Wenn der Library Mode aktiv ist, sind alle Automationen deaktiviert und dieses Menü ist gesperrt.",
-                "Groups": {
-                    "General": "Automation"
-                },
-                "LibraryModeWarning": "Library Mode ist aktiv. Automationen sind deaktiviert. Siehe Wiki: https://github.com/Kapuzenjoe/simplecover5e/wiki/API-(Library-Mode). Einige Module können den Library Mode automatisch aktivieren (z. B. Midi-QOL)."
-            }
-        },
-        "Controls": {
-            "ClearCover": {
-                "Title": "Deckung-Effekte entfernen"
-            }
-        },
-        "Dialog": {
-            "Legend": "Hinweise"
-        },
-        "CoverHint": {
-            "Attack": {
-                "none": "{tokenName}: keine Deckung.",
-                "half": "{tokenName}: halbe Deckung, <strong>+2</strong> RK.",
-                "threeQuarters": "{tokenName}: dreiviertel Deckung, <strong>+5</strong> RK.",
-                "total": "{tokenName}: vollständige Deckung, kann nicht direkt anvisiert werden."
-            },
-            "Save": {
-                "none": "Keine Deckung.",
-                "half": "<strong>+2</strong> auf diesen Geschicklichkeitsrettungswurf.",
-                "threeQuarters": "<strong>+5</strong> auf diesen Geschicklichkeitsrettungswurf.",
-                "total": "Kann nicht direkt anvisiert werden."
-            },
-            "CoverModeChanged": "Deckungsmodus geändert",
-            "CoverModeDesired": "Berechnet: {desiredCover}",
-            "CoverModeNew": "Ausgewählt: {newMode}"
+  "SIMPLE_COVER_5E": {
+    "ItemProperties": {
+      "IgnoreCover": {
+        "Label": "Ignoriert Deckung"
+      }
+    },
+    "Settings": {
+      "CoverScope": {
+        "Name": "Bereich für das Entfernen von Deckung",
+        "Hint": "Wähle, welche Figuren betroffen sind, wenn Deckung entfernt wird: alle Figuren in der Szene, nur Kampfteilnehmer oder nur spielereigene Figuren.",
+        "Options": {
+          "All": "Alle Figuren in der Szene",
+          "Combatants": "Nur Kampfteilnehmer",
+          "Player": "Nur spielereigene Figuren"
         }
+      },
+      "OnlyInCombat": {
+        "Name": "Deckung nur im Kampf anwenden",
+        "Hint": "Wenn aktiviert, läuft die automatische Deckungsberechnung nur, solange ein Kampf aktiv ist."
+      },
+      "RemoveOnCombat": {
+        "Name": "Deckung bei Kampfaktualisierungen entfernen",
+        "Hint": "Entfernt den Deckungsstatus automatisch bei Änderungen im Kampf (Zug, Runde oder Initiative) und berücksichtigt dabei den gewählten Bereich für das Entfernen von Deckung."
+      },
+      "RemoveOnMove": {
+        "Name": "Deckung bei Bewegung einer Figur entfernen",
+        "Hint": "Entfernt den Deckungsstatus automatisch, wenn sich eine Figur während eines aktiven Kampfes bewegt, und berücksichtigt dabei den gewählten Bereich für das Entfernen von Deckung."
+      },
+      "losCheck": {
+        "Name": "Sichtlinienprüfung gegen Wände",
+        "Hint": "Wenn aktiviert, prüft das Modul die Sichtlinie zusätzlich gegen sichtblockierende Wände. Damit können Fälle erkannt werden, in denen das Ziel vollständig durch Wände blockiert ist."
+      },
+      "coverHints": {
+        "Name": "Deckungshinweise in Wurfdialogen",
+        "Hint": "Wähle, wann das Modul Deckungshinweise in Angriffs- und Rettungswurf-Dialogen anzeigen soll. Nicht verfügbar, solange Midi-QOL die Deckungsberechnung über Simple Cover 5e übernimmt.",
+        "Options": {
+          "None": "Nie",
+          "Conditional": "Nur wenn Deckung gilt",
+          "Always": "Immer"
+        }
+      },
+      "coverHintsGmMessage": {
+        "Name": "SL-Chatnachricht bei Deckungsänderungen",
+        "Hint": "Sendet eine Chatnachricht an den SL, wenn die Deckung im Wurfdialog manuell geändert wird."
+      },
+      "CreaturesHalfOnly": {
+        "Name": "Deckung durch Kreaturen auf halbe Deckung begrenzen",
+        "Hint": "Wenn aktiviert, können Kreaturen höchstens halbe Deckung gewähren. Sobald mindestens eine Linie ausschließlich durch Kreaturen blockiert wird, erhält das Ziel halbe Deckung, aber niemals Dreivierteldeckung allein durch Kreaturen. Wände folgen weiterhin den normalen DMG-Regeln."
+      },
+      "IgnoreFriendly": {
+        "Name": "Deckung durch verbündete Figuren ignorieren",
+        "Hint": "Wenn aktiviert, ignoriert die Deckungsprüfung alle Figuren, die dem Angreifer freundlich gesinnt sind."
+      },
+      "IgnoreAllAOE": {
+        "Name": "Deckung für alle Wirkungsbereiche ignorieren",
+        "Hint": "Überspringt Deckungsprüfungen, sobald die Aktivität eine Messschablone definiert. Wenn eine Schablone vorhanden ist, wird für diesen Wurf keine Deckung berechnet."
+      },
+      "IgnoreDistanceAOE": {
+        "Name": "Deckung für Wirkungsbereiche auf Entfernung ignorieren",
+        "Hint": "Überspringt Deckungsprüfungen für Aktivitäten, die einen Wirkungsbereich auf Entfernung erzeugen (z. B. Feuerball). Dies gilt, wenn die Aktivität eine Reichweite größer als 1 hat und eine Messschablone mit einer Reichweiteneinheit außer Selbst, Berührung oder Spezial verwendet."
+      },
+      "IgnoreDistanceSpace": {
+        "Name": "Deckung für Zielbereiche auf Entfernung ignorieren",
+        "Hint": "Überspringt Deckungsprüfungen, wenn die Aktivität einen Zielbereich auf Entfernung anvisiert (Reichweite > 1 und Zieltyp \"space\"). Das wird häufig bei Beschwörungsmerkmalen oder -zaubern verwendet, bei denen der eigentliche Angriff oder Effekt von der beschworenen Kreatur ausgeht. Deckung sollte dann von der Beschwörung aus bewertet werden, nicht vom ursprünglichen Merkmal oder Zauber."
+      },
+      "Hover": {
+        "Name": "Deckungsanzeige beim Hovern",
+        "Hint": "Steuert, ob und wie Deckungsinformationen und Entfernung beim Hovern über eine Figur angezeigt werden.",
+        "Options": {
+          "Off": "Deaktiviert",
+          "CoverOnly": "Nur Deckungssymbole",
+          "CoverAndDistance": "Deckungssymbole und Entfernung"
+        }
+      },
+      "HoverLabelPosition": {
+        "Name": "Position des Hover-Labels",
+        "Hint": "Wähle, wo das Hover-Label relativ zur Zielfigur verankert wird.",
+        "Options": {
+          "Above": "Über der Figur",
+          "On": "Zentriert auf der Figur",
+          "Below": "Unter der Figur"
+        }
+      },
+      "HoverLabelYOffset": {
+        "Name": "Vertikaler Versatz des Hover-Labels",
+        "Hint": "Zusätzlicher vertikaler Versatz (in Pixeln), der auf die Position des Hover-Labels angewendet wird. Positive Werte bewegen das Label nach unten, negative nach oben."
+      },
+      "HoverLabelXOffset": {
+        "Name": "Horizontaler Versatz des Hover-Labels",
+        "Hint": "Zusätzlicher horizontaler Versatz (in Pixeln), der auf die Position des Hover-Labels angewendet wird. Positive Werte bewegen das Label nach rechts, negative nach links."
+      },
+      "GridlessDistanceMode": {
+        "Name": "Entfernungsmodus für gitterlose Szenen",
+        "Hint": "Wähle, wie Entfernung in gitterlosen Szenen gemessen wird. \"Entfernung zwischen Figuren\" misst die kürzeste Entfernung zwischen den Figurgrenzen. \"Entfernung zum Zielbereich\" soll dem Ergebnis auf Quadrat- und Hexrastern mit der globalen Diagonaleinstellung \"Exakt (√2)\" entsprechen.",
+        "Options": {
+          "EdgeEdge": "Entfernung zwischen Figuren",
+          "EdgeToCenter": "Entfernung zum Zielbereich"
+        }
+      },
+      "GridlessTokenShape": {
+        "Name": "Standardform für Figuren in gitterlosen Szenen",
+        "Hint": "Wenn aktiviert, werden neu erstellte Figuren in gitterlosen Szenen automatisch auf die ausgewählte Form gesetzt.",
+        "Options": {
+          "None": "Keine Änderung",
+          "Square": "Rechteck",
+          "Circle": "Ellipse"
+        }
+      },
+      "GridlessTokenShapeUpdateExisting": {
+        "Name": "Gitterlose Form auf bestehende Figuren anwenden",
+        "Hint": "Wenn aktiviert, werden beim Ändern der gitterlosen Figurenform auch bestehende Figuren auf allen gitterlosen Szenen aktualisiert."
+      },
+      "CreaturesProne": {
+        "Name": "Deckungshöhe bei Liegend",
+        "Hint": "Steuert die Höhe, die für liegende Figuren in 3D-Deckungsberechnungen verwendet wird. Dies betrifft Deckungslinien von Angreifer und Ziel sowie die Geometrie blockierender Kreaturen.",
+        "Options": {
+          "None": "Normale Höhe",
+          "LowerSize": "Eine Größenkategorie kleiner",
+          "Half": "Halbe Höhe"
+        }
+      },
+      "Debug": {
+        "Name": "Deckungs-Debug-Linien anzeigen",
+        "Hint": "Zeichnet Hilfslinien während der Deckungsberechnung zwischen Figuren (zum Debugging und zur Fehlerbehebung)."
+      },
+      "LibraryMode": {
+        "Name": "[VORSICHT] Library Mode aktivieren",
+        "Hint": "Der Library Mode deaktiviert die Deckungsautomatisierung von Simple Cover 5e. Aktiviere ihn nur, wenn du den Library Mode ausdrücklich benötigst oder wenn ein anderes Modul die Automatisierung übernimmt (z. B. Midi-QOL). Module können den Library Mode automatisch aktivieren. Dokumentation: https://github.com/Kapuzenjoe/simplecover5e/wiki/API-(Library-Mode)."
+      },
+      "insetAttacker": {
+        "Name": "Angreifer-Einzug (px)",
+        "Hint": "Verschiebt die Messpunkte des Angreifers von der ursprünglichen Ecke in Richtung Figurmitte (Standard: 1; max. 30% der aktuellen Rastergröße)."
+      },
+      "insetTarget": {
+        "Name": "Ziel-Einzug (px)",
+        "Hint": "Verschiebt die Messpunkte des Ziels von der ursprünglichen Ecke in Richtung Figurmitte (Standard: 3; max. 30% der aktuellen Rastergröße)."
+      },
+      "insetOccluder": {
+        "Name": "Blocker-Einzug (px)",
+        "Hint": "Verkleinert die Begrenzungsbox blockierender Kreaturen (Standard: 6; max. 30% der aktuellen Rastergröße)."
+      },
+      "FilteredTargetPoints": {
+        "Name": "Gefilterte Zielpunkte",
+        "Hint": "Steuert, wie durch Clipping entfernte Ziel-Testpunkte die Deckungsbewertung beeinflussen. Standard: \"Als blockiert behandeln\". \"Dynamischer Schwellenwert\" behält das aktuelle Verhalten für halbe Deckung bei, gewährt aber Dreivierteldeckung, wenn mindestens drei Viertel der verbleibenden Linien blockiert sind, statt immer die vollständige Zielform zu verwenden.",
+        "Options": {
+          "Blocked": "Als blockiert behandeln",
+          "Clear": "Als frei behandeln",
+          "Dynamic": "Dynamischer Schwellenwert"
+        }
+      },
+      "VariantMenu": {
+        "Name": "Deckungs- und Messregeln konfigurieren",
+        "Label": "Deckungs- und Messregeln",
+        "Hint": "Konfiguriere, wie Simple Cover 5e Deckung berechnet und Entfernungen auf deinen Szenen misst.",
+        "Groups": {
+          "General": "Deckungsregeln",
+          "Measurement": "Messregeln",
+          "Engine": "Engine-Regeln"
+        }
+      },
+      "AutomationMenu": {
+        "Name": "Deckungsautomatisierung konfigurieren",
+        "Label": "Deckungsautomatisierung",
+        "Hint": "Konfiguriere Deckungsautomatisierung und welche Informationen in Wurfdialogen angezeigt werden. Wenn der Library Mode aktiv ist, ist die gesamte Automatisierung deaktiviert und dieses Menü gesperrt.",
+        "Groups": {
+          "General": "Automatisierung"
+        },
+        "LibraryModeWarning": "Library Mode ist aktiv. Automatisierungsfunktionen sind deaktiviert. Siehe Wiki: https://github.com/Kapuzenjoe/simplecover5e/wiki/API-(Library-Mode). Einige Module können den Library Mode automatisch aktivieren (z. B. Midi-QOL)."
+      }
+    },
+    "Controls": {
+      "ClearCover": {
+        "Title": "Deckungseffekte entfernen"
+      }
+    },
+    "Dialog": {
+      "Legend": "Hinweise"
+    },
+    "CoverHint": {
+      "Attack": {
+        "none": "{tokenName}: keine Deckung.",
+        "half": "{tokenName}: halbe Deckung, <strong>+2</strong> RK.",
+        "threeQuarters": "{tokenName}: Dreivierteldeckung, <strong>+5</strong> RK.",
+        "total": "{tokenName}: vollständige Deckung, kann nicht direkt als Ziel gewählt werden."
+      },
+      "Save": {
+        "none": "Keine Deckung.",
+        "half": "<strong>+2</strong> auf diesen Geschicklichkeitsrettungswurf.",
+        "threeQuarters": "<strong>+5</strong> auf diesen Geschicklichkeitsrettungswurf.",
+        "total": "Kann nicht direkt als Ziel gewählt werden."
+      },
+      "CoverModeChanged": "Deckungsmodus geändert",
+      "CoverModeDesired": "Berechnet: {desiredCover}",
+      "CoverModeNew": "Gesetzt: {newMode}"
+    },
+    "Flags": {
+      "ignoreAllCover": {
+        "all": {
+          "Name": "Jegliche Deckung ignorieren (Alle)",
+          "Hint": "Offensives Flag: Ignoriert die gesamte Deckung des Ziels für Angriffe und Effekte mit Rettungswurf."
+        },
+        "attack": {
+          "Name": "Jegliche Deckung ignorieren (Angriffe)",
+          "Hint": "Offensives Flag: Ignoriert die gesamte Deckung des Ziels nur für Angriffe."
+        },
+        "save": {
+          "Name": "Jegliche Deckung ignorieren (Rettungswürfe)",
+          "Hint": "Offensives Flag: Ignoriert die gesamte Deckung des Ziels nur für Effekte mit Rettungswurf."
+        }
+      },
+      "ignoreHalfCover": {
+        "all": {
+          "Name": "Halbe Deckung ignorieren (Alle)",
+          "Hint": "Offensives Flag: Ignoriert halbe Deckung für Angriffe und Effekte mit Rettungswurf."
+        },
+        "attack": {
+          "Name": "Halbe Deckung ignorieren (Angriffe)",
+          "Hint": "Offensives Flag: Ignoriert halbe Deckung nur für Angriffe."
+        },
+        "save": {
+          "Name": "Halbe Deckung ignorieren (Rettungswürfe)",
+          "Hint": "Offensives Flag: Ignoriert halbe Deckung nur für Effekte mit Rettungswurf."
+        }
+      },
+      "ignoreThreeQuartersCover": {
+        "all": {
+          "Name": "Bis zu Dreivierteldeckung ignorieren (Alle)",
+          "Hint": "Offensives Flag: Ignoriert halbe Deckung und Dreivierteldeckung für Angriffe und Effekte mit Rettungswurf."
+        },
+        "attack": {
+          "Name": "Bis zu Dreivierteldeckung ignorieren (Angriffe)",
+          "Hint": "Offensives Flag: Ignoriert halbe Deckung und Dreivierteldeckung nur für Angriffe."
+        },
+        "save": {
+          "Name": "Bis zu Dreivierteldeckung ignorieren (Rettungswürfe)",
+          "Hint": "Offensives Flag: Ignoriert halbe Deckung und Dreivierteldeckung nur für Effekte mit Rettungswurf."
+        }
+      },
+      "upgradeCover": {
+        "all": {
+          "Name": "Deckung erhöhen (Alle)",
+          "Hint": "Defensives Flag: Erhöht die aktuelle Deckung für Angriffe und Effekte mit Rettungswurf."
+        },
+        "attack": {
+          "Name": "Deckung erhöhen (Angriffe)",
+          "Hint": "Defensives Flag: Erhöht die aktuelle Deckung nur gegen Angriffe."
+        },
+        "save": {
+          "Name": "Deckung erhöhen (Rettungswürfe)",
+          "Hint": "Defensives Flag: Erhöht die aktuelle Deckung nur gegen Effekte mit Rettungswurf."
+        }
+      },
+      "downgradeCover": {
+        "all": {
+          "Name": "Deckung verringern (Alle)",
+          "Hint": "Offensives Flag: Verringert die Deckung des Ziels für Angriffe und Effekte mit Rettungswurf."
+        },
+        "attack": {
+          "Name": "Deckung verringern (Angriffe)",
+          "Hint": "Offensives Flag: Verringert die Deckung des Ziels nur für Angriffe."
+        },
+        "save": {
+          "Name": "Deckung verringern (Rettungswürfe)",
+          "Hint": "Offensives Flag: Verringert die Deckung des Ziels nur für Effekte mit Rettungswurf."
+        }
+      }
     }
+  }
 }

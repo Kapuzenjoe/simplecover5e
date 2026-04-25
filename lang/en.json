@@ -5,9 +5,6 @@
         "Label": "Ignores Cover"
       }
     },
-    "Notifications": {
-      "CreatureHeightsReset": "Simple Cover 5e: Creature heights reset to defaults."
-    },
     "Settings": {
       "CoverScope": {
         "Name": "Cover Removal Scope",
@@ -36,7 +33,7 @@
       },
       "coverHints": {
         "Name": "Cover Notes in Roll Dialogs",
-        "Hint": "Choose when the module should show cover notes in attack and saving throw roll dialogs.",
+        "Hint": "Choose when the module should show cover notes in attack and saving throw roll dialogs. Not available while Midi-QOL handles cover calculation through Simple Cover 5e.",
         "Options": {
           "None": "Never",
           "Conditional": "Only When Cover Applies",
@@ -115,12 +112,12 @@
         "Hint": "When enabled, changing the gridless token shape setting also updates existing tokens on all gridless scenes."
       },
       "CreaturesProne": {
-        "Name": "Prone Creature Height Adjustment",
-        "Hint": "Controls how prone creatures are treated when building their 3D prism for cover calculations. When the \"Wall Height\" module is active, \"Treat as one size smaller\" falls back to half height.",
+        "Name": "Prone Cover Height",
+        "Hint": "Controls the height used for Prone tokens in 3D cover calculations. This affects attacker and target cover rays as well as blocking creature geometry.",
         "Options": {
-          "None": "None",
-          "LowerSize": "Treat as one size smaller",
-          "Half": "Treat as half as tall"
+          "None": "Normal Height",
+          "LowerSize": "One Size Smaller",
+          "Half": "Half Height"
         }
       },
       "Debug": {
@@ -130,10 +127,6 @@
       "LibraryMode": {
         "Name": "[CAUTION] Enable Library Mode",
         "Hint": "Library Mode disables Simple Cover 5e cover automation features. Enable this only if you explicitly need Library Mode or if another module handles automation for you (e.g., Midi-QOL). Some modules may enable Library Mode automatically. Documentation: https://github.com/Kapuzenjoe/simplecover5e/wiki/API-(Library-Mode)."
-      },
-      "CreatureHeights": {
-        "Name": "Default Creature Heights",
-        "Hint": "Default creature heights (in Grid Units) per size category used for 3D cover evaluation. When the \"Wall Height\" module is active, these defaults are ignored and heights are taken from that module instead."
       },
       "insetAttacker": {
         "Name": "Attacker Inset (px)",
@@ -156,24 +149,10 @@
           "Dynamic": "Dynamic Threshold"
         }
       },
-      "HeightsMenu": {
-        "Name": "Configure Creature Heights",
-        "Label": "Creature Heights",
-        "Hint": "Adjust default heights (in Grid Units) for each creature size used when computing cover. When the \"Wall Height\" module is active, these defaults are ignored and heights are taken from that module instead.",
-        "Legend": "Creature Heights",
-        "BodyHint": "Set the default height (in Grid Units) for each creature size. These values are used when treating tokens as 3D prisms for cover. When the \"Wall Height\" module is active, these defaults are ignored and heights are taken from that module instead.",
-        "Buttons": {
-          "Save": "Save",
-          "Reset": "Reset"
-        }
-      },
       "VariantMenu": {
         "Name": "Configure Cover & Measurement Rules",
         "Label": "Cover & Measurement Rules",
         "Hint": "Configure how Simple Cover 5e calculates cover and measures distance on your scenes.",
-        "Buttons": {
-          "Save": "Save"
-        },
         "Groups": {
           "General": "Cover Rules",
           "Measurement": "Measurement Rules",

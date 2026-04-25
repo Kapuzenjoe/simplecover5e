@@ -68,42 +68,16 @@ async function prepareNotes(dialog) {
     return template.content.firstElementChild;
 }
 
-/**
- * Send a GM-only summary message when the selected cover mode changes the effective result.
- *
- * @function dnd5e.postRollConfiguration
- * @memberof hookEvents
- * @param {BasicRoll[]} rolls Rolls that have been constructed but not evaluated.
- * @param {BasicRollProcessConfiguration} config The pending roll process configuration.
- * @param {BasicRollDialogConfiguration} dialog The pending roll dialog configuration.
- * @param {BasicRollMessageConfiguration} message The pending roll message configuration.
- * @returns {Promise<void>} Resolves after any GM summary message has been created.
- */
-export async function onPostRollConfiguration(rolls, config, dialog, message) {
-    const isTotalCoverSave =
-        config?.ability === "dex"
-        && rolls?.some?.(roll => roll?.options?.[MODULE_ID]?.totalCover === true);
+export function onRenderChatMessage(chatMessage, html) {
+    if (!game.user.isGM) return;
 
-    if (
-        isTotalCoverSave
-        && !game.settings.get(MODULE_ID, SETTING_KEYS.LIBRARY_MODE)
-        && config?.midiOptions?.workflowId == null
-    ) {
-        config.evaluate = false;
-        message.create = false;
-        ui.notifications.info(game.i18n.localize(COVER.I18N.HINT_KEYS.Save.total));
-        return;
-    }
+    const anchor = html.querySelector(".message-content") ?? html;
+    if (!anchor) return;
+
+    anchor.querySelectorAll(".simplecover5e-cover-summary").forEach(el => el.remove());
 
     if (!game.settings.get(MODULE_ID, SETTING_KEYS.COVER_HINTS_GM_MESSAGE)) return;
 
-    const messageFlags = message?.data?.flags?.[MODULE_ID]?.notes ?? [];
-    if (!messageFlags.length) return;
-    if (!messageFlags.some(flag => Object.hasOwn(flag, "newMode") && flag.newMode !== flag.desiredCover)) return;
-}
-
-export function onRenderChatMessage(chatMessage, html) {
-    if (!game.user.isGM) return;
     const messageFlags = chatMessage?.flags?.[MODULE_ID]?.notes ?? [];
     if (!messageFlags.length) return;
 
@@ -123,18 +97,13 @@ export function onRenderChatMessage(chatMessage, html) {
     }
     if (!content.length) return;
 
-    const anchor =
-        html.querySelector(".midi-qol-attack-roll, .midi-qol-saves-display, .message-content")
-        ?? html.querySelector(".message-content")
-        ?? html;
-    if (!anchor) return;
-
-    const hr = document.createElement("hr");
     const wrapper = document.createElement("div");
+    wrapper.classList.add("simplecover5e-cover-summary");
     wrapper.innerHTML = `
+        <hr>
         <p><strong>${game.i18n.localize("SIMPLE_COVER_5E.CoverHint.CoverModeChanged")}</strong></p>
         ${content.join("<hr>")}
     `;
 
-    anchor.append(hr, wrapper);
+    anchor.append(wrapper);
 }

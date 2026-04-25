@@ -2,7 +2,18 @@
  * @import { Position } from "../types/shared.types.mjs";
  */
 
-import { MODULE_ID, SETTING_KEYS, COVER, BASE_KEYS } from "../config/constants.config.mjs";
+import { MODULE_ID, SETTING_KEYS, COVER } from "../config/constants.config.mjs";
+
+export function isLibraryMode() {
+  if (game.settings.get(MODULE_ID, SETTING_KEYS.LIBRARY_MODE)) return true;
+
+  const midi = game.modules.get("midi-qol")?.api ?? globalThis.MidiQOL;
+  const coverCalculation =
+    midi?.currentConfigSettings?.optionalRules?.coverCalculation ??
+    midi?.configSettings?.()?.optionalRules?.coverCalculation;
+
+  return coverCalculation === "simplecover5e";
+}
 
 /**
  * Check whether a token or actor has a player owner.
@@ -56,38 +67,99 @@ function resolveTokensForScope(combat, scope) {
 }
 
 /**
- * Clear all cover status effects for the configured scope.
+ * Resolve the system cover status effects provided by dnd5e.
+ *
+ * @returns {{cover: ("half"|"threeQuarters"|"total"), statusId: string, effectId: string|null}[]} The available system cover effects.
+ */
+export function getSystemCoverEffects() {
+  return [
+    ["total", COVER.IDS.total],
+    ["threeQuarters", COVER.IDS.threeQuarters],
+    ["half", COVER.IDS.half]
+  ].map(([cover, statusId]) => ({
+    cover,
+    statusId,
+    effectId: CONFIG.statusEffects[statusId]._id
+  }));
+}
+
+/**
+ * Determine the highest active status and embedded cover states on an actor.
+ *
+ * @param {Actor5e} actor The actor to evaluate.
+ * @returns {{statusCover: ("none"|"half"|"threeQuarters"|"total"), embeddedCover: ("none"|"half"|"threeQuarters"|"total")}} The resolved cover states.
+ */
+export function getActorCoverStates(actor) {
+  const effects = actor?.appliedEffects ?? [];
+  const systemCoverEffects = getSystemCoverEffects();
+
+  let statusCover = "none";
+  for (const { cover, statusId, effectId } of systemCoverEffects) {
+    const isSystemStatus = actor?.statuses?.has?.(statusId) && effects.some(effect => effect.id === effectId);
+    if (isSystemStatus) {
+      statusCover = cover;
+      break;
+    }
+  }
+
+  let embeddedCover = "none";
+  for (const effect of effects) {
+    const isSystemEffect = systemCoverEffects.some(({ effectId }) => effect.id === effectId);
+    if (isSystemEffect) continue;
+
+    const statuses = effect?.statuses;
+    if (!statuses?.has) continue;
+
+    if (statuses.has(COVER.IDS.total)) {
+      embeddedCover = "total";
+      break;
+    }
+    if (statuses.has(COVER.IDS.threeQuarters) && (COVER.ORDER[embeddedCover] < COVER.ORDER.threeQuarters)) {
+      embeddedCover = "threeQuarters";
+    }
+    if (statuses.has(COVER.IDS.half) && (COVER.ORDER[embeddedCover] < COVER.ORDER.half)) {
+      embeddedCover = "half";
+    }
+  }
+
+  return { statusCover, embeddedCover };
+}
+
+/**
+ * Clear module-managed system cover effects for the configured scope.
  * This is typically called when combat state changes or at end-of-turn boundaries.
  *
  * @param {Combat|null} combat The active combat, if any.
  * @returns {Promise<void>} Resolves when all status toggles have settled.
  */
-export async function clearCoverStatusEffect(combat) {
-
+export async function clearSystemCoverEffects(combat) {
   const scope = game.settings.get(MODULE_ID, SETTING_KEYS.COVER_SCOPE);
   const targets = resolveTokensForScope(combat, scope);
-  const hasCover = targets.some(({ actor }) =>
-    actor?.statuses?.has?.(COVER.IDS.half)
-    || actor?.statuses?.has?.(COVER.IDS.threeQuarters)
-    || actor?.statuses?.has?.(COVER.IDS.total)
-  );
-  if (!hasCover) return;
-
-  const ids = Object.values(COVER.IDS).filter(Boolean);
+  const systemCoverEffects = getSystemCoverEffects();
   const jobs = [];
 
   for (const { actor } of targets) {
     if (!actor) continue;
 
-    for (const id of ids) {
-
-      if (actor.statuses?.has?.(id)) {
-        jobs.push(actor.toggleStatusEffect(id));
+    for (const { statusId, effectId } of systemCoverEffects) {
+      const hasSystemEffect = actor.statuses?.has?.(statusId) && actor.appliedEffects?.some(effect => effect.id === effectId);
+      if (hasSystemEffect) {
+        jobs.push(actor.toggleStatusEffect(statusId, { active: false, overlay: false }));
       }
     }
   }
 
   if (jobs.length) await Promise.allSettled(jobs);
+}
+
+export function isDefeatedToken(token) {
+  if (!token) return false;
+
+  const doc = token.document ?? token;
+  if (!doc) return false;
+
+  return doc.hasStatusEffect(CONFIG.specialStatusEffects.DEFEATED)
+    || doc.combatant?.isDefeated === true;
 }
 
 /**
@@ -109,8 +181,8 @@ export function isBlockingCreatureToken(token) {
   const statuses = actor?.statuses;
   if (!statuses) return true;
 
+  if (isDefeatedToken(token)) return false;
   if (statuses.has("ethereal")) return false;
-  if (statuses.has("dead")) return false;
   if (actor.system?.attributes?.hp?.max === 0) return false;
 
   if (game.modules?.get?.("Rideable")?.active) {
@@ -122,7 +194,6 @@ export function isBlockingCreatureToken(token) {
 
 /**
  * Get the creature height in grid distance units for a token document.
- * If the Wall Height module is active, the token's line-of-sight height is used when available.
  *
  * @param {TokenDocument|Position} td The token document or a generic position.
  * @returns {number} The creature height in grid distance units, or 0.
@@ -130,64 +201,22 @@ export function isBlockingCreatureToken(token) {
 export function getCreatureHeight(td) {
   if (!td?.actor) return 0;
   const proneMode = game.settings.get(MODULE_ID, SETTING_KEYS.CREATURES_PRONE);
-  const savedCreatureHeights = game.settings.get(MODULE_ID, SETTING_KEYS.CREATURE_HEIGHTS) ?? {};
   const grid = td?.parent?.grid ?? canvas?.scene?.grid;
   const depth = Number(td?.depth) || 0;
   const distance = Number(grid?.distance) || 0;
-  const sizeKey = td?.actor?.system?.traits?.size || null;
-
-  let height = 0;
-
-  if (isV14()) {
-    height = depth * distance;
-  }
-  else if (isWallHeightModuleActive()) {
-    const elevation = Number(td?.elevation) || 0;
-    const losHeight = td?.object ? Number(td?.object?.losHeight) : NaN;
-
-    if (Number.isFinite(losHeight)) {
-      const diff = losHeight - elevation;
-      if (diff > 0) {
-        height = Math.ceil(diff * 100) / 100;
-      }
-    }
-    else {
-      height = savedCreatureHeights[sizeKey] || 0;
-    }
-  }
-  else {
-    height = savedCreatureHeights[sizeKey] || 0;
-  }
+  let height = depth * distance;
 
   if (td.actor?.statuses?.has?.("prone") && proneMode !== "none") {
     if (proneMode === "half") {
       height *= 0.5;
     }
     else if (proneMode === "lowerSize") {
-      if (isV14()) {
-        const depthLower = (depth > 1) ? Math.max(depth - 1, 0.5) : (depth * 0.5);
-        height = depthLower * distance;
-      }
-      else if (!isWallHeightModuleActive()) {
-        const idx = BASE_KEYS.indexOf(sizeKey);
-        const smallerKey = idx > 0 ? BASE_KEYS[idx - 1] : sizeKey;
-        height = savedCreatureHeights[smallerKey] || 0;
-      }
-      else {
-        height *= 0.5;
-      }
+      const depthLower = (depth > 1) ? Math.max(depth - 1, 0.5) : (depth * 0.5);
+      height = depthLower * distance;
     }
   }
-  return height;
-}
 
-/**
- * Check whether the current Foundry version is 14 or higher.
- *
- * @returns {boolean} True if the current Foundry version is 14 or higher.
- */
-export function isV14() {
-  return game.release.generation >= 14;
+  return height;
 }
 
 /**
@@ -227,15 +256,6 @@ export function isEllipse(tokenDoc) {
  */
 export function isWallHeightModuleActive() {
   return game.modules?.get?.("wall-height")?.active === true;
-}
-
-/**
- * Check whether the Midi-QoL module is active.
- *
- * @returns {boolean} True if the Midi-QoL module is currently active.
- */
-export function isMidiQol() {
-  return game.modules?.get?.("midi-qol")?.active === true;
 }
 
 /**

@@ -1,4 +1,5 @@
-import { MODULE_ID, DEFAULT_SIZE, SETTING_KEYS, BASE_KEYS } from "./constants.config.mjs";
+import { MODULE_ID, SETTING_KEYS } from "./constants.config.mjs";
+import { isLibraryMode } from "../services/cover.service.mjs";
 
 const { HandlebarsApplicationMixin, ApplicationV2 } = foundry.applications.api;
 
@@ -143,98 +144,6 @@ export class SimpleCoverBaseConfigApp extends HandlebarsApplicationMixin(Applica
 }
 
 /**
- * A configuration form for default creature heights.
- *
- * @extends {SimpleCoverBaseConfigApp}
- */
-export class SimpleCoverCreatureHeightsConfig extends SimpleCoverBaseConfigApp {
-    static PART_CONFIG = {
-        inputs: {
-            hint: "SIMPLE_COVER_5E.Settings.HeightsMenu.BodyHint"
-        }
-    };
-
-    static DEFAULT_OPTIONS = foundry.utils.mergeObject(super.DEFAULT_OPTIONS, {
-        position: { width: 500 },
-        window: {
-            title: "SIMPLE_COVER_5E.Settings.HeightsMenu.Name",
-            icon: "fas fa-ruler-vertical",
-            contentClasses: ["standard-form"]
-        },
-        actions: {
-            reset: this._onReset
-        }
-    }, { inplace: false });
-
-    static PARTS = {
-        inputs: { template: "modules/simplecover5e/templates/base-config.hbs" },
-        ...SimpleCoverBaseConfigApp.FOOTER_PARTS
-    };
-
-    /**
-     * Get the footer buttons displayed by the creature heights form.
-     * @returns {object[]} The footer button configuration.
-     */
-    _getButtons() {
-        return [
-            ...super._getButtons(),
-            {
-                type: "button",
-                icon: "fa-solid fa-arrow-rotate-left",
-                label: game.i18n.localize("SIMPLE_COVER_5E.Settings.HeightsMenu.Buttons.Reset"),
-                action: "reset"
-            }
-        ];
-    }
-
-    /**
-     * Prepare the render context for a single creature heights form part.
-     * @param {string} partId The part being prepared.
-     * @param {object} context The base context object.
-     * @param {ApplicationRenderOptions} options The active render options.
-     * @returns {Promise<object>} The prepared part context.
-     */
-    async _preparePartContext(partId, context, options) {
-        context = await super._preparePartContext(partId, context, options);
-        if (partId !== "inputs") return context;
-
-        const current = game.settings.get(MODULE_ID, SETTING_KEYS.CREATURE_HEIGHTS) ?? {};
-        const base = foundry.utils.mergeObject(DEFAULT_SIZE, current, { inplace: false });
-
-        const actorSizes = CONFIG.DND5E?.actorSizes ?? {};
-        const sizes = BASE_KEYS.map((key) => {
-            const sizeData = actorSizes[key];
-            const label = sizeData?.label || key.charAt(0).toUpperCase() + key.slice(1);
-            return { key, value: base[key], label, default: DEFAULT_SIZE[key] };
-        });
-
-        return {
-            ...context,
-            sizes,
-            gridUnits: canvas?.scene?.grid?.units ?? "ft",
-            legend: game.i18n.localize("SIMPLE_COVER_5E.Settings.HeightsMenu.Legend"),
-            settingKey: SETTING_KEYS.CREATURE_HEIGHTS
-        };
-    }
-
-    /**
-     * Reset the configured creature heights to their default values.
-     * @param {PointerEvent|SubmitEvent} event The triggering UI event.
-     * @param {HTMLElement} target The element that triggered the action.
-     * @returns {Promise<void>} Resolves after the defaults have been restored.
-     */
-    static async _onReset(event, target) {
-        event.preventDefault();
-
-        await game.settings.set(MODULE_ID, SETTING_KEYS.CREATURE_HEIGHTS, foundry.utils.duplicate(DEFAULT_SIZE));
-        const messageKey = "SIMPLE_COVER_5E.Notifications.CreatureHeightsReset";
-        ui.notifications.info(game.i18n.has(messageKey) ? game.i18n.localize(messageKey) : "SimpleCover5e: Creature heights reset to defaults.");
-
-        this.render();
-    }
-}
-
-/**
  * A configuration form for cover and measurement rule variants.
  *
  * @extends {SimpleCoverBaseConfigApp}
@@ -337,7 +246,7 @@ export class SimpleCoverAutomationConfig extends SimpleCoverBaseConfigApp {
     async _preparePartContext(partId, context, options) {
         context = await super._preparePartContext(partId, context, options);
 
-        if (game.settings.get(MODULE_ID, SETTING_KEYS.LIBRARY_MODE)) {
+        if (isLibraryMode()) {
             context.fields = [];
             context.message = {
                 level: "warning",

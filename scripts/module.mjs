@@ -2,19 +2,20 @@ import { FLAGS } from "./config/constants.config.mjs";
 import { registerSettings, getSceneControlButtons } from "./config/settings.config.mjs";
 import {
   ignoreCoverProperties,
-  clearCoverOnUpdateCombat,
+  clearCoverOnCombatTurnChange,
   clearCoverOnDeleteCombat,
   clearCoverOnMovement,
   onPreRollAttack,
   onPreRollSavingThrow,
+  onPostSavingThrowRollConfiguration,
   onBuildAttackRollConfig,
   onBuildSavingThrowRollConfig
 } from "./handlers/cover.hooks.mjs";
 import { initQueries } from "./services/queries.service.mjs";
 import { clearCoverDebug } from "./services/cover.debug.mjs";
 import { onHoverToken, onPreDeleteToken } from "./services/hover.service.mjs";
-import { clearCoverOverride, initApi, readyApi } from "./utils/api.mjs";
-import { onRenderChatMessage, onRenderRollConfigurationDialog, onPostRollConfiguration } from "./services/dialog.service.mjs";
+import { initApi, readyApi } from "./utils/api.mjs";
+import { onRenderChatMessage, onRenderRollConfigurationDialog } from "./services/dialog.service.mjs";
 import { onCreateToken } from "./services/cover.service.mjs";
 
 // === Init Phase ===
@@ -31,7 +32,7 @@ Hooks.on("getSceneControlButtons", getSceneControlButtons);
 
 // === Calc Cover Hooks ===
 for (const [hook, fn] of [
-  ["updateCombat", clearCoverOnUpdateCombat],
+  ["combatTurnChange", clearCoverOnCombatTurnChange],
   ["deleteCombat", clearCoverOnDeleteCombat],
   ["recordToken", clearCoverOnMovement],
   ["dnd5e.preRollAttack", onPreRollAttack],
@@ -43,8 +44,7 @@ for (const [hook, fn] of [
   ["createToken", onCreateToken],
   ["dnd5e.buildAttackRollConfig", onBuildAttackRollConfig],
   ["dnd5e.buildSavingThrowRollConfig", onBuildSavingThrowRollConfig],
-  ["dnd5e.postRollConfiguration", onPostRollConfiguration],
-  ["midi-qol.RollComplete", workflow => clearCoverOverride(workflow?.activity ?? null)]
+  ["dnd5e.postSavingThrowRollConfiguration", onPostSavingThrowRollConfiguration]
 ]) {
   Hooks.on(hook, fn);
 }
