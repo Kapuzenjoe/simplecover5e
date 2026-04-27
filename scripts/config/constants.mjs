@@ -1,5 +1,5 @@
 /**
- * @import { CoverLevel } from "../types/shared.types.mjs";
+ * @import { CoverLevel } from "../types/shared.mjs";
  */
 
 /**
@@ -121,15 +121,6 @@ export const SETTING_KEYS = {
  */
 export const HOVER = {
   DISTANCE_LABEL_PROP: `_${MODULE_ID}HoverDistanceLabel`
-};
-
-/**
- * Icon paths for DnD5e cover status indicators used by the hover label.
- */
-export const COVER_ICON_PATHS = {
-  half: "systems/dnd5e/icons/svg/statuses/cover-half.svg",
-  threeQuarters: "systems/dnd5e/icons/svg/statuses/cover-three-quarters.svg",
-  total: "systems/dnd5e/icons/svg/statuses/cover-total.svg"
 };
 
 const DAE_FLAG_SCOPES = Object.freeze(["all", "attack", "save"]);

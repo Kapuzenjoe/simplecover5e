@@ -1,40 +1,18 @@
 /**
- * @import { CoverContext, CoverEvaluationResult, CoverLevel, CoverTargetResult, DialogNoteData, LosResult, Position } from "../types/shared.types.mjs";
+ * @import { CoverContext, CoverEvaluationResult, CoverTargetResult, DialogNoteData, LosResult, Position } from "../types/shared.mjs";
  */
 
-import { MODULE_ID, SETTING_KEYS } from "../config/constants.config.mjs";
+import { MODULE_ID, COVER, SETTING_KEYS } from "../config/constants.mjs";
 import {
     buildCoverContext,
     evaluateCoverFromOccluders,
     evaluateLOS,
-} from "../services/cover.engine.mjs";
-import { ignoresCover } from "../utils/rules.cover.mjs";
-import { drawCoverDebug, clearCoverDebug } from "../services/cover.debug.mjs";
-import { measureTokenDistance } from "../utils/distance.mjs";
-import { isLibraryMode } from "../services/cover.service.mjs";
-
-const coverOverrides = new Map();
-
-function getCoverOverrideKey(activity, targetDoc) {
-    const activityUuid = activity?.uuid ?? "";
-    const targetActorUuid = targetDoc?.actor?.uuid ?? "";
-    const targetId = targetDoc?.id ?? "";
-
-    if (!activityUuid || (!targetActorUuid && !targetId)) return null;
-    return `${activityUuid}:${targetActorUuid}:${targetId}`;
-}
-
-/**
- * Resolve the effective cover level for an activity, including ignore-cover rules.
- *
- * @param {Activity5e} activity The activity being evaluated.
- * @param {CoverLevel} cover The computed/requested cover level.
- * @param {Actor5e|null} [targetActor=null] The targeted actor.
- * @returns {{cover: CoverLevel, bonus: (0|2|5|null)}} The effective cover level and its corresponding bonus.
- */
-export function getIgnoreCover(activity, cover, targetActor = null) {
-    return ignoresCover(activity, cover, targetActor);
-}
+} from "./engine.mjs";
+import { ignoresCover } from "./rules.mjs";
+import { drawCoverDebug, clearCoverDebug } from "./debug.mjs";
+import { measureTokenDistance } from "../canvas/distance.mjs";
+import { isLibraryMode } from "../integrations/midi-qol.mjs";
+import { getActorCoverStates } from "./status.mjs";
 
 /**
  * Evaluate line of sight (LOS) from an attacker to a target.
@@ -65,68 +43,34 @@ function getTokenTokenDistance(sourceToken, targetToken) {
 }
 
 /**
- * Store a transient cover override for the current roll workflow.
- * Internal helper only. This is not added to the public module API.
+ * Resolve the final cover result exposed by the provider API.
  *
- * @param {Activity5e|null} activity The owning activity.
- * @param {Token|TokenDocument} target The affected target.
- * @param {{cover: CoverLevel, bonus: (0|2|5|null)}} override The final cover override.
- * @returns {void}
+ * @param {TokenDocument|Position} targetDoc The target token document or target-like object.
+ * @param {CoverEvaluationResult} result The raw cover result to adjust.
+ * @param {object} [options={}] Additional result options.
+ * @param {Activity5e|null} [options.activity=null] The activity being evaluated.
+ * @param {boolean} [options.includeEmbeddedCover=false] Whether embedded cover effects on the target should be considered.
+ * @returns {CoverEvaluationResult} The effective cover result.
  */
-export function setCoverOverride(activity, target, { cover = "none", bonus = 0 } = {}) {
-    const targetDoc = target?.document ?? target;
-    const key = getCoverOverrideKey(activity, targetDoc);
-    if (!key) return;
+function resolveCoverResult(targetDoc, result, { activity = null, includeEmbeddedCover = false } = {}) {
+    let cover = result.cover ?? "none";
+    let bonus = result.bonus;
 
-    coverOverrides.set(key, { cover, bonus });
-}
-
-/**
- * Clear transient cover overrides for one activity, or for one specific target on that activity.
- * Internal helper only. This is not added to the public module API.
- *
- * @param {Activity5e|null} activity The owning activity.
- * @param {Token|TokenDocument|null} [target=null] Optional single target to clear.
- * @returns {void}
- */
-export function clearCoverOverride(activity, target = null) {
-    const activityUuid = activity?.uuid ?? "";
-    if (!activityUuid) return;
-
-    if (target) {
-        const targetDoc = target?.document ?? target;
-        const key = getCoverOverrideKey(activity, targetDoc);
-        if (key) coverOverrides.delete(key);
-        return;
-    }
-
-    for (const key of coverOverrides.keys()) {
-        if (key.startsWith(`${activityUuid}:`)) {
-            coverOverrides.delete(key);
+    if (includeEmbeddedCover) {
+        const { embeddedCover } = getActorCoverStates(targetDoc?.actor);
+        if (COVER.ORDER[embeddedCover] > COVER.ORDER[cover]) {
+            cover = embeddedCover;
+            bonus = COVER.BONUS[embeddedCover];
         }
     }
-}
-
-function resolveCoverResult(targetDoc, activity, result) {
-    let finalResult = result;
 
     if (activity) {
-        const { cover: desiredCover, bonus: desiredBonus } = getIgnoreCover(activity, finalResult?.cover ?? "none", targetDoc?.actor);
-        finalResult.cover = desiredCover;
-        finalResult.bonus = desiredBonus;
+        ({ cover, bonus } = ignoresCover(activity, cover, targetDoc?.actor));
     }
 
-    const overrideKey = getCoverOverrideKey(activity, targetDoc);
-    const override = overrideKey ? coverOverrides.get(overrideKey) : null;
-
-    if (overrideKey) {
-        if (override) {
-            finalResult.cover = override.cover ?? finalResult.cover;
-            if (Object.hasOwn(override, "bonus")) finalResult.bonus = override.bonus;
-        }
-    }
-
-    return finalResult;
+    result.cover = cover;
+    result.bonus = bonus;
+    return result;
 }
 
 /**
@@ -139,9 +83,10 @@ function resolveCoverResult(targetDoc, activity, result) {
  * @param {boolean|null} [options.debug=null] Whether to force debug output. Null uses the module debug setting.
  * @param {boolean} [options.losCheck=false] Whether to perform a wall line-of-sight check.
  * @param {Activity5e|null} [options.activity=null] The activity being evaluated for cover.
+ * @param {boolean} [options.includeEmbeddedCover=false] Whether embedded cover effects on the target should be considered.
  * @returns {CoverEvaluationResult|null} The computed cover result, or null if inputs are invalid.
  */
-export function getCover({ attacker, target, scene = canvas?.scene, debug = null, losCheck = false, activity = null } = {}) {
+export function getCover({ attacker, target, scene = canvas?.scene, debug = null, losCheck = false, activity = null, includeEmbeddedCover = false } = {}) {
     if (!attacker || !target || !scene) return null;
 
     const attackerDoc = attacker.document ?? attacker;
@@ -156,20 +101,18 @@ export function getCover({ attacker, target, scene = canvas?.scene, debug = null
     const ctx = buildCoverContext(scene);
     if (!ctx) return null;
 
-    const result = evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, { debug: debugOn })
-
     let los = { hasLOS: true, targetLosPoints: [] };
     if (losCheck) {
-        los = evaluateLOS(attackerDoc, targetDoc, ctx)
-        if (!los.hasLOS) {
-            result.cover = "total";
-            result.bonus = null;
-        }
+        los = evaluateLOS(attackerDoc, targetDoc, ctx);
     }
 
-    const finalResult = resolveCoverResult(targetDoc, activity, result);
+    const result = los.hasLOS
+        ? evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, { debug: debugOn })
+        : { cover: "total", bonus: null };
 
-    if (debugOn && finalResult.debugSegments?.length && game.users.activeGM) {
+    const finalResult = resolveCoverResult(targetDoc, result, { activity, includeEmbeddedCover });
+
+    if (debugOn && game.users.activeGM && (finalResult.debugSegments?.length || los.targetLosPoints?.length)) {
         drawCoverDebug({
             segments: finalResult.debugSegments ?? [],
             tokenShapes: finalResult.debugTokenShapes,
@@ -189,9 +132,10 @@ export function getCover({ attacker, target, scene = canvas?.scene, debug = null
  * @param {boolean|null} [options.debug=null] Whether to force debug output. Null uses the module debug setting.
  * @param {boolean} [options.losCheck=false] Whether to perform a wall line-of-sight check.
  * @param {Activity5e|null} [options.activity=null] The activity being evaluated for cover.
+ * @param {boolean} [options.includeEmbeddedCover=false] Whether embedded cover effects on targets should be considered.
  * @returns {CoverTargetResult[]} The per-target cover results.
  */
-export function getCoverForTargets({ attacker, targets = null, scene = canvas?.scene, debug = null, losCheck = false, activity = null } = {}) {
+export function getCoverForTargets({ attacker, targets = null, scene = canvas?.scene, debug = null, losCheck = false, activity = null, includeEmbeddedCover = false } = {}) {
     if (!attacker || !scene) return [];
 
     const attackerDoc = attacker.document ?? attacker;
@@ -214,18 +158,16 @@ export function getCoverForTargets({ attacker, targets = null, scene = canvas?.s
         const targetDoc = t?.document ?? t;
         if (!targetDoc) continue;
 
-        const result = evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, { debug: debugOn })
-
         let los = { hasLOS: true, targetLosPoints: [] };
         if (losCheck) {
-            los = evaluateLOS(attackerDoc, targetDoc, ctx)
-            if (!los.hasLOS) {
-                result.cover = "total";
-                result.bonus = null;
-            }
+            los = evaluateLOS(attackerDoc, targetDoc, ctx);
         }
 
-        const finalResult = resolveCoverResult(targetDoc, activity, result);
+        const result = los.hasLOS
+            ? evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, { debug: debugOn })
+            : { cover: "total", bonus: null };
+
+        const finalResult = resolveCoverResult(targetDoc, result, { activity, includeEmbeddedCover });
 
         out.push({ target: t, result: finalResult, los });
     }
@@ -250,15 +192,17 @@ export function getCoverForTargets({ attacker, targets = null, scene = canvas?.s
  * @param {DialogNoteData} [note={}] The note definition.
  * @returns {void}
  */
-export function setDialogNote(dialogConfig, { cover, target, icon = "", label = "", hint = "" } = {}) {
+export function setDialogNote(dialogConfig, note = {}) {
     if (!dialogConfig) return;
 
     dialogConfig.options ??= {};
     const data = (dialogConfig.options[MODULE_ID] ??= {});
     data.notes ??= [];
 
+    const { cover, target, icon = "", label = "", hint = "", ...metadata } = note;
     const targetId = target == null ? null : String(target);
     const noteData = {
+        ...metadata,
         cover: cover ?? null,
         target: targetId,
         icon: String(icon ?? ""),
@@ -274,7 +218,6 @@ export function setDialogNote(dialogConfig, { cover, target, icon = "", label = 
         data.notes.push(noteData);
     }
 
-    data.rendered = false;
 }
 
 /**
@@ -310,7 +253,6 @@ export function initApi() {
         getCoverForTargets,
         getLibraryMode,
         setLibraryMode,
-        getIgnoreCover,
         getLOS,
         getTokenTokenDistance,
         setDialogNote,

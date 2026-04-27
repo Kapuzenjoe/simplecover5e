@@ -1,7 +1,9 @@
-import { MODULE_ID, SETTING_KEYS } from "./constants.config.mjs";
-import { SimpleCoverVariantConfig, SimpleCoverAutomationConfig } from "./menu.config.mjs";
-import { clearCoverDebug } from "../services/cover.debug.mjs";
-import { clearSystemCoverEffects, changeTokenShapeGlobal } from "../services/cover.service.mjs";
+import { MODULE_ID, SETTING_KEYS } from "./constants.mjs";
+import { SimpleCoverVariantConfig } from "../applications/variant-config.mjs";
+import { SimpleCoverAutomationConfig } from "../applications/automation-config.mjs";
+import { clearCoverDebug } from "../cover/debug.mjs";
+import { clearSystemCoverEffects } from "../cover/status.mjs";
+import { changeTokenShapeGlobal } from "../canvas/token-shape.mjs";
 
 /**
  * Update token shapes on gridless scenes after the related setting changes.
@@ -377,11 +379,21 @@ const SETTINGS = [
 ];
 
 /**
+ * Initialize module settings and setting-related hooks.
+ *
+ * @returns {void}
+ */
+export function initSettings() {
+  registerSettings();
+  Hooks.on("getSceneControlButtons", getSceneControlButtons);
+}
+
+/**
  * Register all module settings and configuration menus.
  *
  * @returns {void}
  */
-export function registerSettings() {
+function registerSettings() {
   for (const { key, ...data } of SETTINGS) {
     game.settings.register(MODULE_ID, key, data);
   }
@@ -413,7 +425,7 @@ export function registerSettings() {
  * @param {Record<string, SceneControl>} controls The current scene control configuration.
  * @returns {void}
  */
-export function getSceneControlButtons(controls) {
+function getSceneControlButtons(controls) {
   if (!game.user.isGM) return;
   controls.tokens.tools[MODULE_ID] = {
     name: MODULE_ID,

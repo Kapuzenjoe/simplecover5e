@@ -1,9 +1,9 @@
 /**
- * @import { CoverContext, CoverEvaluationResult, DebugTokenShapes, LosResult, OccluderPrism, Position, TestPoint } from "../types/shared.types.mjs";
+ * @import { CoverContext, CoverEvaluationResult, DebugTokenShapes, LosResult, OccluderPrism, Position, TestPoint } from "../types/shared.mjs";
  */
 
-import { MODULE_ID, COVER, SETTING_KEYS } from "../config/constants.config.mjs";
-import { getTokenExternalRadius, isBlockingCreatureToken, getCreatureHeight, isEllipse, isWallHeightModuleActive } from "./cover.service.mjs";
+import { MODULE_ID, COVER, SETTING_KEYS } from "../config/constants.mjs";
+import { getTokenExternalRadius, isBlockingCreatureToken, getCreatureHeight, isEllipse, isWallHeightModuleActive } from "./token.mjs";
 
 /**
  * Build a cover evaluation context for a single pass.
@@ -169,6 +169,7 @@ function wallsBlock(aCorner, bCorner, ctx, losPolygon = null) {
     }
 
     let blocked = false;
+    let surfaceCollisionBlocked = false;
     let collisions = [];
 
     const debugData = {
@@ -202,17 +203,31 @@ function wallsBlock(aCorner, bCorner, ctx, losPolygon = null) {
                 tMin,
                 tMax
             }) ?? false;
+            surfaceCollisionBlocked ||= surfaceBlocked;
 
-            const wallBlocked = backend.testCollision(A, B, {
-                type: "sight",
-                mode: "all",
-                useThreshold: true,
-                level: fromLevel,
-                tMin,
-                tMax
-            }) ?? false;
-
-            collisions = wallBlocked;
+            let wallBlocked = false;
+            if (isWallHeightModuleActive()) {
+                const wallCollisions = backend.testCollision(A, B, {
+                    type: "sight",
+                    mode: "all",
+                    useThreshold: true,
+                    level: fromLevel,
+                    tMin,
+                    tMax
+                }) ?? [];
+                collisions.push(...wallCollisions);
+                wallBlocked = wallCollisions.length > 0;
+            }
+            else {
+                wallBlocked = backend.testCollision(A, B, {
+                    type: "sight",
+                    mode: "any",
+                    useThreshold: true,
+                    level: fromLevel,
+                    tMin,
+                    tMax
+                }) ?? false;
+            }
 
             debugData.segment1 = {
                 tMin,
@@ -221,7 +236,7 @@ function wallsBlock(aCorner, bCorner, ctx, losPolygon = null) {
                 wallBlocked
             };
 
-            if (surfaceBlocked || wallBlocked.length) blocked = true;
+            if (surfaceBlocked || wallBlocked) blocked = true;
         }
     }
 
@@ -237,15 +252,31 @@ function wallsBlock(aCorner, bCorner, ctx, losPolygon = null) {
             tMin,
             tMax
         }) ?? false;
+        surfaceCollisionBlocked ||= surfaceBlocked;
 
-        const wallBlocked = backend.testCollision(A, B, {
-            type: "sight",
-            mode: "any",
-            useThreshold: true,
-            level: toLevel,
-            tMin,
-            tMax
-        }) ?? false;
+        let wallBlocked = false;
+        if (isWallHeightModuleActive()) {
+            const wallCollisions = backend.testCollision(A, B, {
+                type: "sight",
+                mode: "all",
+                useThreshold: true,
+                level: toLevel,
+                tMin,
+                tMax
+            }) ?? [];
+            collisions.push(...wallCollisions);
+            wallBlocked = wallCollisions.length > 0;
+        }
+        else {
+            wallBlocked = backend.testCollision(A, B, {
+                type: "sight",
+                mode: "any",
+                useThreshold: true,
+                level: toLevel,
+                tMin,
+                tMax
+            }) ?? false;
+        }
 
         debugData.segment2 = {
             tMin,
@@ -265,7 +296,7 @@ function wallsBlock(aCorner, bCorner, ctx, losPolygon = null) {
         );
     }
 
-    if (!isWallHeightModuleActive() || losPolygon) {
+    if (!isWallHeightModuleActive() || losPolygon || surfaceCollisionBlocked) {
         return { blocked, A, B };
     }
 
@@ -723,23 +754,23 @@ export function evaluateLOS(attackerDoc, targetDoc, ctx) {
  */
 function getConstrainedTestPoints(points, td) {
     const level = td.parent?.levels?.get(td?.level) ?? null;
-    const origin = td.getVisionOrigin?.() ?? td.getCenterPoint?.() ?? {
-        x: td.x,
-        y: td.y,
-        elevation: td?.elevation ?? 0,
-        level: td?.level ?? null
-    };
+    if (!level) return points;
+    const origin = td.getMovementOrigin();
 
-    if ((points.length === 1) && (points[0].x === origin.x) && (points[0].y === origin.y)) {
+    if ((points.length === 1) && (points[0].x === origin.x) && (points[0].y === origin.y)
+        && ((points[0].elevation === undefined) || (points[0].elevation === origin.elevation))) {
         return points;
     }
 
     const { width, height } = td.getSize();
     const boundingBox = new PIXI.Rectangle(td.x, td.y, width, height);
-    const polygon = foundry.canvas.geometry.ClockwiseSweepPolygon.create(origin, { type: "sight", level, boundingBox });
+    const polygon = foundry.canvas.geometry.ClockwiseSweepPolygon.create(origin, { type: "move", level, boundingBox });
+    const options = { type: "move", mode: "any", level };
     for (let i = points.length - 1; i >= 0; i--) {
-        const { x, y } = points[i];
-        if (polygon.contains(x, y)) continue;
+        const point = points[i];
+        if (polygon.contains(point.x, point.y) && ((point.elevation === undefined)
+            || !level.parent.testSurfaceCollision(origin, point, options))) continue;
+
         points[i] = points[points.length - 1];
         points.length--;
     }

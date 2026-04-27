@@ -1,8 +1,8 @@
 /**
- * @import { CoverLevel, CoverRuleFlagObject } from "../types/shared.types.mjs";
+ * @import { CoverLevel, CoverRuleFlagObject } from "../types/shared.mjs";
  */
 
-import { MODULE_ID, COVER, SETTING_KEYS } from "../config/constants.config.mjs";
+import { MODULE_ID, COVER, SETTING_KEYS } from "../config/constants.mjs";
 
 const EXCLUDED_UNITS = new Set(["self", "touch", "special"]);
 const EXCLUDED_TEMPLATE_TYPES = new Set(["", "radius"]);

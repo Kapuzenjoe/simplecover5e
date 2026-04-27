@@ -1,5 +1,5 @@
-import { MODULE_ID, SETTING_KEYS } from "../config/constants.config.mjs";
-import { getCreatureHeight, getTokenExternalRadius } from "../services/cover.service.mjs";
+import { MODULE_ID, SETTING_KEYS } from "../config/constants.mjs";
+import { getCreatureHeight, getTokenExternalRadius } from "../cover/token.mjs";
 
 /**
  * Measure the minimal 3D distance between two tokens in scene grid units.

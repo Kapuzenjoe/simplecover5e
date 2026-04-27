@@ -1,70 +1,21 @@
-import { FLAGS } from "./config/constants.config.mjs";
-import { registerSettings, getSceneControlButtons } from "./config/settings.config.mjs";
-import {
-  ignoreCoverProperties,
-  clearCoverOnCombatTurnChange,
-  clearCoverOnDeleteCombat,
-  clearCoverOnMovement,
-  onPreRollAttack,
-  onPreRollSavingThrow,
-  onPostSavingThrowRollConfiguration,
-  onBuildAttackRollConfig,
-  onBuildSavingThrowRollConfig
-} from "./handlers/cover.hooks.mjs";
-import { initQueries } from "./services/queries.service.mjs";
-import { clearCoverDebug } from "./services/cover.debug.mjs";
-import { onHoverToken, onPreDeleteToken } from "./services/hover.service.mjs";
-import { initApi, readyApi } from "./utils/api.mjs";
-import { onRenderChatMessage, onRenderRollConfigurationDialog } from "./services/dialog.service.mjs";
-import { onCreateToken } from "./services/cover.service.mjs";
+import { initSettings } from "./config/settings.mjs";
+import { initCoverHooks } from "./cover/hooks.mjs";
+import { initQueries } from "./socket/queries.mjs";
+import { initCoverDebugHooks } from "./cover/debug.mjs";
+import { initDaeIntegration } from "./integrations/dae.mjs";
+import { initRollDialogHooks } from "./applications/roll-dialog.mjs";
+import { initHoverHooks } from "./canvas/hover.mjs";
+import { initApi, readyApi } from "./cover/api.mjs";
 
-// === Init Phase ===
 Hooks.once("init", () => {
-  registerSettings();
+  initSettings();
   initQueries();
-  ignoreCoverProperties();
+  initCoverHooks();
+  initCoverDebugHooks();
+  initDaeIntegration();
+  initRollDialogHooks();
+  initHoverHooks();
   initApi();
 });
 
 Hooks.once("ready", readyApi);
-Hooks.on("canvasReady", clearCoverDebug);
-Hooks.on("getSceneControlButtons", getSceneControlButtons);
-
-// === Calc Cover Hooks ===
-for (const [hook, fn] of [
-  ["combatTurnChange", clearCoverOnCombatTurnChange],
-  ["deleteCombat", clearCoverOnDeleteCombat],
-  ["recordToken", clearCoverOnMovement],
-  ["dnd5e.preRollAttack", onPreRollAttack],
-  ["dnd5e.preRollSavingThrow", onPreRollSavingThrow],
-  ["hoverToken", onHoverToken],
-  ["dnd5e.renderChatMessage", onRenderChatMessage],
-  ["renderRollConfigurationDialog", onRenderRollConfigurationDialog],
-  ["preDeleteToken", onPreDeleteToken],
-  ["createToken", onCreateToken],
-  ["dnd5e.buildAttackRollConfig", onBuildAttackRollConfig],
-  ["dnd5e.buildSavingThrowRollConfig", onBuildSavingThrowRollConfig],
-  ["dnd5e.postSavingThrowRollConfiguration", onPostSavingThrowRollConfiguration]
-]) {
-  Hooks.on(hook, fn);
-}
-
-// === Register Flags for DAE ===
-
-Hooks.once("dae.setupComplete", () => {
-  const dae = globalThis.DAE;
-  if (!dae) return;
-
-  const fields = Object.keys(FLAGS);
-  dae.addAutoFields?.(fields);
-  dae.localizationMap ??= {};
-
-  for (const field of fields) {
-    const localization = FLAGS[field];
-    if (!localization) continue;
-
-    const name = game.i18n.localize(localization.name);
-    const description = game.i18n.localize(localization.hint);
-    dae.localizationMap[field] = { name, description };
-  }
-});

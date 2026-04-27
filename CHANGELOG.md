@@ -24,6 +24,7 @@
 - Token outer radius is now resolved centrally from document data and reused consistently across cover and distance calculations.
 - Updated the German localization.
 - General cleanup, smaller bug fixes, and performance improvements.
+- New project folder structure for better organization.
 
 ## 2.0.0
 

@@ -2,15 +2,5 @@
     <legend>{{ifThen legend legend (localize "SETUP.Configuration")}}</legend>
     {{#if message}}<p class="note {{message.level}}">{{message.text}}</p>{{/if}}
 
-    {{#if sizes}}
-    {{#each sizes as |s|}}
-    <div class="form-group">
-        <label>{{s.label}} ({{../gridUnits}})</label>
-        {{numberInput s.value name=(concat ../settingKey "." s.key) min=0 step=0.5 placeholder=s.default}}
-    </div>
-    {{/each}}
-    {{#if hint}}<p class="hint">{{hint}}</p>{{/if}}
-    {{else}}
     {{> "dnd5e.fieldlist" fields}}
-    {{/if}}
 </fieldset>

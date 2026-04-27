@@ -111,4 +111,11 @@
  * @property {string} [icon=""] The icon class or image data used by the note.
  * @property {string} [label=""] The note label shown in the dialog.
  * @property {string} [hint=""] The note hint shown in the dialog.
+ * @property {CoverLevel} [desiredCover] The originally computed cover level for chat summaries.
+ * @property {0|2|5|null} [desiredBonus] The originally computed cover bonus.
+ * @property {string} [targetId] The target token ID used by chat message notes.
+ * @property {string} [targetName] The target display name.
+ * @property {string} [targetActorUuid] The target actor UUID.
+ * @property {string} [activityUuid] The activity UUID associated with the roll.
+ * @property {CoverLevel|string|null} [newMode] The selected cover level after a dialog override.
  */

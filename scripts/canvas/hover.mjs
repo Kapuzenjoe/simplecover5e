@@ -1,6 +1,16 @@
-import { MODULE_ID, SETTING_KEYS, HOVER, COVER_ICON_PATHS } from "../config/constants.config.mjs";
-import { measureTokenDistance } from "../utils/distance.mjs";
-import { getCover } from "../utils/api.mjs";
+import { MODULE_ID, SETTING_KEYS, HOVER, COVER } from "../config/constants.mjs";
+import { measureTokenDistance } from "./distance.mjs";
+import { getCover } from "../cover/api.mjs";
+
+/**
+ * Register hooks used by the token hover cover display.
+ *
+ * @returns {void}
+ */
+export function initHoverHooks() {
+  Hooks.on("hoverToken", onHoverToken);
+  Hooks.on("preDeleteToken", onPreDeleteToken);
+}
 
 /**
  * Remove any hover label elements previously attached to a token.
@@ -27,7 +37,7 @@ function removeHoverDecorations(token) {
  * @param {string} userId The ID of the user who initiated the deletion.
  * @returns {void}
  */
-export function onPreDeleteToken(td, options, userId){
+function onPreDeleteToken(td, options, userId){
   removeHoverDecorations(td?.object)
 }
 
@@ -41,7 +51,7 @@ export function onPreDeleteToken(td, options, userId){
  * @param {boolean} hoverState True when hover starts, or false when hover ends.
  * @returns {Promise<void>} Resolves after the hover label has been updated.
  */
-export async function onHoverToken(token, hoverState) {
+async function onHoverToken(token, hoverState) {
   const hoveredToken = token;
   if (!hoveredToken) return;
 
@@ -75,7 +85,14 @@ export async function onHoverToken(token, hoverState) {
   let coverKey = "";
   if (hoverMode === "coverOnly" || hoverMode === "coverAndDistance") {
     const losCheck = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.LOS_CHECK);
-    const result = getCover({ attacker: actorToken, target: hoveredToken, scene: hoveredToken.scene, debug: false, losCheck: losCheck });
+    const result = getCover({
+      attacker: actorToken,
+      target: hoveredToken,
+      scene: hoveredToken.scene,
+      debug: false,
+      losCheck,
+      includeEmbeddedCover: true
+    });
 
     if (result?.cover !== "none") {
       coverKey = result?.cover || "";
@@ -142,13 +159,11 @@ export async function onHoverToken(token, hoverState) {
 
   let coverRowHtml = "";
   if (showCoverIcon) {
-    const iconPath = COVER_ICON_PATHS[coverKey];
-    if (iconPath) {
-      const coverHtml = `
-        <span class="img cover-icon" style="background-image: url('${iconPath}');"></span>
-      `;
-      coverRowHtml = `<div class="cover-row">${coverHtml}</div>`;
-    }
+    const iconPath = CONFIG.statusEffects[COVER.IDS[coverKey]].img;
+    const coverHtml = `
+      <span class="img cover-icon" style="background-image: url('${iconPath}');"></span>
+    `;
+    coverRowHtml = `<div class="cover-row">${coverHtml}</div>`;
   }
 
   htmlLabel.innerHTML = `
