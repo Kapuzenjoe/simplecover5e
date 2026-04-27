@@ -1,6 +1,6 @@
 # Simple Cover 5e
 
-![Static Badge](https://img.shields.io/badge/Foundry-v13--14-informational)
+![Static Badge](https://img.shields.io/badge/Foundry-v14-informational)
 ![Static Badge](https://img.shields.io/badge/Dnd5e-v5.2-informational)
 ![Static Badge](https://img.shields.io/badge/Dnd5e-v5.3-informational)
 
@@ -19,7 +19,7 @@
   - **Square / Gridless (Square Shape)**: if **1–2** lines are blocked, the target gains **Half Cover**; if **3** lines are blocked, the target gains **Three-Quarters Cover**.
   - **Hex**: if **1–3** lines are blocked, the target gains **Half Cover**; if **4+** lines are blocked, the target gains **Three-Quarters Cover**.
   - **Gridless (Circle Shape)**: uses an 8-sample perimeter; if **1–5** lines are blocked, the target gains **Half Cover**; if **6+** lines are blocked, the target gains **Three-Quarters Cover**.
-- Blocking tokens are treated as 3D prisms with configurable heights by creature size. When the **Wall Height** module is active, creature heights are taken from that module instead of these defaults. Non-blocking creatures (hidden tokens, ethereal/dead creatures, or creatures with 0 max HP) are ignored when evaluating cover.
+- Blocking tokens are treated as 3D prisms using Foundry V14's native token depth. Non-blocking creatures (hidden tokens, ethereal/dead creatures, or creatures with 0 max HP) are ignored when evaluating cover.
 - For **gridless Circle Shapes**, blocking creatures use a slightly smaller internal square AABB as their blocking footprint, sized to sit safely inside the circular radius.
 - Effects are pushed directly into the roll (target AC / save DC adjustments) and synchronized with token status effects.
 - On **gridless** scenes, larger tokens are evaluated using multiple sample centers (virtual sub-cells / multi-sample layouts) to approximate multi-square behavior where no RAW gridless procedure exists.
@@ -61,9 +61,8 @@ Simple Cover 5e is **partially compatible** with **Ready Set Roll 5e**:
 
 ### Wall Height
 
-- When the **Wall Height** module is active, simplecover5e uses its per-token LOS height for 3D cover evaluation and ignores this module’s default creature height settings.
-- Walls with Wall Height bounds (`top` / `bottom`) are treated as 3D barriers: a cover line is only blocked if the 3D line between attacker and target passes through the wall’s height range.
-- For 3D LOS checks, the attacker’s ray starts at about **70%** of their height (approximate eye level) and aims at **50%** of the target’s height, so low walls tend to grant partial cover instead of behaving like unrealistic full-height barriers.
+- Wall Height wall bounds (`top` / `bottom`) are treated as 3D barriers while the module remains supported: a cover line is only blocked if the 3D line between attacker and target passes through the wall’s height range.
+- Creature height is still resolved from Foundry V14 native token depth. Wall Height no longer replaces creature height data.
 
 ## Examples (with active debug mode)
 

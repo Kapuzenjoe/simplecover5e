@@ -49,9 +49,9 @@ function onPreDeleteToken(td, options, userId){
  * @memberof hookEvents
  * @param {Token5e} token The hovered token.
  * @param {boolean} hoverState True when hover starts, or false when hover ends.
- * @returns {Promise<void>} Resolves after the hover label has been updated.
+ * @returns {void}
  */
-async function onHoverToken(token, hoverState) {
+function onHoverToken(token, hoverState) {
   const hoveredToken = token;
   if (!hoveredToken) return;
 
@@ -125,12 +125,6 @@ async function onHoverToken(token, hoverState) {
     return;
   }
 
-  let fontSize = nameplate.style?.fontSize ?? 16;
-  if (typeof fontSize === "string") {
-    const parsed = parseInt(fontSize, 10);
-    if (!Number.isNaN(parsed)) fontSize = parsed;
-  }
-
   const measurementHud = document.querySelector("#hud #measurement");
   if (!measurementHud) {
     removeHoverDecorations(hoveredToken);
@@ -159,7 +153,8 @@ async function onHoverToken(token, hoverState) {
 
   let coverRowHtml = "";
   if (showCoverIcon) {
-    const iconPath = CONFIG.statusEffects[COVER.IDS[coverKey]].img;
+    const statusId = COVER.IDS[coverKey];
+    const iconPath = CONFIG.statusEffects.find(effect => effect.id === statusId).img;
     const coverHtml = `
       <span class="img cover-icon" style="background-image: url('${iconPath}');"></span>
     `;

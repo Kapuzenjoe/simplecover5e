@@ -70,7 +70,7 @@ These settings enable or disable optional cover rules. This page lists what can 
   Ignores friendly creature blockers during cover evaluation.
 
 - **Prone Creature Height Adjustment**
-  Controls how prone creatures are treated for 3D cover. Options are **None** (default), **Treat as one size smaller**, and **Treat as half as tall**. With *Wall Height* active, **Treat as one size smaller** falls back to half height.
+  Controls how prone creatures are treated for 3D cover. Options are **None** (default), **Treat as one size smaller**, and **Treat as half as tall**.
 
 - **Ignore Cover for All Area Effects**
   Skips cover checks for activities that use an area template.
@@ -140,9 +140,9 @@ Controls how target test points removed by token clipping affect cover evaluatio
 
 Creature heights are used to treat tokens as 3D blockers during cover evaluation.
 
-In Foundry V14, Simple Cover 5e uses the native token depth (`token.document.depth`) together with the scene grid distance. The custom Creature Heights menu is not registered in V14.
+Simple Cover 5e uses Foundry V14's native token depth (`token.document.depth`) together with the scene grid distance. The old configurable Creature Heights menu is no longer used.
 
-In Foundry V13, Simple Cover 5e uses configurable default heights per creature size category. When the **Wall Height** module is active, Simple Cover 5e uses Wall Height's per-token LoS height when available instead of these defaults.
+Wall Height wall bounds can still affect wall blocking while that integration remains supported, but Wall Height no longer replaces creature height data.
 
 ## Hover (Client UI)
 

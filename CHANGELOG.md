@@ -4,6 +4,7 @@
 
 - **Removed Foundry V13 support**. Simple Cover 5e now relies on only Foundry V14 token depth and native token geometry.
 - Removed the old configurable Creature Heights menu and Wall Height creature height support. This was already disabled in V14+, so this only removes unused V13-era code.
+- `getCover` and `getCoverForTargets` now excepts optional parameter `includeEmbeddedCover` Whether embedded cover effects on the target should be considered.
 - When Midi-QOL is configured with `coverCalculation === "simplecover5e"`, Simple Cover 5e now behaves like Library Mode and only acts as a cover provider.
   - In this mode, the cover workflow stays in Midi-QOL's hands to avoid conflicting roll mutations.
   - Roll dialog cover notes are currently disabled for this Midi-QOL workflow. Keeping them in sync with Midi-QOL causes too many edge cases, so this needs a different strategy or should remain in Midi-QOL.

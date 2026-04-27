@@ -1,12 +1,14 @@
 import { MODULE_ID, COVER, SETTING_KEYS } from "../config/constants.mjs";
-import { isLibraryMode } from "../integrations/midi-qol.mjs";
+import { isMidiAutomation } from "../integrations/midi-qol.mjs";
 import { clearSystemCoverEffects } from "./status.mjs";
 import { isDefeatedToken } from "./token.mjs";
 import { onCreateToken } from "../canvas/token-shape.mjs";
-import { addCoverNote, applyDialogCoverOverride } from "../applications/roll-dialog.mjs";
+import { applyDialogCoverOverride } from "../applications/roll-dialog.mjs";
 import { getCover, getCoverForTargets } from "./api.mjs";
 import { clearCoverDebug } from "./debug.mjs";
 import { setCoverStatusViaGM } from "../socket/queries.mjs";
+
+const COVER_TARGETS_PATH = `data.flags.${MODULE_ID}.targets`;
 
 /**
  * Register cover automation hooks for the native dnd5e workflow.
@@ -72,22 +74,39 @@ function resolveSourceMessage(config) {
 /**
  * Test whether the native roll automation should run for the current workflow.
  *
+ * @param {Combat|null} [combat=game.combats.active] The combat context for combat-only automation.
  * @returns {boolean} True when cover automation may mutate the roll workflow.
  */
-function rollAutomationEnabled() {
-  if (isLibraryMode()) return false;
-  return !(game.settings.get(MODULE_ID, SETTING_KEYS.ONLY_IN_COMBAT) && !game.combats?.active);
+function rollAutomationEnabled(combat = game.combats?.active) {
+  if (game.settings.get(MODULE_ID, SETTING_KEYS.LIBRARY_MODE)) return false;
+  if (isMidiAutomation()) return false;
+  return !game.settings.get(MODULE_ID, SETTING_KEYS.ONLY_IN_COMBAT) || !!combat;
 }
 
 /**
- * Determine whether cover hints should be written for a cover level.
+ * Store cover state for the roll dialog and optional GM chat summary.
  *
+ * @param {BasicRollMessageConfiguration} message The pending roll message configuration.
+ * @param {Actor5e} actor The target actor.
  * @param {("none"|"half"|"threeQuarters"|"total")} cover The resolved cover level.
- * @returns {boolean} True if a hint should be shown.
+ * @returns {void}
  */
-function shouldShowCoverHint(cover) {
+function setCoverTarget(message, actor, cover) {
+  if (!message || !actor || !COVER.KEYS.includes(cover)) return;
+
   const mode = game.settings.get(MODULE_ID, SETTING_KEYS.COVER_HINTS);
-  return mode === "always" || (mode === "conditional" && cover !== "none");
+  if (mode !== "always" && (mode !== "conditional" || cover === "none")) return;
+
+  let targets = foundry.utils.getProperty(message, COVER_TARGETS_PATH);
+  if (!Array.isArray(targets)) {
+    targets = [];
+    foundry.utils.setProperty(message, COVER_TARGETS_PATH, targets);
+  }
+
+  const data = { uuid: actor.uuid, originalCover: cover, newCover: null };
+  const existing = targets.findIndex(target => target.uuid === actor.uuid);
+  if (existing >= 0) targets[existing] = data;
+  else targets.push(data);
 }
 
 /**
@@ -132,20 +151,7 @@ function onPreRollAttack(config, dialog, message) {
     void setCoverStatusViaGM(targetActor.uuid, resolvedCover);
     setAttackCoverBonus({ desiredBonus: resolvedBonus, targetActor, singleTarget: targets.length === 1, config, message });
 
-    const isHideNPCNamesActive = game.modules?.get?.("hide-npc-names")?.active === true;
-    const targetName = isHideNPCNamesActive && game?.hnn ? game.hnn.getReplacementInfo(targetActor).displayName : out.target?.name || "???";
-
-    if (shouldShowCoverHint(resolvedCover)) {
-      addCoverNote(dialog, {
-        cover: resolvedCover,
-        bonus: resolvedBonus,
-        targetId: out.target.id,
-        targetName: targetName,
-        targetActorUuid: targetActor.uuid,
-        activityUuid: activity.uuid,
-        hint: game.i18n.format(COVER.I18N.HINT_KEYS.Attack[resolvedCover], { tokenName: targetName })
-      });
-    }
+    setCoverTarget(message, targetActor, resolvedCover);
   }
 }
 
@@ -194,17 +200,7 @@ function onPreRollSavingThrow(config, dialog, message) {
   void setCoverStatusViaGM(actor.uuid, resolvedCover);
   setSaveCoverBonus(config.rolls?.[0], resolvedBonus, resolvedCover);
 
-  if (shouldShowCoverHint(resolvedCover)) {
-    addCoverNote(dialog, {
-      cover: resolvedCover,
-      bonus: resolvedBonus,
-      targetId: targetToken.id,
-      targetName: targetToken.name,
-      targetActorUuid: actor.uuid,
-      activityUuid: activity.uuid,
-      hint: game.i18n.localize(COVER.I18N.HINT_KEYS.Save[resolvedCover])
-    });
-  }
+  setCoverTarget(message, actor, resolvedCover);
 }
 
 /**
@@ -223,7 +219,7 @@ function onPostSavingThrowRollConfiguration(rolls, config, dialog, message) {
     config?.ability === "dex"
     && rolls?.some?.(roll => roll?.options?.[MODULE_ID]?.totalCover === true);
 
-  if (!isTotalCoverSave || isLibraryMode()) return;
+  if (!isTotalCoverSave || !rollAutomationEnabled()) return;
 
   ui.notifications.info(game.i18n.localize(COVER.I18N.HINT_KEYS.Save.total));
   return false;
@@ -241,7 +237,7 @@ function onPostSavingThrowRollConfiguration(rolls, config, dialog, message) {
  */
 async function clearCoverOnCombatTurnChange(combat, previous, current) {
   try {
-    if (isLibraryMode()) return;
+    if (!rollAutomationEnabled(combat)) return;
     if (!game.users.activeGM?.isSelf) return;
     if (!game.settings.get(MODULE_ID, SETTING_KEYS.RMV_ON_COMBAT)) return;
 
@@ -265,12 +261,10 @@ async function clearCoverOnCombatTurnChange(combat, previous, current) {
  */
 async function clearCoverOnMovement(token) {
   try {
-    if (isLibraryMode()) return;
+    const active = game.combats?.active;
+    if (!rollAutomationEnabled(active)) return;
     if (!game.users.activeGM?.isSelf) return;
     if (!game.settings.get(MODULE_ID, SETTING_KEYS.RMV_ON_MOVE)) return;
-
-    const active = game.combats?.active;
-    if (!active) return;
 
     await clearSystemCoverEffects(active);
 
@@ -292,7 +286,7 @@ async function clearCoverOnMovement(token) {
  */
 async function clearCoverOnDeleteCombat(combat) {
   try {
-    if (isLibraryMode()) return;
+    if (!rollAutomationEnabled(combat)) return;
     if (!game.users.activeGM?.isSelf) return;
     if (!game.settings.get(MODULE_ID, SETTING_KEYS.RMV_ON_COMBAT)) return;
 
@@ -388,9 +382,9 @@ function setSaveCoverBonus(rollConfig, desiredBonus, desiredCover) {
  * @returns {void}
  */
 function onBuildAttackRollConfig(app, config, formData, index) {
-  if (isLibraryMode()) return;
+  if (!rollAutomationEnabled()) return;
 
-  const changes = applyDialogCoverOverride(app, formData, "attack");
+  const changes = applyDialogCoverOverride(app, formData);
   const targets = app.message?.data?.flags?.dnd5e?.targets ?? [];
 
   for (const change of changes) {
@@ -417,9 +411,9 @@ function onBuildAttackRollConfig(app, config, formData, index) {
  * @returns {void}
  */
 function onBuildSavingThrowRollConfig(app, config, formData, index) {
-  if (isLibraryMode()) return;
+  if (!rollAutomationEnabled()) return;
 
-  for (const change of applyDialogCoverOverride(app, formData, "save")) {
+  for (const change of applyDialogCoverOverride(app, formData)) {
     setSaveCoverBonus(config, change.resolvedBonus, change.resolvedCover);
   }
 }

@@ -64,7 +64,7 @@ export function getSystemCoverEffects() {
   ].map(([cover, statusId]) => ({
     cover,
     statusId,
-    effectId: CONFIG.statusEffects[statusId]._id
+    effectId: CONFIG.statusEffects.find(effect => effect.id === statusId)._id
   }));
 }
 

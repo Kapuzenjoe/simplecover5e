@@ -94,21 +94,9 @@ Query or toggle *Library Mode*. When Library Mode is enabled, Simple Cover 5e st
 
 Library Mode is stored as a visible world setting with a caution label. It can also be enabled through the API by integrations that want to use Simple Cover 5e only as a cover provider. Only GMs can change the setting through `setLibraryMode`, which returns `true` when the setting was updated. During Midi-QOL workflows, Simple Cover 5e also behaves as library-only when Midi-QOL is configured to use `simplecover5e` as its cover calculation mode, preventing both modules from applying cover automation at the same time.
 
-### Evaluate Ignore Cover Rules
+Library Mode disables Simple Cover 5e's automation only. API calls still evaluate ignore-cover rules when an `activity` is provided to `getCover(...)` or `getCoverForTargets(...)`.
 
-```js
-api.getIgnoreCover(activity, cover, targetActor?)
-// returns: { cover: ("none"|"half"|"threeQuarters"|"total"), bonus: (number|null) }
-```
-
-Resolve the effective cover level for an activity, including Simple Cover 5e's ignore-cover rules, such as item properties and feat-based checks for Sharpshooter or Spell Sniper.
-
-- `targetActor`: optional actor used for defensive cover flags such as `upgradeCover`.
-
-Library Mode disables Simple Cover 5e's automation only. API calls still evaluate ignore-cover rules when an `activity` is provided. Integrations can either:
-
-- pass `activity` to `getCover(...)` / `getCoverForTargets(...)`, or
-- call `getIgnoreCover(activity, cover, targetActor)` manually and apply the returned `{ cover, bonus }` as desired.
+Integrations that need rule-adjusted cover should pass the dnd5e activity to the cover query and apply the returned `{ cover, bonus }` as desired.
 
 ### Get LoS
 

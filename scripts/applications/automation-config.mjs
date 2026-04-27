@@ -1,5 +1,5 @@
-import { SETTING_KEYS } from "../config/constants.mjs";
-import { isLibraryMode } from "../integrations/midi-qol.mjs";
+import { MODULE_ID, SETTING_KEYS } from "../config/constants.mjs";
+import { isMidiAutomation } from "../integrations/midi-qol.mjs";
 import { SimpleCoverBaseConfigApp } from "./base-config.mjs";
 
 /**
@@ -48,7 +48,7 @@ export class SimpleCoverAutomationConfig extends SimpleCoverBaseConfigApp {
     async _preparePartContext(partId, context, options) {
         context = await super._preparePartContext(partId, context, options);
 
-        if (isLibraryMode()) {
+        if (game.settings.get(MODULE_ID, SETTING_KEYS.LIBRARY_MODE) || isMidiAutomation()) {
             context.fields = [];
             context.message = {
                 level: "warning",

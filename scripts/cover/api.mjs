@@ -11,7 +11,6 @@ import {
 import { ignoresCover } from "./rules.mjs";
 import { drawCoverDebug, clearCoverDebug } from "./debug.mjs";
 import { measureTokenDistance } from "../canvas/distance.mjs";
-import { isLibraryMode } from "../integrations/midi-qol.mjs";
 import { getActorCoverStates } from "./status.mjs";
 
 /**
@@ -211,22 +210,17 @@ export function setDialogNote(dialogConfig, note = {}) {
     };
 
     const existingIndex = targetId === null ? -1 : data.notes.findIndex(note => note.target === targetId);
-
-    if (existingIndex !== -1) {
-        data.notes[existingIndex] = noteData;
-    } else {
-        data.notes.push(noteData);
-    }
-
+    if (existingIndex !== -1) data.notes[existingIndex] = noteData;
+    else data.notes.push(noteData);
 }
 
 /**
- * Get whether the module is currently operating in library mode.
+ * Get whether the configured Library Mode setting is enabled.
  *
- * @returns {boolean} True if library mode is enabled.
+ * @returns {boolean} True if the Library Mode setting is enabled.
  */
 function getLibraryMode() {
-    return isLibraryMode();
+    return game.settings.get(MODULE_ID, SETTING_KEYS.LIBRARY_MODE);
 }
 
 /**

@@ -10,7 +10,7 @@
 
     {{#if this.cover}}
     <div class="form-fields">
-      <select name="{{../moduleId}}.{{this.target}}.cover">
+      <select name="{{this.name}}">
         {{selectOptions ../coverModes selected=this.cover localize=true}}
       </select>
     </div>
