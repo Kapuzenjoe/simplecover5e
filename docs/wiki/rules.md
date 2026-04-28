@@ -40,8 +40,8 @@ For `actionType === "rwak"` and cover is **not** `total`:
 
 Detection:
 
-- By item name `"Sharpshooter"` **or**
-- By `system.identifier === "sharpshooter"`
+- By `system.identifier === "sharpshooter"` **or**
+- By item name `"Sharpshooter"`
 
 ### Feat: Spell Sniper (Ranged Spell Attacks)
 
@@ -51,8 +51,8 @@ For `actionType === "rsak"` and cover is **not** `total`:
 
 Detection:
 
-- By item name `"Spell Sniper"` **or**
-- By `system.identifier === "spell-sniper"`
+- By `system.identifier === "spell-sniper"` **or**
+- By item name `"Spell Sniper"`
 
 ### Item: Wand of the War Mage
 
@@ -62,13 +62,13 @@ For ranged or melee spell attacks (`rsak` or `msak`) where cover is exactly `hal
 
 Detection:
 
-- Item name matches `wand of the war mage` **or**
 - By `system.identifier` matching one of:
   - `1-wand-of-the-war-mage`
   - `wand-of-the-war-mage`
   - `wand-of-the-war-mage-1`
   - `wand-of-the-war-mage-2`
   - `wand-of-the-war-mage-3`
+- Item name matches `wand of the war mage`
 
 ### Spell: Sacred Flame
 
@@ -76,8 +76,8 @@ If the computed cover is **not** total, cover is ignored for Sacred Flame saving
 
 Detection:
 
-- By item name `"Sacred Flame"` **or**
-- By `system.identifier === "sacred-flame"`
+- By `system.identifier === "sacred-flame"` **or**
+- By item name `"Sacred Flame"`
 
 
 ## Optional Rules (Module Settings)

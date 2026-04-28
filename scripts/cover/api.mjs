@@ -42,16 +42,27 @@ function getTokenTokenDistance(sourceToken, targetToken) {
 }
 
 /**
- * Resolve the final cover result exposed by the provider API.
+ * Evaluate the shared cover workflow for a prepared attacker/target pair.
  *
- * @param {TokenDocument|Position} targetDoc The target token document or target-like object.
- * @param {CoverEvaluationResult} result The raw cover result to adjust.
- * @param {object} [options={}] Additional result options.
- * @param {Activity5e|null} [options.activity=null] The activity being evaluated.
- * @param {boolean} [options.includeEmbeddedCover=false] Whether embedded cover effects on the target should be considered.
- * @returns {CoverEvaluationResult} The effective cover result.
+ * @param {TokenDocument|Position} attackerDoc The attacking token document or a generic position.
+ * @param {TokenDocument} targetDoc The target token document.
+ * @param {CoverContext} ctx The cover evaluation context.
+ * @param {object} [options={}] Cover workflow options.
+ * @param {boolean} [options.debug=false] Whether debug geometry should be collected.
+ * @param {boolean} [options.losCheck=false] Whether wall line-of-sight can force total cover.
+ * @param {Activity5e|null} [options.activity=null] The activity being evaluated for cover rules.
+ * @param {boolean} [options.includeEmbeddedCover=false] Whether embedded cover effects should be considered.
+ * @returns {{ result: CoverEvaluationResult, los: LosResult }} The final cover result and LOS data.
  */
-function resolveCoverResult(targetDoc, result, { activity = null, includeEmbeddedCover = false } = {}) {
+function evaluateTargetCover(attackerDoc, targetDoc, ctx, { debug = false, losCheck = false, activity = null, includeEmbeddedCover = false } = {}) {
+    const los = losCheck
+        ? evaluateLOS(attackerDoc, targetDoc, ctx)
+        : { hasLOS: true, targetLosPoints: [] };
+
+    const result = los.hasLOS
+        ? evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, { debug })
+        : { cover: "total", bonus: null };
+
     let cover = result.cover ?? "none";
     let bonus = result.bonus;
 
@@ -69,7 +80,7 @@ function resolveCoverResult(targetDoc, result, { activity = null, includeEmbedde
 
     result.cover = cover;
     result.bonus = bonus;
-    return result;
+    return { result, los };
 }
 
 /**
@@ -100,25 +111,21 @@ export function getCover({ attacker, target, scene = canvas?.scene, debug = null
     const ctx = buildCoverContext(scene);
     if (!ctx) return null;
 
-    let los = { hasLOS: true, targetLosPoints: [] };
-    if (losCheck) {
-        los = evaluateLOS(attackerDoc, targetDoc, ctx);
-    }
+    const { result, los } = evaluateTargetCover(attackerDoc, targetDoc, ctx, {
+        debug: debugOn,
+        losCheck,
+        activity,
+        includeEmbeddedCover
+    });
 
-    const result = los.hasLOS
-        ? evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, { debug: debugOn })
-        : { cover: "total", bonus: null };
-
-    const finalResult = resolveCoverResult(targetDoc, result, { activity, includeEmbeddedCover });
-
-    if (debugOn && game.users.activeGM && (finalResult.debugSegments?.length || los.targetLosPoints?.length)) {
+    if (debugOn && game.users.activeGM && (result.debugSegments?.length || los.targetLosPoints?.length)) {
         drawCoverDebug({
-            segments: finalResult.debugSegments ?? [],
-            tokenShapes: finalResult.debugTokenShapes,
+            segments: result.debugSegments ?? [],
+            tokenShapes: result.debugTokenShapes,
             targetLosPoints: los.targetLosPoints
         });
     }
-    return finalResult;
+    return result;
 }
 
 /**
@@ -157,18 +164,14 @@ export function getCoverForTargets({ attacker, targets = null, scene = canvas?.s
         const targetDoc = t?.document ?? t;
         if (!targetDoc) continue;
 
-        let los = { hasLOS: true, targetLosPoints: [] };
-        if (losCheck) {
-            los = evaluateLOS(attackerDoc, targetDoc, ctx);
-        }
+        const { result, los } = evaluateTargetCover(attackerDoc, targetDoc, ctx, {
+            debug: debugOn,
+            losCheck,
+            activity,
+            includeEmbeddedCover
+        });
 
-        const result = los.hasLOS
-            ? evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, { debug: debugOn })
-            : { cover: "total", bonus: null };
-
-        const finalResult = resolveCoverResult(targetDoc, result, { activity, includeEmbeddedCover });
-
-        out.push({ target: t, result: finalResult, los });
+        out.push({ target: t, result, los });
     }
 
     if (debugOn && out.length && game.users.activeGM) {

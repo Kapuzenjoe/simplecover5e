@@ -4,10 +4,10 @@
 
 - **Removed Foundry V13 support**. Simple Cover 5e now relies on only Foundry V14 token depth and native token geometry.
 - Removed the old configurable Creature Heights menu and Wall Height creature height support. This was already disabled in V14+, so this only removes unused V13-era code.
-- `getCover` and `getCoverForTargets` now excepts optional parameter `includeEmbeddedCover` Whether embedded cover effects on the target should be considered.
-- When Midi-QOL is configured with `coverCalculation === "simplecover5e"`, Simple Cover 5e now behaves like Library Mode and only acts as a cover provider.
+- `getCover` and `getCoverForTargets` can now treat embedded cover effects on the target as manual cover when `includeEmbeddedCover` is enabled, allowing effects such as Swallow's Total Cover to take priority over calculated cover.
+- When Midi-QOL cover calculation is set to `simplecover5e`, Simple Cover 5e now behaves like Library Mode and only acts as a cover provider.
   - In this mode, the cover workflow stays in Midi-QOL's hands to avoid conflicting roll mutations.
-  - Roll dialog cover notes are currently disabled for this Midi-QOL workflow. Keeping them in sync with Midi-QOL causes too many edge cases, so this needs a different strategy or should remain in Midi-QOL.
+  - Roll dialog cover notes are currently disabled for this Midi-QOL workflow. Midi-QOL calculates cover too late for this feature; set Midi-QOL's cover calculation to `none` as a workaround if you want to use Simple Cover 5e's roll dialog cover notes.
 - Simplified and shortened the roll dialog cover hint text for attacks and Dexterity saving throws.
   - Fixed hidden NPC names not being respected consistently in attack cover hints.
 - The optional GM-only cover-change summary is now attached to the existing roll chat card instead of creating a separate blind-roll chat message.
@@ -25,7 +25,7 @@
 - Token outer radius is now resolved centrally from document data and reused consistently across cover and distance calculations.
 - Updated the German localization.
 - General cleanup, smaller bug fixes, and performance improvements.
-- New project folder structure for better organization.
+- Reorganized the project folder structure for better maintainability.
 
 ## 2.0.0
 
