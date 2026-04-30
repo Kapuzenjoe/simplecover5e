@@ -63,9 +63,41 @@ Simple Cover 5e is **partially compatible** with **Ready Set Roll 5e**:
 - Wall Height wall bounds (`top` / `bottom`) are treated as 3D barriers while the module remains supported: a cover line is only blocked if the 3D line between attacker and target passes through the wall’s height range.
 - Creature height is still resolved from Foundry V14 native token depth. Wall Height no longer replaces creature height data.
 
-## Examples (with active debug mode)
+## Screenshots
 
-![Example 1](docs/example_1.png)
-![Example 2](docs/example_2.png)
-![Example 3](docs/example_3.png)
-![Example 4](docs/example_4.png)
+The debug overlay is enabled where the image focuses on cover sampling or line-of-sight behavior.
+
+<table>
+  <tr>
+    <td colspan="2">
+      <strong>Attack roll cover note</strong><br>
+      <img src="docs/example-attack-roll-cover-dialog.png" alt="Attack roll dialog showing a Half Cover note with active debug cover lines" width="100%">
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <strong>GM cover change indicator</strong><br>
+      <img src="docs/example-gm-cover-change-indicator.png" alt="GM chat card showing a cover change warning tooltip on the target row" width="100%">
+    </td>
+    <td width="50%">
+      <strong>Hover cover and distance label</strong><br>
+      <img src="docs/example-hover-cover-distance.png" alt="Token hover label showing cover and distance with clear debug lines" width="100%">
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2">
+      <strong>Elevation-aware cover and LoS</strong><br>
+      <img src="docs/example-elevation-los-cover.png" alt="Cover debug lines showing elevated attacker and target sampling with scene levels" width="100%">
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <strong>Wall line-of-sight debug</strong><br>
+      <img src="docs/example-wall-los-debug.png" alt="Wall line-of-sight debug points and cover rays around a blocking wall corner" width="100%">
+    </td>
+    <td width="50%">
+      <strong>Gridless large-token sampling</strong><br>
+      <img src="docs/example-gridless-large-token-debug.png" alt="Gridless large-token cover sampling with circular token shape and hover distance label" width="100%">
+    </td>
+  </tr>
+</table>
