@@ -3,17 +3,6 @@ import { SimpleCoverVariantConfig } from "../applications/variant-config.mjs";
 import { SimpleCoverAutomationConfig } from "../applications/automation-config.mjs";
 import { clearCoverDebug } from "../cover/debug.mjs";
 import { clearSystemCoverEffects } from "../cover/status.mjs";
-import { changeTokenShapeGlobal } from "../canvas/token-shape.mjs";
-
-/**
- * Update token shapes on gridless scenes after the related setting changes.
- *
- * @returns {Promise<void>} Resolves after matching token shapes have been updated.
- */
-async function onGridlessTokenShapeChange() {
-  if (!game.settings.get(MODULE_ID, SETTING_KEYS.GRIDLESS_TOKEN_SHAPE_UPDATE_EXISTING)) return;
-  return changeTokenShapeGlobal();
-}
 
 /**
  * Clear cover debug graphics when debug rendering is disabled.
@@ -278,16 +267,6 @@ const SETTINGS = [
       blank: false,
       trim: true
     }),
-    requiresReload: false,
-    onChange: onGridlessTokenShapeChange
-  },
-  {
-    key: SETTING_KEYS.GRIDLESS_TOKEN_SHAPE_UPDATE_EXISTING,
-    name: "SIMPLE_COVER_5E.Settings.GridlessTokenShapeUpdateExisting.Name",
-    hint: "SIMPLE_COVER_5E.Settings.GridlessTokenShapeUpdateExisting.Hint",
-    scope: "world",
-    config: false,
-    type: new foundry.data.fields.BooleanField({ initial: false }),
     requiresReload: false
   },
   {

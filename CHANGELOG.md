@@ -10,20 +10,22 @@
   - Roll dialog cover notes are currently disabled for this Midi-QOL workflow. Midi-QOL calculates cover too late for this feature; set Midi-QOL's cover calculation to `none` as a workaround if you want to use Simple Cover 5e's roll dialog cover notes.
 - Simplified and shortened the roll dialog cover hint text for attacks and Dexterity saving throws.
   - Fixed hidden NPC names not being respected consistently in attack cover hints.
-- The optional GM-only cover-change summary is now attached to the existing roll chat card instead of creating a separate blind-roll chat message.
+- GM-only cover changes are now shown inline on attack target rows and saving throw totals as a hoverable warning icon instead of as a separate chat summary.
 - Aligned attack and saving throw token resolution more closely with the DnD5e roll message workflow.
   - Saving throws now resolve their target/source tokens from the current speaker and originating usage message where possible.
 - Removed the old `9999` save-bonus workaround for Total Cover on Dexterity saving throws. **Total Cover now marks the roll as blocked**, removes the cover bonus, and prevents the saving throw roll/chat message from being created.
-- Optimized cover status handling by resolving DnD5e cover effects from `CONFIG.statusEffects` instead of hardcoded effect ids.
-  - Cover cleanup now targets the normal DnD5e cover effects more precisely, avoiding accidental cleanup of embedded/custom cover statuses from other Active Effects.
+- Cover cleanup now targets the normal DnD5e cover effects more precisely, avoiding accidental cleanup of embedded/custom cover statuses from other Active Effects.
 - **Prone Mode** now also affects attackers and targets during cover calculation, allowing prone to act as a simple ducking mechanic. For example, with Half Height enabled, a prone attacker uses half height as its attack height.
 - Blocking creature tokens are now resolved from the current scene document data instead of active canvas placeables.
   - Hidden and defeated tokens are ignored using Foundry/DnD5e document state instead of hardcoded status assumptions.
 - Changing Gridless Token Default Shape now only affects newly created tokens by default.
-  - Added a separate **Apply Gridless Shape to Existing Tokens** option to explicitly update existing tokens on gridless scenes.
+  - Added a button to the Gridless Token Default Shape setting row to explicitly apply the selected shape to existing tokens, with a choice between the current scene and all gridless scenes.
 - Cover cleanup now runs on combat turn changes and on the recorded end of token movement, reducing redundant updates.
-- Token outer radius is now resolved centrally from document data and reused consistently across cover and distance calculations.
+- Token outer radius is now applied consistently across cover and distance calculations.
+- Fixed gridless edge-to-edge distance measurement so external token radius no longer reduce vertical distance when elevations differ.
+- Hover cover/distance labels now match Foundry's waypoint label styling and use localized distance formatting.
 - Updated the German localization.
+- Configuration setting menus now use Foundry's core fieldset form template.
 - General cleanup, smaller bug fixes, and performance improvements.
 - Reorganized the project folder structure for better maintainability.
 

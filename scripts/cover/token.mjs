@@ -3,6 +3,7 @@
  */
 
 import { MODULE_ID, SETTING_KEYS } from "../config/constants.mjs";
+import { hasRideableRiders } from "../integrations/rideable.mjs";
 
 export function isDefeatedToken(token) {
   if (!token) return false;
@@ -37,11 +38,7 @@ export function isBlockingCreatureToken(token) {
   if (statuses.has("ethereal")) return false;
   if (actor.system?.attributes?.hp?.max === 0) return false;
 
-  if (game.modules?.get?.("Rideable")?.active) {
-    if (doc.flags?.Rideable?.RidersFlag?.length > 0) return false
-  }
-
-  return true;
+  return !hasRideableRiders(doc);
 }
 
 /**
@@ -100,12 +97,3 @@ export function isEllipse(tokenDoc) {
     tokenDoc?.shape === CONST.TOKEN_SHAPES.ELLIPSE_2
   );
 };
-
-/**
- * Check whether the Wall Height module is active.
- *
- * @returns {boolean} True if the Wall Height module is currently active.
- */
-export function isWallHeightModuleActive() {
-  return game.modules?.get?.("wall-height")?.active === true;
-}

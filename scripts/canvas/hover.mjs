@@ -37,8 +37,8 @@ function removeHoverDecorations(token) {
  * @param {string} userId The ID of the user who initiated the deletion.
  * @returns {void}
  */
-function onPreDeleteToken(td, options, userId){
-  removeHoverDecorations(td?.object)
+function onPreDeleteToken(td, options, userId) {
+  removeHoverDecorations(td?.object);
 }
 
 /**
@@ -51,7 +51,7 @@ function onPreDeleteToken(td, options, userId){
  * @param {boolean} hoverState True when hover starts, or false when hover ends.
  * @returns {void}
  */
-function onHoverToken(token, hoverState) {
+async function onHoverToken(token, hoverState) {
   const hoveredToken = token;
   if (!hoveredToken) return;
 
@@ -76,12 +76,6 @@ function onHoverToken(token, hoverState) {
     return;
   }
 
-  const nameplate = hoveredToken.nameplate;
-  if (!nameplate) {
-    removeHoverDecorations(hoveredToken);
-    return;
-  }
-
   let coverKey = "";
   if (hoverMode === "coverOnly" || hoverMode === "coverAndDistance") {
     const losCheck = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.LOS_CHECK);
@@ -99,10 +93,10 @@ function onHoverToken(token, hoverState) {
     }
   }
 
-  const showCoverIcon =
-    (hoverMode === "coverOnly" || hoverMode === "coverAndDistance") && !!coverKey;
+  const showCoverIcon = !!coverKey;
 
-  let labelText = "";
+  let distanceText = "";
+  let units = "";
   if (hoverMode === "coverAndDistance") {
     const distance = measureTokenDistance(
       actorToken.document,
@@ -114,11 +108,11 @@ function onHoverToken(token, hoverState) {
       return;
     }
 
-    const unit = hoveredToken?.scene?.grid?.units ?? "";
-    labelText = unit ? `${distance} ${unit}` : `${distance}`;
+    units = hoveredToken?.scene?.grid?.units ?? "";
+    distanceText = distance.toNearest(0.01).toLocaleString(game.i18n.lang);
   }
 
-  const showDistance = hoverMode === "coverAndDistance" && !!labelText;
+  const showDistance = hoverMode === "coverAndDistance" && !!distanceText;
 
   if (!showCoverIcon && !showDistance) {
     removeHoverDecorations(hoveredToken);
@@ -131,43 +125,42 @@ function onHoverToken(token, hoverState) {
     return;
   }
 
-  /** @type {HTMLDivElement} */
-  let htmlLabel = hoveredToken[HOVER.DISTANCE_LABEL_PROP];
+  removeHoverDecorations(hoveredToken);
 
-  if (!htmlLabel || !(htmlLabel instanceof HTMLElement)) {
+  const uiScale = canvas.dimensions.uiScale;
+  let htmlLabel;
+
+  if (showDistance) {
+    const rendered = await foundry.applications.handlebars.renderTemplate(
+      "templates/hud/waypoint-label.hbs",
+      {
+        cssClass: "hover-distance-label",
+        action: { icon: "fa-solid fa-ruler" },
+        distance: { total: distanceText },
+        units,
+        uiScale
+      }
+    );
+    if (!hoveredToken.hover) return;
+    htmlLabel = foundry.utils.parseHTML(rendered);
+  }
+  else {
     htmlLabel = document.createElement("div");
     htmlLabel.classList.add("waypoint-label", "hover-distance-label");
-    measurementHud.appendChild(htmlLabel);
-    hoveredToken[HOVER.DISTANCE_LABEL_PROP] = htmlLabel;
   }
 
-  let distanceRowHtml = "";
-  if (showDistance) {
-    distanceRowHtml = `
-      <div class="distance-row">
-        <span class="icon"><i class="fa-solid fa-ruler"></i></span>
-        <span class="total-measurement">${labelText}</span>
-      </div>
-    `;
-  }
-
-  let coverRowHtml = "";
   if (showCoverIcon) {
-    const statusId = COVER.IDS[coverKey];
-    const iconPath = CONFIG.statusEffects.find(effect => effect.id === statusId).img;
-    const coverHtml = `
-      <span class="img cover-icon" style="background-image: url('${iconPath}');"></span>
-    `;
-    coverRowHtml = `<div class="cover-row">${coverHtml}</div>`;
+    const iconPath = CONFIG.statusEffects[COVER.IDS[coverKey]].img;
+    const coverIcon = document.createElement("span");
+    coverIcon.classList.add("img");
+    coverIcon.style.backgroundImage = `url("${iconPath}")`;
+    htmlLabel.append(coverIcon);
   }
 
-  htmlLabel.innerHTML = `
-    ${distanceRowHtml}
-    ${coverRowHtml}
-  `;
+  measurementHud.appendChild(htmlLabel);
+  hoveredToken[HOVER.DISTANCE_LABEL_PROP] = htmlLabel;
 
   const center = hoveredToken.center ?? { x: hoveredToken.x, y: hoveredToken.y };
-  const uiScale = canvas.dimensions?.uiScale ?? 1;
 
   let posX = center.x;
   let posY = center.y;

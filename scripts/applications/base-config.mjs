@@ -8,136 +8,126 @@ const { HandlebarsApplicationMixin, ApplicationV2 } = foundry.applications.api;
  * @extends {ApplicationV2}
  */
 export class SimpleCoverBaseConfigApp extends HandlebarsApplicationMixin(ApplicationV2) {
-    static PART_CONFIG = {};
-    static SAVE_BUTTON_LABEL = "SETTINGS.Save";
-    static FOOTER_PARTS = {
-        footer: { template: "templates/generic/form-footer.hbs" }
+    static FIELDSETS = [];
+
+    /** @inheritdoc */
+    static PARTS = {
+        form: {
+            template: "templates/generic/form-fields.hbs",
+            scrollable: [""]
+        },
+        footer: {
+            template: "templates/generic/form-footer.hbs"
+        }
     };
 
     /** @inheritdoc */
-    static DEFAULT_OPTIONS = foundry.utils.mergeObject(super.DEFAULT_OPTIONS ?? {}, {
+    static DEFAULT_OPTIONS = {
         tag: "form",
-        classes: ["standard-form"],
-        position: { width: 600 },
+        position: { width: 700 },
         window: {
-            icon: "fas fa-list-check",
             contentClasses: ["standard-form"]
         },
         form: {
-            submitOnChange: false,
             closeOnSubmit: true,
-            handler(event, form, formData) {
-                return this.constructor._onSubmit(event, form, formData);
-            }
+            handler: SimpleCoverBaseConfigApp._onSubmit
         }
-    }, { inplace: false });
+    };
 
     /**
      * Get the footer buttons displayed by the form.
-     * @returns {object[]} The footer button configuration.
+     * @returns {FormFooterButton[]} The footer button configuration.
      */
     _getButtons() {
         return [
             {
                 type: "submit",
                 icon: "fa-solid fa-floppy-disk",
-                label: game.i18n.localize(this.constructor.SAVE_BUTTON_LABEL)
+                label: "SETTINGS.Save"
             }
         ];
     }
 
     /**
-     * Prepare the render context for a single application part.
-     * @param {string} partId The part being prepared.
-     * @param {object} context The base context object.
+     * Prepare the application render context.
      * @param {ApplicationRenderOptions} options The active render options.
-     * @returns {Promise<object>} The prepared part context.
+     * @returns {Promise<object>} The prepared render context.
      */
-    async _preparePartContext(partId, context, options) {
-        context = await super._preparePartContext(partId, context, options);
-        context.buttons ??= this._getButtons();
-
-        const partConfig = this.constructor.PART_CONFIG?.[partId];
-        if (partConfig) {
-            if (partConfig.legend) context.legend = game.i18n.localize(partConfig.legend);
-            if (partConfig.hint) context.hint = game.i18n.localize(partConfig.hint);
-            if (Array.isArray(partConfig.keys)) {
-                context.fields = partConfig.keys.map((k) => this._createSettingField(k)).filter(Boolean);
-            }
-        }
-
-        return context;
+    async _prepareContext(options) {
+        const context = await super._prepareContext(options);
+        return Object.assign(context, {
+            fields: this._getFields(),
+            buttons: this._getButtons()
+        });
     }
 
     /**
-     * Build a field descriptor for a registered setting.
-     * @param {string} key The setting key to describe.
-     * @returns {object|null} The field descriptor, or null if the setting cannot be rendered.
+     * Get grouped form fields for the configured settings.
+     * @returns {FormNode[]} The grouped form field data.
      */
-    _createSettingField(key) {
+    _getFields() {
+        const fieldsets = [];
+
+        for (const { legend, keys } of this.constructor.FIELDSETS) {
+            const fields = keys.map((key) => this._getSettingField(key)).filter(Boolean);
+            if (!fields.length) continue;
+
+            fieldsets.push({ fieldset: true, legend, fields });
+        }
+
+        return fieldsets;
+    }
+
+    /**
+     * Get form field data for a registered setting.
+     * @param {string} key The module setting key.
+     * @returns {object|null} The form field data.
+     */
+    _getSettingField(key) {
         const setting = game.settings.settings.get(`${MODULE_ID}.${key}`);
-        if (!setting) return null;
+        if (!(setting?.type instanceof foundry.data.fields.DataField)) return null;
 
-        const { BooleanField, NumberField, StringField, DataField } = foundry.data.fields;
+        const field = setting.type;
+        field.name = setting.id;
+        field.label ||= setting.name;
+        field.hint ||= setting.hint ?? "";
 
-        const isDataField = setting.type instanceof DataField;
-        const FieldClass = { [Boolean]: BooleanField, [Number]: NumberField, [String]: StringField }[setting.type];
-        if (!isDataField && !FieldClass) return null;
-        const field = isDataField ? setting.type : new FieldClass({ required: true, blank: false });
-
-        const data = {
-            name: key,
+        return {
             field,
-            label: game.i18n.localize(setting.name),
-            hint: setting.hint ? game.i18n.localize(setting.hint) : "",
             value: game.settings.get(MODULE_ID, key)
         };
-
-        if ((setting.type === Boolean) || (setting.type instanceof BooleanField)) {
-            data.input = (_field, config) => foundry.applications.fields.createCheckboxInput(config);
-        }
-
-        const choices = setting.choices ?? field.choices ?? field.options?.choices ?? null;
-
-        if (choices) {
-            data.options = Object.entries(choices).map(([value, label]) => ({
-                value,
-                label: game.i18n.localize(label)
-            }));
-        }
-
-        return data;
     }
 
     /**
      * Persist submitted form values to the corresponding settings.
-     * @param {SubmitEvent} event The triggering submit event.
+     * @param {SubmitEvent} _event The triggering submit event.
      * @param {HTMLFormElement} form The submitted form element.
      * @param {FormDataExtended} formData The expanded form data.
      * @returns {Promise<void>} Resolves after settings have been updated.
      */
-    static async _onSubmit(event, form, formData) {
-        event.preventDefault();
-
-        const values = foundry.utils.expandObject(formData.object ?? {});
+    static async _onSubmit(_event, form, formData) {
         let requiresClientReload = false;
         let requiresWorldReload = false;
 
-        for (const [key, value] of Object.entries(values)) {
-            const settingDef = game.settings.settings.get(`${MODULE_ID}.${key}`);
-            if (!settingDef) continue;
+        for (const [id, value] of Object.entries(formData.object ?? {})) {
+            const setting = game.settings.settings.get(id);
+            if (!setting) continue;
 
-            const current = game.settings.get(MODULE_ID, key, { document: true });
-            const before = current?._source?.value ?? current;
-            const updated = await game.settings.set(MODULE_ID, key, value, { document: true });
-            if (before === (updated?._source?.value ?? updated)) continue;
+            const priorValue = game.settings.get(setting.namespace, setting.key, { document: true })?._source.value;
+            let updated;
+            try {
+                updated = await game.settings.set(setting.namespace, setting.key, value, { document: true });
+            } catch (error) {
+                ui.notifications.error(error);
+            }
 
-            requiresClientReload ||= (settingDef.scope !== "world") && settingDef.requiresReload;
-            requiresWorldReload ||= (settingDef.scope === "world") && settingDef.requiresReload;
+            if (priorValue === updated?._source.value) continue;
+            requiresClientReload ||= (setting.scope !== CONST.SETTING_SCOPES.WORLD) && setting.requiresReload;
+            requiresWorldReload ||= (setting.scope === CONST.SETTING_SCOPES.WORLD) && setting.requiresReload;
         }
 
         if (requiresClientReload || requiresWorldReload) {
-            return SettingsConfig.reloadConfirm({ world: requiresWorldReload });
+            return foundry.applications.settings.SettingsConfig.reloadConfirm({ world: requiresWorldReload });
         }
     }
 }

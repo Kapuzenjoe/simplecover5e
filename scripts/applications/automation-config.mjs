@@ -8,24 +8,15 @@ import { SimpleCoverBaseConfigApp } from "./base-config.mjs";
  * @extends {SimpleCoverBaseConfigApp}
  */
 export class SimpleCoverAutomationConfig extends SimpleCoverBaseConfigApp {
-    static DEFAULT_OPTIONS = foundry.utils.mergeObject(super.DEFAULT_OPTIONS, {
-        classes: ["standard-form", "simplecover5e-variant-config"],
-        position: { width: 600 },
+    static DEFAULT_OPTIONS = {
         window: {
             title: "SIMPLE_COVER_5E.Settings.AutomationMenu.Name",
-            icon: "fas fa-list-check",
-            contentClasses: ["standard-form"]
+            icon: "fa-solid fa-cogs"
         }
-    }, { inplace: false });
-
-
-    static PARTS = {
-        general: { template: "modules/simplecover5e/templates/base-config.hbs" },
-        ...SimpleCoverBaseConfigApp.FOOTER_PARTS
     };
 
-    static PART_CONFIG = {
-        general: {
+    static FIELDSETS = [
+        {
             legend: "SIMPLE_COVER_5E.Settings.AutomationMenu.Groups.General",
             keys: [
                 SETTING_KEYS.COVER_HINTS,
@@ -36,24 +27,19 @@ export class SimpleCoverAutomationConfig extends SimpleCoverBaseConfigApp {
                 SETTING_KEYS.RMV_ON_MOVE
             ]
         }
-    };
+    ];
 
     /**
-     * Prepare the render context for a single automation form part.
-     * @param {string} partId The part being prepared.
-     * @param {object} context The base context object.
+     * Prepare the automation settings render context.
      * @param {ApplicationRenderOptions} options The active render options.
-     * @returns {Promise<object>} The prepared part context.
+     * @returns {Promise<object>} The prepared render context.
      */
-    async _preparePartContext(partId, context, options) {
-        context = await super._preparePartContext(partId, context, options);
+    async _prepareContext(options) {
+        const context = await super._prepareContext(options);
 
         if (game.settings.get(MODULE_ID, SETTING_KEYS.LIBRARY_MODE) || isMidiAutomation()) {
             context.fields = [];
-            context.message = {
-                level: "warning",
-                text: game.i18n.localize("SIMPLE_COVER_5E.Settings.AutomationMenu.LibraryModeWarning")
-            };
+            context.hint = "SIMPLE_COVER_5E.Settings.AutomationMenu.LibraryModeWarning";
         }
 
         return context;

@@ -41,6 +41,7 @@ const parseFlagValue = value => {
   if (typeof value !== "string") return value;
 
   const trimmed = value.trim();
+  if (trimmed === "") return null;
   if (trimmed === "true") return true;
   if (trimmed === "false") return false;
 

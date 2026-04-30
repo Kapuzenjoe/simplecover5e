@@ -39,15 +39,19 @@ export function measureTokenDistance(sourceToken, targetToken) {
       { ...targetCenter }
     ];
 
+    const externalAdjust = (sourceRadius + targetRadius) / distancePixels;
     for (const s of sourceCenters) {
       for (const t of targetCenters) {
-        const d = grid.measurePath([s, t]);
-        if (d.cost < minDistance) minDistance = d.cost;
+        const horizontal = grid.measurePath([
+          { x: s.x, y: s.y },
+          { x: t.x, y: t.y }
+        ]).cost;
+        const horizontalEdge = Math.max(0, horizontal - externalAdjust);
+        const vertical = Math.abs((s.elevation ?? 0) - (t.elevation ?? 0));
+        const distance = Math.hypot(horizontalEdge, vertical);
+        if (distance < minDistance) minDistance = distance;
       }
     }
-
-    const externalAdjust = (sourceRadius + targetRadius) / distancePixels;
-    minDistance = minDistance - externalAdjust;
   }
   else {
     let sourceCenters = sourceDoc.getContainmentTestPoints();

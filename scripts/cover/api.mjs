@@ -42,7 +42,7 @@ function getTokenTokenDistance(sourceToken, targetToken) {
 }
 
 /**
- * Evaluate the shared cover workflow for a prepared attacker/target pair.
+ * Evaluate the cover workflow for a prepared attacker/target pair.
  *
  * @param {TokenDocument|Position} attackerDoc The attacking token document or a generic position.
  * @param {TokenDocument} targetDoc The target token document.
@@ -89,19 +89,23 @@ function evaluateTargetCover(attackerDoc, targetDoc, ctx, { debug = false, losCh
  * @param {object} [options={}] Options controlling the cover evaluation.
  * @param {Token|TokenDocument|Position} options.attacker The attacking token, token document, or generic position.
  * @param {Token|TokenDocument} options.target The target token or token document.
- * @param {Scene} [options.scene=canvas.scene] The scene on which to evaluate cover.
+ * @param {Scene} [options.scene] The scene on which to evaluate cover.
  * @param {boolean|null} [options.debug=null] Whether to force debug output. Null uses the module debug setting.
  * @param {boolean} [options.losCheck=false] Whether to perform a wall line-of-sight check.
  * @param {Activity5e|null} [options.activity=null] The activity being evaluated for cover.
  * @param {boolean} [options.includeEmbeddedCover=false] Whether embedded cover effects on the target should be considered.
  * @returns {CoverEvaluationResult|null} The computed cover result, or null if inputs are invalid.
  */
-export function getCover({ attacker, target, scene = canvas?.scene, debug = null, losCheck = false, activity = null, includeEmbeddedCover = false } = {}) {
-    if (!attacker || !target || !scene) return null;
+export function getCover({ attacker, target, scene, debug = null, losCheck = false, activity = null, includeEmbeddedCover = false } = {}) {
+    if (!attacker || !target) return null;
 
     const attackerDoc = attacker.document ?? attacker;
     const targetDoc = target.document ?? target;
     if (!attackerDoc || !targetDoc) return null;
+
+    scene ??= attackerDoc.parent ?? canvas?.scene;
+    if (!scene) return null;
+    if (targetDoc.parent !== scene) return null;
 
     const settingDebug = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.DEBUG);
     const debugOn = (debug === null) ? settingDebug : !!debug;
@@ -134,18 +138,21 @@ export function getCover({ attacker, target, scene = canvas?.scene, debug = null
  * @param {object} [options={}] Options controlling the cover evaluation.
  * @param {Token|TokenDocument|Position} options.attacker The attacking token, token document, or generic position.
  * @param {Token[]|TokenDocument[]|null} [options.targets] Explicit targets, or the user's current targets.
- * @param {Scene} [options.scene=canvas.scene] The scene on which to evaluate cover.
+ * @param {Scene} [options.scene] The scene on which to evaluate cover.
  * @param {boolean|null} [options.debug=null] Whether to force debug output. Null uses the module debug setting.
  * @param {boolean} [options.losCheck=false] Whether to perform a wall line-of-sight check.
  * @param {Activity5e|null} [options.activity=null] The activity being evaluated for cover.
  * @param {boolean} [options.includeEmbeddedCover=false] Whether embedded cover effects on targets should be considered.
  * @returns {CoverTargetResult[]} The per-target cover results.
  */
-export function getCoverForTargets({ attacker, targets = null, scene = canvas?.scene, debug = null, losCheck = false, activity = null, includeEmbeddedCover = false } = {}) {
-    if (!attacker || !scene) return [];
+export function getCoverForTargets({ attacker, targets = null, scene, debug = null, losCheck = false, activity = null, includeEmbeddedCover = false } = {}) {
+    if (!attacker) return [];
 
     const attackerDoc = attacker.document ?? attacker;
     if (!attackerDoc) return [];
+
+    scene ??= attackerDoc.parent ?? canvas?.scene;
+    if (!scene) return [];
 
     const settingDebug = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.DEBUG);
     const debugOn = (debug === null) ? settingDebug : !!debug;
@@ -163,6 +170,7 @@ export function getCoverForTargets({ attacker, targets = null, scene = canvas?.s
     for (const t of list) {
         const targetDoc = t?.document ?? t;
         if (!targetDoc) continue;
+        if (targetDoc.parent !== scene) continue;
 
         const { result, los } = evaluateTargetCover(attackerDoc, targetDoc, ctx, {
             debug: debugOn,

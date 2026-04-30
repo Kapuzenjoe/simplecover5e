@@ -3,7 +3,8 @@
  */
 
 import { MODULE_ID, COVER, SETTING_KEYS } from "../config/constants.mjs";
-import { getTokenExternalRadius, isBlockingCreatureToken, getCreatureHeight, isEllipse, isWallHeightModuleActive } from "./token.mjs";
+import { getTokenExternalRadius, isBlockingCreatureToken, getCreatureHeight, isEllipse } from "./token.mjs";
+import { isWallHeightModuleActive, wallHeightBlocks } from "../integrations/wall-height.mjs";
 
 /**
  * Build a cover evaluation context for a single pass.
@@ -138,9 +139,6 @@ function wallsBlock(aCorner, bCorner, ctx, losPolygon = null) {
     const scene = ctx.scene ?? canvas?.scene;
     const backend = CONFIG.Canvas.polygonBackends.sight;
 
-    const debugOn = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.DEBUG);
-    const activeGM = game.users?.activeGM;
-
     let fromLevel = A?.level ?? ctx.level ?? null;
     if (typeof fromLevel === "string") fromLevel = scene?.levels?.get(fromLevel) ?? null;
 
@@ -171,17 +169,6 @@ function wallsBlock(aCorner, bCorner, ctx, losPolygon = null) {
     let blocked = false;
     let surfaceCollisionBlocked = false;
     let collisions = [];
-
-    const debugData = {
-        A,
-        B,
-        losPolygon,
-        fromLevel: fromLevel?.id ?? null,
-        toLevel: toLevel?.id ?? null,
-        tSplit,
-        segment1: null,
-        segment2: null
-    };
 
     // Segment 1: source level
     if (fromLevel && (tSplit > 0)) {
@@ -229,13 +216,6 @@ function wallsBlock(aCorner, bCorner, ctx, losPolygon = null) {
                 }) ?? false;
             }
 
-            debugData.segment1 = {
-                tMin,
-                tMax,
-                surfaceBlocked,
-                wallBlocked
-            };
-
             if (surfaceBlocked || wallBlocked) blocked = true;
         }
     }
@@ -278,105 +258,16 @@ function wallsBlock(aCorner, bCorner, ctx, losPolygon = null) {
             }) ?? false;
         }
 
-        debugData.segment2 = {
-            tMin,
-            tMax,
-            surfaceBlocked,
-            wallBlocked
-        };
-
         if (surfaceBlocked || wallBlocked) blocked = true;
-    }
-
-
-    if (debugOn && activeGM) {
-        console.debug(
-            `[${MODULE_ID}] wallsBlock: `,
-            debugData
-        );
     }
 
     if (!isWallHeightModuleActive() || losPolygon || surfaceCollisionBlocked) {
         return { blocked, A, B };
     }
 
-    for (const vertex of collisions) {
-        if (!vertex) continue;
-
-        const edgeSet = vertex.edges ?? vertex.cwEdges ?? vertex.ccwEdges;
-        if (!edgeSet) continue;
-
-        const { coverLineZ } = getLineHeightAtVertex(A, B, vertex);
-        if (!Number.isFinite(coverLineZ)) continue;
-
-        for (const edge of edgeSet) {
-            const wallDoc = edge?.object?.document;
-            if (!wallDoc) continue;
-
-            const whFlags = wallDoc.flags?.["wall-height"];
-            const topRaw = whFlags?.top;
-            const bottomRaw = whFlags?.bottom;
-
-            const wallTop = (topRaw != null) ? Number(topRaw) : Infinity;
-            const wallBottom = (bottomRaw != null) ? Number(bottomRaw) : -Infinity;
-
-            if (wallTop === Infinity && wallBottom === -Infinity) {
-                return { blocked: true, A, B };
-            }
-
-            const wallBlocks = A.elevation >= wallBottom && A.elevation <= wallTop;
-            const coverBlocks = coverLineZ >= wallBottom && coverLineZ <= wallTop;
-
-            if (debugOn && activeGM) {
-                console.debug(
-                    `[${MODULE_ID}] wall-height line check:`,
-                    {
-                        wall: { id: edge?.object?.document.id, bottom: wallBottom, top: wallTop },
-                        coverLineZ,
-                        wallBlocks,
-                        coverBlocks,
-                        tVertex: {
-                            x: vertex.x,
-                            y: vertex.y
-                        }
-                    }
-                );
-            }
-
-            if (wallBlocks || coverBlocks) {
-                return { blocked: true, A, B };
-            }
-        }
-    }
-    return { blocked: false, A, B, collisions };
-}
-
-/**
- * Compute the ray height at a wall-intersection vertex along segment A→B.
- * The result is used to compare line height against Wall Height top and bottom values.
- *
- * @param {{x:number,y:number,elevation:number}} A The segment start point.
- * @param {{x:number,y:number,elevation:number}} B The segment end point.
- * @param {{x:number,y:number}} vertex The intersection vertex on the wall.
- * @returns {{coverLineZ:number}} The interpolated line height at the intersection vertex.
- */
-function getLineHeightAtVertex(A, B, vertex) {
-    const dx = B.x - A.x;
-    const dy = B.y - A.y;
-
-    let t;
-    if (Math.abs(dx) >= Math.abs(dy)) {
-        const denom = dx || 1e-9;
-        t = (vertex.x - A.x) / denom;
-    } else {
-        const denom = dy || 1e-9;
-        t = (vertex.y - A.y) / denom;
-    }
-    t = Math.min(Math.max(t, 0), 1);
-
-    const coverLineZ = A.elevation + t * (B.elevation - A.elevation);
-
-    return { coverLineZ };
+    return wallHeightBlocks(A, B, collisions)
+        ? { blocked: true, A, B }
+        : { blocked: false, A, B, collisions };
 }
 
 /**
@@ -536,7 +427,7 @@ function buildTokenCornersForCenter(center, ctx, td, inset) {
     corners.forEach(c => c.elevation = center?.elevation ?? 0);
     corners.forEach(c => c.level = center?.level ?? null);
 
-    return getConstrainedTestPoints(corners, td);
+    return constrainCoverTestPoints(corners, td);
 }
 
 /**
@@ -746,14 +637,16 @@ export function evaluateLOS(attackerDoc, targetDoc, ctx) {
 }
 
 /**
- * Filter token test points against the token's constrained movement polygon.
+ * Constrain cover-specific token test points against the token's movement area.
+ *
+ * This mirrors Foundry's protected `TokenDocument#_constrainTestPoints` for custom cover corners.
  *
  * @param {TestPoint[]} points The points to constrain. Modified in place.
- * @param {TokenDocument} td The token document that defines the constrained area.
+ * @param {TokenDocument} td The token document whose movement constraints are applied.
  * @returns {TestPoint[]} The constrained points array.
  */
-function getConstrainedTestPoints(points, td) {
-    const level = td.parent?.levels?.get(td?.level) ?? null;
+function constrainCoverTestPoints(points, td) {
+    const level = td.parent?.levels.get(td.level);
     if (!level) return points;
     const origin = td.getMovementOrigin();
 
@@ -775,6 +668,7 @@ function getConstrainedTestPoints(points, td) {
         points.length--;
     }
 
+    // If all test points are behind a wall/surface, the origin becomes the single test point.
     if (!points.length) points.push(origin);
     return points;
 }

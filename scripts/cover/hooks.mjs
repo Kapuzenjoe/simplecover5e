@@ -2,7 +2,7 @@ import { MODULE_ID, COVER, SETTING_KEYS } from "../config/constants.mjs";
 import { isMidiAutomation } from "../integrations/midi-qol.mjs";
 import { clearSystemCoverEffects } from "./status.mjs";
 import { isDefeatedToken } from "./token.mjs";
-import { onCreateToken } from "../canvas/token-shape.mjs";
+import { onPreCreateToken } from "../canvas/token-shape.mjs";
 import { applyDialogCoverOverride } from "../applications/roll-dialog.mjs";
 import { getCover, getCoverForTargets } from "./api.mjs";
 import { clearCoverDebug } from "./debug.mjs";
@@ -20,7 +20,7 @@ export function initCoverHooks() {
   Hooks.on("combatTurnChange", clearCoverOnCombatTurnChange);
   Hooks.on("deleteCombat", clearCoverOnDeleteCombat);
   Hooks.on("recordToken", clearCoverOnMovement);
-  Hooks.on("createToken", onCreateToken);
+  Hooks.on("preCreateToken", onPreCreateToken);
   Hooks.on("dnd5e.preRollAttack", onPreRollAttack);
   Hooks.on("dnd5e.preRollSavingThrow", onPreRollSavingThrow);
   Hooks.on("dnd5e.postSavingThrowRollConfiguration", onPostSavingThrowRollConfiguration);
@@ -34,10 +34,8 @@ export function initCoverHooks() {
  * @returns {void}
  */
 function ignoreCoverProperties() {
-  const labelKey = "SIMPLE_COVER_5E.ItemProperties.IgnoreCover.Label";
   CONFIG.DND5E.itemProperties.ignoreCover = {
-    label: game.i18n.has(labelKey) ? game.i18n.localize(labelKey) : "Ignores Cover",
-    abbreviation: "iC" // Workaround for https://github.com/foundryvtt/dnd5e/issues/6378
+    label: game.i18n.localize("SIMPLE_COVER_5E.ItemProperties.IgnoreCover.Label")
   };
   CONFIG.DND5E.validProperties.weapon.add("ignoreCover");
   CONFIG.DND5E.validProperties.spell.add("ignoreCover");
@@ -361,11 +359,6 @@ function setSaveCoverBonus(rollConfig, desiredBonus, desiredCover) {
   rollConfig.options ??= {};
   rollConfig.options[MODULE_ID] ??= {};
   rollConfig.options[MODULE_ID].totalCover = desiredCover === "total";
-
-  if (desiredCover === "total") {
-    delete rollConfig.data.cover;
-    return;
-  }
 
   rollConfig.data.cover = desiredBonus ?? 0;
 }

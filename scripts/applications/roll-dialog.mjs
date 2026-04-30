@@ -1,5 +1,9 @@
 import { MODULE_ID, COVER, SETTING_KEYS } from "../config/constants.mjs";
+import { getHiddenNpcName } from "../integrations/hide-npc-names.mjs";
 import { setCoverStatusViaGM } from "../socket/queries.mjs";
+
+const ROLL_CONFIGURATION_PART = '[data-application-part="configuration"]';
+const DIALOG_NOTES_SELECTOR = 'fieldset[data-simplecover5e="dialog-notes"]';
 
 /**
  * Register hooks used by cover notes in roll dialogs and chat messages.
@@ -24,10 +28,12 @@ async function onRenderRollConfigurationDialog(dialog, html) {
     const notes = await prepareNotes(dialog);
     if (!notes) return;
 
-    html.querySelector('fieldset[data-simplecover5e="dialog-notes"]')?.remove();
+    html.querySelector(DIALOG_NOTES_SELECTOR)?.remove();
 
-    const configFieldset = html.querySelector('fieldset[data-application-part="configuration"]');
-    configFieldset?.after(notes);
+    const configuration = html.querySelector(ROLL_CONFIGURATION_PART);
+    if (!configuration) return;
+
+    configuration.after(notes);
 
     dialog.setPosition();
 }
@@ -41,10 +47,8 @@ async function onRenderRollConfigurationDialog(dialog, html) {
  */
 function getTargetName(target, systemTargets) {
     const actor = fromUuidSync(target.uuid);
-    if (actor && game.modules?.get?.("hide-npc-names")?.active === true && game?.hnn) {
-        const replacement = game.hnn.getReplacementInfo(actor)?.displayName;
-        if (replacement) return replacement;
-    }
+    const hiddenNpcName = actor ? getHiddenNpcName(actor) : null;
+    if (hiddenNpcName) return hiddenNpcName;
 
     const systemTarget = systemTargets.find(systemTarget => systemTarget.uuid === target.uuid);
     if (systemTarget?.name) return systemTarget.name;
@@ -61,8 +65,9 @@ function getTargetName(target, systemTargets) {
  * @returns {string} The localized hint.
  */
 function getCoverHint(type, cover, targetName) {
+    const tokenName = foundry.utils.escapeHTML(targetName);
     return type === "attack"
-        ? game.i18n.format(COVER.I18N.HINT_KEYS.Attack[cover], { tokenName: targetName })
+        ? game.i18n.format(COVER.I18N.HINT_KEYS.Attack[cover], { tokenName })
         : game.i18n.localize(COVER.I18N.HINT_KEYS.Save[cover]);
 }
 
@@ -117,7 +122,7 @@ async function prepareNotes(dialog) {
             return prepareDialogNote({
                 name: `${MODULE_ID}.targets.${index}.newCover`,
                 cover,
-                icon: statusId ? CONFIG.statusEffects.find(effect => effect.id === statusId).img : "",
+                icon: statusId ? (CONFIG.statusEffects[statusId]?.img ?? "") : "",
                 label: game.i18n.localize(COVER.I18N.LABEL_PREFIX_KEY),
                 hint: getCoverHint(type, cover, getTargetName(target, systemTargets))
             });
@@ -139,40 +144,75 @@ async function prepareNotes(dialog) {
 function onRenderChatMessage(chatMessage, html) {
     if (!game.user.isGM) return;
 
-    const anchor = html.querySelector(".message-content") ?? html;
-    if (!anchor) return;
-
-    anchor.querySelectorAll(".simplecover5e-cover-summary").forEach(el => el.remove());
+    html.querySelectorAll(".simplecover5e-cover-change, .simplecover5e-cover-summary").forEach(el => el.remove());
 
     if (!game.settings.get(MODULE_ID, SETTING_KEYS.COVER_HINTS_GM_MESSAGE)) return;
 
-    const content = [];
-    const escapeHTML = foundry.utils.escapeHTML;
-    const targets = chatMessage.flags?.[MODULE_ID]?.targets ?? [];
-    const systemTargets = chatMessage.flags?.dnd5e?.targets ?? [];
-    for (const target of targets) {
-        if ((target.newCover == null) || (target.newCover === target.originalCover)) continue;
+    const changedTargets = (chatMessage.flags?.[MODULE_ID]?.targets ?? [])
+        .filter(target => (target.newCover != null) && (target.newCover !== target.originalCover));
+    if (!changedTargets.length) return;
 
-        content.push(`
-            <p><strong>${escapeHTML(getTargetName(target, systemTargets))}</strong></p>
-            <p>
-                ${game.i18n.format("SIMPLE_COVER_5E.CoverHint.CoverModeDesired", { desiredCover: game.i18n.localize(COVER.I18N.LABEL[target.originalCover]) })}
-                 <br>
-                ${game.i18n.format("SIMPLE_COVER_5E.CoverHint.CoverModeNew", { newMode: game.i18n.localize(COVER.I18N.LABEL[target.newCover]) })}
-            </p>
-        `);
+    const rollType = chatMessage.flags?.dnd5e?.roll?.type;
+    const changedByUuid = new Map(changedTargets.map(target => [target.uuid, target]));
+
+    const getCoverChangeTooltip = target => {
+        const originalCover = game.i18n.localize(COVER.I18N.LABEL[target.originalCover]);
+        const newCover = game.i18n.localize(COVER.I18N.LABEL[target.newCover]);
+        const label = game.i18n.localize("SIMPLE_COVER_5E.CoverHint.CoverModeChanged");
+        const html = `<i class="fa-solid fa-triangle-exclamation"></i> `
+            + `<strong>${foundry.utils.escapeHTML(label)}</strong><br>`
+            + `${foundry.utils.escapeHTML(originalCover)} &rarr; ${foundry.utils.escapeHTML(newCover)}`;
+        return {
+            text: `${label}: ${originalCover} -> ${newCover}`,
+            html
+        };
+    };
+
+    if (rollType === "attack") {
+        for (const row of html.querySelectorAll(".targets-tray .evaluation li.target[data-uuid]")) {
+            const target = changedByUuid.get(row.dataset.uuid);
+            if (!target) continue;
+
+            const ac = row.querySelector(".ac");
+            if (!ac) continue;
+
+            const tooltip = getCoverChangeTooltip(target);
+
+            const icon = document.createElement("i");
+            icon.classList.add("fa-solid", "fa-triangle-exclamation", "simplecover5e-cover-change");
+            Object.assign(icon.dataset, {
+                tooltipHtml: tooltip.html,
+                tooltipClass: "dnd5e2 dnd5e-tooltip"
+            });
+            icon.setAttribute("aria-label", tooltip.text);
+            ac.prepend(icon);
+        }
+        return;
     }
-    if (!content.length) return;
 
-    const wrapper = document.createElement("div");
-    wrapper.classList.add("simplecover5e-cover-summary");
-    wrapper.innerHTML = `
-        <hr>
-        <p><strong>${game.i18n.localize("SIMPLE_COVER_5E.CoverHint.CoverModeChanged")}</strong></p>
-        ${content.join("<hr>")}
-    `;
+    if (rollType === "save") {
+        const total = html.querySelector(".dice-result .dice-total");
+        if (!total) return;
 
-    anchor.append(wrapper);
+        const target = changedTargets[0];
+        const tooltip = getCoverChangeTooltip(target);
+
+        let icons = total.querySelector(":scope > .icons");
+        if (!icons) {
+            icons = document.createElement("span");
+            icons.classList.add("icons");
+            total.prepend(icons);
+        }
+
+        const icon = document.createElement("i");
+        icon.classList.add("fa-solid", "fa-triangle-exclamation", "simplecover5e-cover-change");
+        Object.assign(icon.dataset, {
+            tooltipHtml: tooltip.html,
+            tooltipClass: "dnd5e2 dnd5e-tooltip"
+        });
+        icon.setAttribute("aria-label", tooltip.text);
+        icons.append(icon);
+    }
 }
 
 /**

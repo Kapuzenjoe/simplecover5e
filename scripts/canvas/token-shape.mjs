@@ -1,18 +1,18 @@
 import { MODULE_ID, SETTING_KEYS } from "../config/constants.mjs";
 
 /**
- * Update a newly created token shape on a gridless scene to match the current setting.
+ * Set a newly created token with the desired shape on a gridless scene.
  *
- * @function createToken
+ * @function preCreateToken
  * @memberof hookEvents
- * @param {TokenDocument5e} td The created token document.
+ * @param {TokenDocument5e} td The token document being created.
+ * @param {object} data The source data used to create the token.
  * @param {object} options Additional workflow options.
  * @param {string} userId The initiating user's ID.
- * @returns {Promise<void>} Resolves after the token has been updated when needed.
+ * @returns {void}
  */
-export async function onCreateToken(td, options, userId) {
+export function onPreCreateToken(td, data, options, userId) {
   if (!td?.parent?.grid?.isGridless) return
-  if (!game.user.isGM) return
 
   const shapeMode = game.settings.get(MODULE_ID, SETTING_KEYS.GRIDLESS_TOKEN_SHAPE);
 
@@ -24,21 +24,23 @@ export async function onCreateToken(td, options, userId) {
   if (desiredShape == null) return;
   if (td.shape === desiredShape) return;
 
-  await td.update(
-    { shape: desiredShape }
-  );
+  td.updateSource({ shape: desiredShape });
 }
 
 /**
- * Globally update token shapes on all gridless scenes to match the configured setting.
+ * Update existing token shapes on gridless scenes to match the configured setting.
  *
- * @returns {Promise<void>} Resolves after matching token shapes have been updated.
+ * @param {object} [options] Additional update options.
+ * @param {Scene|null} [options.scene=null] A specific scene to update, or null for all scenes.
+ * @returns {Promise<number>} The number of updated tokens.
  */
-export async function changeTokenShapeGlobal() {
-  if (!game.user.isGM) return
+export async function changeTokenShapes({ scene = null } = {}) {
+  if (!game.user.isGM) return 0;
   const shapeMode = game.settings.get(MODULE_ID, SETTING_KEYS.GRIDLESS_TOKEN_SHAPE);
+  const scenes = scene ? [scene] : game.scenes;
+  let count = 0;
 
-  for (const scene of game.scenes) {
+  for (const scene of scenes) {
     if (!scene.grid?.isGridless) continue;
 
     const desiredShape =
@@ -50,6 +52,9 @@ export async function changeTokenShapeGlobal() {
 
     const tokenDocs = scene.tokens.contents.filter(td => td.shape !== desiredShape);
     const updates = tokenDocs.map(td => ({ _id: td.id, shape: desiredShape }));
+    count += updates.length;
     await scene.updateEmbeddedDocuments("Token", updates);
   }
+
+  return count;
 }

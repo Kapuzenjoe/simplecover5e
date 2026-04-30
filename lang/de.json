@@ -41,8 +41,8 @@
         }
       },
       "coverHintsGmMessage": {
-        "Name": "SL-Chatnachricht bei Deckungsänderungen",
-        "Hint": "Sendet eine Chatnachricht an den SL, wenn die Deckung im Wurfdialog manuell geändert wird."
+        "Name": "SL-Chatindikatoren bei Deckungsänderungen",
+        "Hint": "Zeigt ein SL-spezifisches Warnsymbol bei Angriffszielen und Rettungswurfergebnissen, wenn die Deckung im Wurfdialog manuell geändert wird."
       },
       "CreaturesHalfOnly": {
         "Name": "Deckung durch Kreaturen auf halbe Deckung begrenzen",
@@ -101,15 +101,17 @@
       "GridlessTokenShape": {
         "Name": "Standardform für Figuren in gitterlosen Szenen",
         "Hint": "Wenn aktiviert, werden neu erstellte Figuren in gitterlosen Szenen automatisch auf die ausgewählte Form gesetzt.",
+        "ApplyExisting": "Auf bestehende Figuren anwenden",
+        "ApplyTitle": "Gitterlose Figurenform anwenden",
+        "ApplyHint": "Aktualisiert bestehende Figuren auf die ausgewählte Standardform für gitterlose Szenen.",
+        "ApplyCurrentScene": "Aktuelle Szene",
+        "ApplyAllScenes": "Alle gitterlosen Szenen",
+        "ApplyUpdated": "{count} Figuren aktualisiert.",
         "Options": {
           "None": "Keine Änderung",
           "Square": "Rechteck",
           "Circle": "Ellipse"
         }
-      },
-      "GridlessTokenShapeUpdateExisting": {
-        "Name": "Gitterlose Form auf bestehende Figuren anwenden",
-        "Hint": "Wenn aktiviert, werden beim Ändern der gitterlosen Figurenform auch bestehende Figuren auf allen gitterlosen Szenen aktualisiert."
       },
       "CreaturesProne": {
         "Name": "Deckungshöhe bei Liegend",

@@ -196,14 +196,14 @@ Increase the actor's effective cover by 1 or 2 steps.
 
 ### Flag Values
 
-Ignore flags use boolean values. Upgrade and downgrade flags accept either a numeric value (`1` or `2`) or an object value:
+Ignore flags use boolean values. Upgrade and downgrade flags accept either a numeric value (`1` or `2`) or a valid JSON object value:
 
-```js
+```json
 {
-  steps: 1,
-  min: "half",
-  max: "total",
-  condition: "prone"
+  "steps": 1,
+  "min": "half",
+  "max": "total",
+  "condition": "prone"
 }
 ```
 
@@ -211,6 +211,8 @@ Ignore flags use boolean values. Upgrade and downgrade flags accept either a num
 - `min`: minimum current cover required for the flag to apply
 - `max`: maximum current cover allowed for the flag to apply
 - `condition`: optional status id required on the target actor for `upgradeCover`, or on the source actor for `downgradeCover`
+
+Legacy object-like values with unquoted keys, such as `{ steps: 1, min: "half" }`, are still accepted for existing effects, but valid JSON is preferred.
 
 Legacy root boolean flags such as `flags.simplecover5e.ignoreAllCover = true` are still accepted for attack rolls, but scoped flags are preferred.
 
@@ -227,5 +229,5 @@ flags.simplecover5e.upgradeCover.all ADD 2
 ```
 
 ```text
-flags.simplecover5e.downgradeCover.save ADD {"steps":1,"min":"half","max":"total"}
+flags.simplecover5e.downgradeCover.save ADD {"steps":1,"min":"half","max":"total","condition":"prone"}
 ```

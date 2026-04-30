@@ -1,7 +1,6 @@
 # Simple Cover 5e
 
 ![Static Badge](https://img.shields.io/badge/Foundry-v14-informational)
-![Static Badge](https://img.shields.io/badge/Dnd5e-v5.2-informational)
 ![Static Badge](https://img.shields.io/badge/Dnd5e-v5.3-informational)
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/peterlankton86911)

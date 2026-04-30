@@ -17,9 +17,9 @@ Controls whether the module shows the current cover result in attack and saving 
 - **Always**
   A cover hint is shown for every evaluated target.
 
-### GM Chat Message for Cover Changes
+### GM Chat Cover Change Indicators
 
-When enabled, the GM chat view shows a note when cover is changed manually in the roll dialog.
+When enabled, the GM chat view shows a warning icon on attack target rows and saving throw totals when cover is changed manually in the roll dialog.
 
 ### Library Mode
 
@@ -105,7 +105,7 @@ Controls how newly created tokens on gridless scenes are shaped for distance and
 
 #### Apply Gridless Shape to Existing Tokens
 
-When enabled, changing the gridless token shape setting also updates existing tokens on all gridless scenes.
+The button next to **Gridless Token Shape** explicitly applies the selected shape to existing tokens. You can choose whether to update only the current scene or all gridless scenes.
 
 ### Engine Rules
 

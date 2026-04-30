@@ -11,7 +11,7 @@ const sc = game.modules.get("simplecover5e")?.api;
 ### Get Cover
 
 ```js
-api.getCover({ attacker, target, scene?, debug?, losCheck?, activity? })
+api.getCover({ attacker, target, scene?, debug?, losCheck?, activity?, includeEmbeddedCover? })
 ```
 
 Compute cover between a single attacker (`Token | TokenDocument`) or a position object (`{ x, y, elevation? }`) and a single target (`Token | TokenDocument`). This returns `null` if inputs are invalid; otherwise it returns a result object.
@@ -19,6 +19,7 @@ Compute cover between a single attacker (`Token | TokenDocument`) or a position 
 - `debug`: `null` uses the module Debug setting; `true` forces debug on; `false` forces it off.
 - `losCheck`: when `true`, an additional wall LoS check is performed; if LoS fails, the result is forced to **Total Cover**.
 - `activity`: when provided, Simple Cover 5e applies ignore-cover rules to the computed cover before returning.
+- `includeEmbeddedCover`: when `true`, embedded cover effects on the target actor are treated as manual cover. This lets effects such as Swallow's Total Cover take priority over calculated cover before activity-based ignore-cover rules are applied.
 
 **Return Shape:**
 
@@ -58,10 +59,12 @@ if (result) {
 ### Get Cover for Multiple Targets
 
 ```js
-api.getCoverForTargets({ attacker, targets?, scene?, debug?, losCheck?, activity? })
+api.getCoverForTargets({ attacker, targets?, scene?, debug?, losCheck?, activity?, includeEmbeddedCover? })
 ```
 
 Compute cover for a single attacker (`Token | TokenDocument`) or a position object (`{ x, y, elevation? }`) against multiple targets (`Token[] | TokenDocument[] | null`). If `targets` is omitted, the function defaults to the current user's targeted tokens. Returns an array of entries:
+
+The options behave the same as `getCover(...)`, including `includeEmbeddedCover` for treating embedded target cover effects as manual cover.
 
 **Return Shape:**
 
