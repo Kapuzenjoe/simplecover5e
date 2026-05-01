@@ -1,4 +1,4 @@
-import { FLAGS } from "../config/constants.mjs";
+import { FLAGS } from "../config.mjs";
 
 /**
  * Register DAE auto-fields once DAE has finished its setup.

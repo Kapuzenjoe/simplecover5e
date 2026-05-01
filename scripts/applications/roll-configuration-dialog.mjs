@@ -1,6 +1,6 @@
-import { MODULE_ID, COVER, SETTING_KEYS } from "../config/constants.mjs";
+import { MODULE_ID, COVER, SETTING_KEYS } from "../config.mjs";
 import { getHiddenNpcName } from "../integrations/hide-npc-names.mjs";
-import { setCoverStatusViaGM } from "../socket/queries.mjs";
+import { setCoverStatusViaGM } from "../cover/status.mjs";
 
 const ROLL_CONFIGURATION_PART = '[data-application-part="configuration"]';
 const DIALOG_NOTES_SELECTOR = 'fieldset[data-simplecover5e="dialog-notes"]';

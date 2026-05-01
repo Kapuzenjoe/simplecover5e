@@ -1,8 +1,8 @@
 /**
- * @import { CoverContext, CoverEvaluationResult, DebugTokenShapes, LosResult, OccluderPrism, Position, TestPoint } from "../types/shared.mjs";
+ * @import { CoverContext, CoverEvaluationResult, DebugTokenShapes, LosResult, OccluderPrism, Position, TestPoint } from "../_types.mjs";
  */
 
-import { MODULE_ID, COVER, SETTING_KEYS } from "../config/constants.mjs";
+import { MODULE_ID, COVER, SETTING_KEYS } from "../config.mjs";
 import { getTokenExternalRadius, isBlockingCreatureToken, getCreatureHeight, isEllipse } from "./token.mjs";
 import { isWallHeightModuleActive, wallHeightBlocks } from "../integrations/wall-height.mjs";
 

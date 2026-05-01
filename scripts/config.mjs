@@ -1,5 +1,5 @@
 /**
- * @import { CoverLevel } from "../types/shared.mjs";
+ * @import { CoverLevel } from "./_types.mjs";
  */
 
 /**

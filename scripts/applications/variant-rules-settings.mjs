@@ -1,5 +1,5 @@
-import { MODULE_ID, SETTING_KEYS } from "../config/constants.mjs";
-import { SimpleCoverBaseConfigApp } from "./base-config.mjs";
+import { MODULE_ID, SETTING_KEYS } from "../config.mjs";
+import { SimpleCoverBaseConfigApp } from "./base-settings.mjs";
 import { changeTokenShapes } from "../canvas/token-shape.mjs";
 
 /**

@@ -1,4 +1,4 @@
-import { MODULE_ID, SETTING_KEYS } from "../config/constants.mjs";
+import { MODULE_ID, SETTING_KEYS } from "../config.mjs";
 
 /**
  * Set a newly created token with the desired shape on a gridless scene.

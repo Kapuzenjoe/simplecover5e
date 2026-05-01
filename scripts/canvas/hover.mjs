@@ -1,4 +1,4 @@
-import { MODULE_ID, SETTING_KEYS, HOVER, COVER } from "../config/constants.mjs";
+import { MODULE_ID, SETTING_KEYS, HOVER, COVER } from "../config.mjs";
 import { measureTokenDistance } from "./distance.mjs";
 import { getCover } from "../cover/api.mjs";
 

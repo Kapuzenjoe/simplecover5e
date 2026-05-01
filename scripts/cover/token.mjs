@@ -1,8 +1,8 @@
 /**
- * @import { Position } from "../types/shared.mjs";
+ * @import { Position } from "../_types.mjs";
  */
 
-import { MODULE_ID, SETTING_KEYS } from "../config/constants.mjs";
+import { MODULE_ID, SETTING_KEYS } from "../config.mjs";
 import { hasRideableRiders } from "../integrations/rideable.mjs";
 
 export function isDefeatedToken(token) {

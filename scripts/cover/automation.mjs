@@ -1,12 +1,11 @@
-import { MODULE_ID, COVER, SETTING_KEYS } from "../config/constants.mjs";
+import { MODULE_ID, COVER, SETTING_KEYS } from "../config.mjs";
 import { isMidiAutomation } from "../integrations/midi-qol.mjs";
-import { clearSystemCoverEffects } from "./status.mjs";
+import { clearSystemCoverEffects, setCoverStatusViaGM } from "./status.mjs";
 import { isDefeatedToken } from "./token.mjs";
 import { onPreCreateToken } from "../canvas/token-shape.mjs";
-import { applyDialogCoverOverride } from "../applications/roll-dialog.mjs";
+import { applyDialogCoverOverride } from "../applications/roll-configuration-dialog.mjs";
 import { getCover, getCoverForTargets } from "./api.mjs";
 import { clearCoverDebug } from "./debug.mjs";
-import { setCoverStatusViaGM } from "../socket/queries.mjs";
 
 const COVER_TARGETS_PATH = `data.flags.${MODULE_ID}.targets`;
 

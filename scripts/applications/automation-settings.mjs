@@ -1,6 +1,6 @@
-import { MODULE_ID, SETTING_KEYS } from "../config/constants.mjs";
+import { MODULE_ID, SETTING_KEYS } from "../config.mjs";
 import { isMidiAutomation } from "../integrations/midi-qol.mjs";
-import { SimpleCoverBaseConfigApp } from "./base-config.mjs";
+import { SimpleCoverBaseConfigApp } from "./base-settings.mjs";
 
 /**
  * A configuration form for cover automation. 

@@ -1,8 +1,8 @@
-import { MODULE_ID, SETTING_KEYS } from "./constants.mjs";
-import { SimpleCoverVariantConfig } from "../applications/variant-config.mjs";
-import { SimpleCoverAutomationConfig } from "../applications/automation-config.mjs";
-import { clearCoverDebug } from "../cover/debug.mjs";
-import { clearSystemCoverEffects } from "../cover/status.mjs";
+import { MODULE_ID, SETTING_KEYS } from "./config.mjs";
+import { SimpleCoverVariantConfig } from "./applications/variant-rules-settings.mjs";
+import { SimpleCoverAutomationConfig } from "./applications/automation-settings.mjs";
+import { clearCoverDebug } from "./cover/debug.mjs";
+import { clearSystemCoverEffects } from "./cover/status.mjs";
 
 /**
  * Clear cover debug graphics when debug rendering is disabled.

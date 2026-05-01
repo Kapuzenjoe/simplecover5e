@@ -1,8 +1,8 @@
 /**
- * @import { CoverContext, CoverEvaluationResult, CoverTargetResult, DialogNoteData, LosResult, Position } from "../types/shared.mjs";
+ * @import { CoverContext, CoverEvaluationResult, CoverTargetResult, DialogNoteData, LosResult, Position } from "../_types.mjs";
  */
 
-import { MODULE_ID, COVER, SETTING_KEYS } from "../config/constants.mjs";
+import { MODULE_ID, COVER, SETTING_KEYS } from "../config.mjs";
 import {
     buildCoverContext,
     evaluateCoverFromOccluders,

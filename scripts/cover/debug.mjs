@@ -1,5 +1,5 @@
 /**
- * @import { CoverDebugOptions, DebugPoint, DebugPolygon, DebugSegment } from "../types/shared.mjs";
+ * @import { CoverDebugOptions, DebugPoint, DebugPolygon, DebugSegment } from "../_types.mjs";
  */
 
 const DEBUG_Z_INDEX = 1000;
