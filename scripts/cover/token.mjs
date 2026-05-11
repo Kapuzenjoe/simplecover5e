@@ -42,6 +42,28 @@ export function isBlockingCreatureToken(token) {
 }
 
 /**
+ * Scale an elevation value by the module's prone mode for a token.
+ * Returns the elevation unchanged when the token is not prone or prone mode is "none".
+ *
+ * @param {TokenDocument} tokenDoc The token document to check.
+ * @param {number} elevation The elevation (or height) value to scale.
+ * @returns {number} The scaled elevation.
+ */
+export function applyProneMode(tokenDoc, elevation) {
+  if (!tokenDoc?.actor?.statuses?.has?.("prone")) return elevation;
+  const proneMode = game.settings.get(MODULE_ID, SETTING_KEYS.CREATURES_PRONE);
+  if (proneMode === "none") return elevation;
+  if (proneMode === "half") return elevation * 0.5;
+  if (proneMode === "lowerSize") {
+    const depth = Number(tokenDoc?.depth) || 0;
+    if (!depth) return elevation;
+    const depthLower = (depth > 1) ? Math.max(depth - 1, 0.5) : (depth * 0.5);
+    return elevation * (depthLower / depth);
+  }
+  return elevation;
+}
+
+/**
  * Get the creature height in grid distance units for a token document.
  *
  * @param {TokenDocument|Position} td The token document or a generic position.
@@ -49,23 +71,10 @@ export function isBlockingCreatureToken(token) {
  */
 export function getCreatureHeight(td) {
   if (!td?.actor) return 0;
-  const proneMode = game.settings.get(MODULE_ID, SETTING_KEYS.CREATURES_PRONE);
   const grid = td?.parent?.grid ?? canvas?.scene?.grid;
   const depth = Number(td?.depth) || 0;
   const distance = Number(grid?.distance) || 0;
-  let height = depth * distance;
-
-  if (td.actor?.statuses?.has?.("prone") && proneMode !== "none") {
-    if (proneMode === "half") {
-      height *= 0.5;
-    }
-    else if (proneMode === "lowerSize") {
-      const depthLower = (depth > 1) ? Math.max(depth - 1, 0.5) : (depth * 0.5);
-      height = depthLower * distance;
-    }
-  }
-
-  return height;
+  return applyProneMode(td, depth * distance);
 }
 
 /**

@@ -3,7 +3,7 @@
  */
 
 import { MODULE_ID, COVER, SETTING_KEYS } from "../config.mjs";
-import { getTokenExternalRadius, isBlockingCreatureToken, getCreatureHeight, isEllipse } from "./token.mjs";
+import { getTokenExternalRadius, isBlockingCreatureToken, getCreatureHeight, isEllipse, applyProneMode } from "./token.mjs";
 import { isWallHeightModuleActive, wallHeightBlocks } from "../integrations/wall-height.mjs";
 
 /**
@@ -458,8 +458,14 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
 
     const boxes = new Map(blockingTokenDocs.map(td => [td.id, buildCreaturePrism(td, ctx, debugTokenShapes)]));
 
-    const attackerVisionSource = (attackerDoc?.elevation ?? 0) + (getCreatureHeight(attackerDoc) * 0.5);
-    const targetVisionSource = (targetDoc?.elevation ?? 0) + (getCreatureHeight(targetDoc) * 0.5);
+    const attackerVisionSource = applyProneMode(
+        attackerDoc,
+        attackerDoc?.getVisionOrigin?.()?.elevation ?? (attackerDoc?.elevation ?? 0)
+    );
+    const targetVisionSource = applyProneMode(
+        targetDoc,
+        targetDoc?.getVisionOrigin?.()?.elevation ?? (targetDoc?.elevation ?? 0)
+    );
     const attackerSamples = attackerDoc?.getContainmentTestPoints?.()
         ?? [{ x: attackerDoc.x, y: attackerDoc.y }];
     const targetSamples = targetDoc?.getContainmentTestPoints?.()

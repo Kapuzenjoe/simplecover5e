@@ -16,6 +16,7 @@
 - Removed the old `9999` save-bonus workaround for Total Cover on Dexterity saving throws. **Total Cover now marks the roll as blocked**, removes the cover bonus, and prevents the saving throw roll/chat message from being created.
 - Cover cleanup now targets the normal DnD5e cover effects more precisely, avoiding accidental cleanup of embedded/custom cover statuses from other Active Effects.
 - **Prone Mode** now also affects attackers and targets during cover calculation, allowing prone to act as a simple ducking mechanic. For example, with Half Height enabled, a prone attacker uses half height as its attack height.
+- When Midi-QOL is active as the cover provider, cover heights are taken from `getVisionOrigin()`, automatically respecting Midi-QOL's **Vision Test Point Height** setting and per-token height flags. Prone mode applies on top.
 - Blocking creature tokens are now resolved from the current scene document data instead of active canvas placeables.
   - Hidden and defeated tokens are ignored using Foundry/DnD5e document state instead of hardcoded status assumptions.
 - Changing Gridless Token Default Shape now only affects newly created tokens by default.
