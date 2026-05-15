@@ -112,6 +112,26 @@ const SETTINGS = [
     config: false
   },
   {
+    key: SETTING_KEYS.IGNORE_AOE,
+    name: "SIMPLE_COVER_5E.Settings.IgnoreAOECover.Name",
+    hint: "SIMPLE_COVER_5E.Settings.IgnoreAOECover.Hint",
+    scope: "world",
+    type: new foundry.data.fields.StringField({
+      choices: {
+        none: "SIMPLE_COVER_5E.Settings.IgnoreAOECover.Options.None",
+        range: "SIMPLE_COVER_5E.Settings.IgnoreAOECover.Options.Range",
+        all: "SIMPLE_COVER_5E.Settings.IgnoreAOECover.Options.All"
+      },
+      initial: "none",
+      required: true,
+      blank: false,
+      trim: true
+    }),
+    requiresReload: false,
+    config: false
+  },
+  // Legacy — superseded by IGNORE_AOE; kept registered for migration in migration.mjs
+  {
     key: SETTING_KEYS.IGNORE_DISTANCE_AOE,
     name: "SIMPLE_COVER_5E.Settings.IgnoreDistanceAOE.Name",
     hint: "SIMPLE_COVER_5E.Settings.IgnoreDistanceAOE.Hint",

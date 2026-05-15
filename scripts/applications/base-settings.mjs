@@ -24,7 +24,7 @@ export class SimpleCoverBaseConfigApp extends HandlebarsApplicationMixin(Applica
     /** @inheritdoc */
     static DEFAULT_OPTIONS = {
         tag: "form",
-        position: { width: 700 },
+        position: { width: 600 },
         window: {
             contentClasses: ["standard-form"]
         },

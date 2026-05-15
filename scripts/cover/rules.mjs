@@ -224,14 +224,13 @@ export function ignoresCover(activity, cover = "none", targetActor = null) {
   // 4) SOURCE TEMPLATES: AoE / Distance / Space
   // ------------------------------------------------------------
   if (effectiveCover !== "none") {
-    const ignoreAllAoe = game.settings.get(MODULE_ID, SETTING_KEYS.IGNORE_ALL_AOE);
-    const ignoreDistanceAoe = game.settings.get(MODULE_ID, SETTING_KEYS.IGNORE_DISTANCE_AOE);
+    const ignoreAoe = game.settings.get(MODULE_ID, SETTING_KEYS.IGNORE_AOE);
     const ignoreDistanceSpace = game.settings.get(MODULE_ID, SETTING_KEYS.IGNORE_DISTANCE_SPACE);
 
-    if (ignoreAllAoe) {
+    if (ignoreAoe === "all") {
       if (templateType !== "") effectiveCover = "none";
     }
-    else if (ignoreDistanceAoe) {
+    else if (ignoreAoe === "range") {
       const rangeValue = activity?.range?.value ?? 0;
       const rangeUnits = activity?.range?.units ?? "";
 

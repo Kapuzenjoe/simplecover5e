@@ -26,6 +26,8 @@
 - Fixed gridless edge-to-edge distance measurement so external token radius no longer reduce vertical distance when elevations differ.
 - Hover cover/distance labels now match Foundry's waypoint label styling and use localized distance formatting.
 - Updated the German localization.
+- Consolidated the **Ignore Cover for All AoE** and **Ignore Cover for Ranged AoE** boolean settings into a single **AoE Template Cover** dropdown (Never / Ranged AoE / All AoE). Existing world settings are migrated automatically on first load.
+- Revised all setting names and hints
 - Configuration setting menus now use Foundry's core fieldset form template.
 - General cleanup, smaller bug fixes, and performance improvements.
 - Reorganized the project folder structure for better maintainability.

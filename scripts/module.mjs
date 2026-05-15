@@ -6,6 +6,7 @@ import { initDaeIntegration } from "./integrations/dae.mjs";
 import { initRollDialogHooks } from "./applications/roll-configuration-dialog.mjs";
 import { initHoverHooks } from "./canvas/hover.mjs";
 import { initApi, readyApi } from "./cover/api.mjs";
+import { readyMigration } from "./migration.mjs";
 
 Hooks.once("init", () => {
   initSettings();
@@ -18,4 +19,7 @@ Hooks.once("init", () => {
   initApi();
 });
 
-Hooks.once("ready", readyApi);
+Hooks.once("ready", () => {
+  readyApi();
+  readyMigration();
+});

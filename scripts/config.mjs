@@ -91,8 +91,9 @@ export const SETTING_KEYS = {
   RMV_ON_MOVE: "rmvCovMovement",
   LOS_CHECK: "losCheck",
   CREATURES_HALF_ONLY: "creaturesHalfCoverOnly",
-  IGNORE_DISTANCE_AOE: "IgnoreDistanceAOE",
-  IGNORE_ALL_AOE: "IgnoreAllAOE",
+  IGNORE_AOE: "ignoreAOECover",
+  IGNORE_DISTANCE_AOE: "IgnoreDistanceAOE", // Legacy
+  IGNORE_ALL_AOE: "IgnoreAllAOE", // Legacy
   IGNORE_DISTANCE_SPACE: "IgnoreDistanceSpace",
   DEBUG: "debugCover",
   HOVER: "hover",
