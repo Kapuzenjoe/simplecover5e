@@ -1,13 +1,14 @@
 /**
- * @import { CoverContext, CoverEvaluationResult, DebugTokenShapes, LosResult, OccluderPrism, Position, TestPoint } from "../types/shared.types.mjs";
+ * @import { CoverContext, CoverEvaluationResult, DebugTokenShapes, LosResult, OccluderPrism, Position, TestPoint } from "../_types.mjs";
  */
 
-import { MODULE_ID, COVER, SETTING_KEYS } from "../config/constants.config.mjs";
-import { isBlockingCreatureToken, getCreatureHeight, isEllipse, isV14, isWallHeightModuleActive } from "./cover.service.mjs";
+import { MODULE_ID, COVER, SETTING_KEYS } from "../config.mjs";
+import { getTokenExternalRadius, isBlockingCreatureToken, getCreatureHeight, isEllipse, applyProneMode } from "./token.mjs";
+import { isWallHeightModuleActive, wallHeightBlocks } from "../integrations/wall-height.mjs";
 
 /**
  * Build a cover evaluation context for a single pass.
- * The context caches grid measurements, active-canvas helpers, and module settings used by the cover and LOS evaluators.
+ * The context caches grid measurements and module settings used by the cover and LOS evaluators.
  *
  * @param {Scene} scene The scene to evaluate.
  * @returns {CoverContext} The cover evaluation context.
@@ -30,7 +31,6 @@ export function buildCoverContext(scene) {
         insetAttackerPx: Math.min(grid.size * 0.3, insetAttacker),
         insetTargetPx: Math.min(grid.size * 0.3, insetTarget),
         insetOccluderPx: Math.min(grid.size * 0.3, insetOccluder),
-        placeables: activeScene ? (canvas?.tokens?.placeables ?? []) : [],
         level: activeScene ? (canvas?.level ?? null) : null
     };
 }
@@ -48,11 +48,11 @@ export function buildCreaturePrism(td, ctx, debugTokenShapes) {
     const { grid, halfGridSize, insetOccluderPx, distancePixels } = ctx;
     const elevation = Number(td?.elevation ?? 0);
     const zMin = elevation * distancePixels;
-    let height = getCreatureHeight(td, ctx);
+    let height = getCreatureHeight(td);
 
     const zMax = zMin + (height * distancePixels);
     const prisms = [];
-    const radius = td?.object?.externalRadius ?? 0;
+    const radius = getTokenExternalRadius(td) ?? 0;
     const { x, y } = td.getCenterPoint();
     const insetToCenter = insetOccluderPx / Math.SQRT2;
 
@@ -70,14 +70,7 @@ export function buildCreaturePrism(td, ctx, debugTokenShapes) {
         });
     }
     else if (grid.isHexagonal) {
-        let centers = [];
-        if (isV14()) {
-            centers = td.getContainmentTestPoints({ depth: 0 });
-        }
-        else {
-            const offs = td.getOccupiedGridSpaceOffsets?.() ?? [];
-            centers = offs.map(o => grid.getCenterPoint(o))
-        }
+        const centers = td.getContainmentTestPoints({ depth: 0 });
 
         let halfCenter = Math.max(radius * 0.80, 0);
 
@@ -146,9 +139,6 @@ function wallsBlock(aCorner, bCorner, ctx, losPolygon = null) {
     const scene = ctx.scene ?? canvas?.scene;
     const backend = CONFIG.Canvas.polygonBackends.sight;
 
-    const debugOn = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.DEBUG);
-    const activeGM = game.users?.activeGM;
-
     let fromLevel = A?.level ?? ctx.level ?? null;
     if (typeof fromLevel === "string") fromLevel = scene?.levels?.get(fromLevel) ?? null;
 
@@ -177,21 +167,11 @@ function wallsBlock(aCorner, bCorner, ctx, losPolygon = null) {
     }
 
     let blocked = false;
+    let surfaceCollisionBlocked = false;
     let collisions = [];
 
-    const debugData = {
-        A,
-        B,
-        losPolygon,
-        fromLevel: fromLevel?.id ?? null,
-        toLevel: toLevel?.id ?? null,
-        tSplit,
-        segment1: null,
-        segment2: null
-    };
-
     // Segment 1: source level
-    if ((fromLevel && (tSplit > 0)) || !isV14()) {
+    if (fromLevel && (tSplit > 0)) {
         const tMin = 0;
         const tMax = tSplit;
 
@@ -210,26 +190,33 @@ function wallsBlock(aCorner, bCorner, ctx, losPolygon = null) {
                 tMin,
                 tMax
             }) ?? false;
+            surfaceCollisionBlocked ||= surfaceBlocked;
 
-            const wallBlocked = backend.testCollision(A, B, {
-                type: "sight",
-                mode: "all",
-                useThreshold: true,
-                level: fromLevel,
-                tMin,
-                tMax
-            }) ?? false;
+            let wallBlocked = false;
+            if (isWallHeightModuleActive()) {
+                const wallCollisions = backend.testCollision(A, B, {
+                    type: "sight",
+                    mode: "all",
+                    useThreshold: true,
+                    level: fromLevel,
+                    tMin,
+                    tMax
+                }) ?? [];
+                collisions.push(...wallCollisions);
+                wallBlocked = wallCollisions.length > 0;
+            }
+            else {
+                wallBlocked = backend.testCollision(A, B, {
+                    type: "sight",
+                    mode: "any",
+                    useThreshold: true,
+                    level: fromLevel,
+                    tMin,
+                    tMax
+                }) ?? false;
+            }
 
-            if (!isV14()) collisions = wallBlocked
-
-            debugData.segment1 = {
-                tMin,
-                tMax,
-                surfaceBlocked,
-                wallBlocked
-            };
-
-            if (surfaceBlocked || wallBlocked.length) blocked = true;
+            if (surfaceBlocked || wallBlocked) blocked = true;
         }
     }
 
@@ -245,115 +232,42 @@ function wallsBlock(aCorner, bCorner, ctx, losPolygon = null) {
             tMin,
             tMax
         }) ?? false;
+        surfaceCollisionBlocked ||= surfaceBlocked;
 
-        const wallBlocked = backend.testCollision(A, B, {
-            type: "sight",
-            mode: "any",
-            useThreshold: true,
-            level: toLevel,
-            tMin,
-            tMax
-        }) ?? false;
-
-        debugData.segment2 = {
-            tMin,
-            tMax,
-            surfaceBlocked,
-            wallBlocked
-        };
+        let wallBlocked = false;
+        if (isWallHeightModuleActive()) {
+            const wallCollisions = backend.testCollision(A, B, {
+                type: "sight",
+                mode: "all",
+                useThreshold: true,
+                level: toLevel,
+                tMin,
+                tMax
+            }) ?? [];
+            collisions.push(...wallCollisions);
+            wallBlocked = wallCollisions.length > 0;
+        }
+        else {
+            wallBlocked = backend.testCollision(A, B, {
+                type: "sight",
+                mode: "any",
+                useThreshold: true,
+                level: toLevel,
+                tMin,
+                tMax
+            }) ?? false;
+        }
 
         if (surfaceBlocked || wallBlocked) blocked = true;
     }
 
-
-    if (debugOn && activeGM) {
-        console.debug(
-            `[${MODULE_ID}] wallsBlock: `,
-            debugData
-        );
-    }
-
-    if (!isWallHeightModuleActive() || losPolygon) {
+    if (!isWallHeightModuleActive() || losPolygon || surfaceCollisionBlocked) {
         return { blocked, A, B };
     }
 
-    for (const vertex of collisions) {
-        if (!vertex) continue;
-
-        const edgeSet = vertex.edges ?? vertex.cwEdges ?? vertex.ccwEdges;
-        if (!edgeSet) continue;
-
-        const { coverLineZ } = getLineHeightAtVertex(A, B, vertex);
-        if (!Number.isFinite(coverLineZ)) continue;
-
-        for (const edge of edgeSet) {
-            const wallDoc = edge?.object?.document;
-            if (!wallDoc) continue;
-
-            const whFlags = wallDoc.flags?.["wall-height"];
-            const topRaw = whFlags?.top;
-            const bottomRaw = whFlags?.bottom;
-
-            const wallTop = (topRaw != null) ? Number(topRaw) : Infinity;
-            const wallBottom = (bottomRaw != null) ? Number(bottomRaw) : -Infinity;
-
-            if (wallTop === Infinity && wallBottom === -Infinity) {
-                return { blocked: true, A, B };
-            }
-
-            const wallBlocks = A.elevation >= wallBottom && A.elevation <= wallTop;
-            const coverBlocks = coverLineZ >= wallBottom && coverLineZ <= wallTop;
-
-            if (debugOn && activeGM) {
-                console.debug(
-                    `[${MODULE_ID}] wall-height line check:`,
-                    {
-                        wall: { id: edge?.object?.document.id, bottom: wallBottom, top: wallTop },
-                        coverLineZ,
-                        wallBlocks,
-                        coverBlocks,
-                        tVertex: {
-                            x: vertex.x,
-                            y: vertex.y
-                        }
-                    }
-                );
-            }
-
-            if (wallBlocks || coverBlocks) {
-                return { blocked: true, A, B };
-            }
-        }
-    }
-    return { blocked: false, A, B, collisions };
-}
-
-/**
- * Compute the ray height at a wall-intersection vertex along segment A→B.
- * The result is used to compare line height against Wall Height top and bottom values.
- *
- * @param {{x:number,y:number,elevation:number}} A The segment start point.
- * @param {{x:number,y:number,elevation:number}} B The segment end point.
- * @param {{x:number,y:number}} vertex The intersection vertex on the wall.
- * @returns {{coverLineZ:number}} The interpolated line height at the intersection vertex.
- */
-function getLineHeightAtVertex(A, B, vertex) {
-    const dx = B.x - A.x;
-    const dy = B.y - A.y;
-
-    let t;
-    if (Math.abs(dx) >= Math.abs(dy)) {
-        const denom = dx || 1e-9;
-        t = (vertex.x - A.x) / denom;
-    } else {
-        const denom = dy || 1e-9;
-        t = (vertex.y - A.y) / denom;
-    }
-    t = Math.min(Math.max(t, 0), 1);
-
-    const coverLineZ = A.elevation + t * (B.elevation - A.elevation);
-
-    return { coverLineZ };
+    return wallHeightBlocks(A, B, collisions)
+        ? { blocked: true, A, B }
+        : { blocked: false, A, B, collisions };
 }
 
 /**
@@ -399,82 +313,6 @@ function segIntersectsAABB3D(p, q, b) {
 
     const EPS = 1e-3;
     return (t0 + EPS) < (t1 - EPS);
-}
-
-/**
- * Compute sample centers used by the v13 cover and LOS evaluators.
- * The sampling pattern depends on grid mode and creature size.
- *
- * @param {TokenDocument|Position} td The token document or position to sample.
- * @returns {Array<{x:number,y:number}>} The sample center points in canvas pixel space.
- */
-export function getTokenSampleCenters(td) {
-    const grid = td?.object?.scene?.grid ?? canvas?.scene.grid ?? null
-    const x = td.x
-    const y = td.y
-    const width = td?.width ?? 0;
-    const height = td?.height ?? 0;
-
-    const centers = [];
-
-    if ((width <= 1) && (height <= 1)) {
-        const center = td.getCenterPoint?.() ?? { x, y };
-        return [{ x: center.x, y: center.y }]
-    }
-
-    else if (grid.isHexagonal) {
-        const offsets = td.getOccupiedGridSpaceOffsets?.() ?? [];
-        for (const o of offsets) {
-            const c = grid.getCenterPoint(o);
-            centers.push({ x: c.x, y: c.y });
-        }
-        return centers
-    }
-    else {
-        const size = td?.getSize();
-        const padX = Math.min(grid.sizeX, size.width) / 2;
-        const padY = Math.min(grid.sizeY, size.height) / 2;
-        const [deltaX, deltaY] = grid.isHexagonal ? (grid.columns ? [grid.sizeX * 0.75, grid.sizeY]
-            : [grid.sizeX, grid.sizeY * 0.75]) : [grid.size, grid.size];
-        const innerX = size.width - (padX * 2);
-        const innerY = size.height - (padY * 2);
-        const m = innerX ? Math.max(Math.round((innerX / deltaX) + 1e-6), 1) : 0;
-        const n = innerY ? Math.max(Math.round((innerY / deltaY) + 1e-6), 1) : 0;
-        const stepX = m ? innerX / m : 0;
-        const stepY = n ? innerY / n : 0;
-
-        const center = td.getCenterPoint?.()
-
-        if (grid.isGridless && isEllipse(td)) {
-            const numRings = Math.ceil(Math.min(n, m) / 2);
-            const maxDensity = Math.max((2 * (n + m)).toNearest(4), 4);
-            for (let k = 0; k < numRings; k++) {
-                const radiusX = (innerX / 2) - (stepX * k);
-                const radiusY = (innerY / 2) - (stepY * k);
-                const density = maxDensity - (8 * k);
-                const deltaAngle = Math.PI * 2 / density;
-                for (let s = 0; s < density; s++) {
-                    const angle = deltaAngle * s;
-                    centers.push({
-                        x: center.x + (Math.cos(angle) * radiusX),
-                        y: center.y + (Math.sin(angle) * radiusY)
-                    });
-                }
-            }
-            return centers;
-        }
-        else {
-            for (let i = 0; i <= n; i++) {
-                for (let j = 0; j <= m; j++) {
-                    centers.push({
-                        x: x + padX + (stepX * j),
-                        y: y + padY + (stepY * i),
-                    });
-                }
-            }
-            return centers;
-        }
-    }
 }
 
 /**
@@ -565,13 +403,13 @@ function buildTokenCornersForCenter(center, ctx, td, inset) {
     const { halfGridSize, grid } = ctx
     const useCircleShape = grid.isGridless && isEllipse(td);
 
-    const externalRadius = td?.object?.externalRadius ?? null
+    const externalRadius = getTokenExternalRadius(td);
     if (externalRadius === null) {
         return [{
             x: center?.x,
             y: center?.y,
             elevation: center?.elevation ?? 0,
-            level: isV14() ? (center?.level ?? null) : undefined
+            level: center?.level ?? null
         }];
     }
 
@@ -587,9 +425,9 @@ function buildTokenCornersForCenter(center, ctx, td, inset) {
     else corners = buildBoxCorners(center, radius, inset);
 
     corners.forEach(c => c.elevation = center?.elevation ?? 0);
-    if (isV14()) corners.forEach(c => c.level = center?.level ?? null);
+    corners.forEach(c => c.level = center?.level ?? null);
 
-    return getConstrainedTestPoints(corners, td);
+    return constrainCoverTestPoints(corners, td);
 }
 
 /**
@@ -610,64 +448,50 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
     const filteredTargetPoints = game.settings?.get?.(MODULE_ID, SETTING_KEYS.FILTERED_TARGET_POINTS) ?? "blocked";
     const ignoreFriendly = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.IGNORE_FRIENDLY);
 
-    const placeables = ctx.placeables ?? [];
-    const blockingTokens = placeables.filter(t =>
-        t.id !== attackerDoc?.id &&
-        t.id !== targetDoc?.id &&
-        (!ignoreFriendly || attackerDoc?.disposition !== t?.document?.disposition) &&
-        isBlockingCreatureToken(t)
+    const tokenDocs = ctx.scene?.tokens?.contents ?? [];
+    const blockingTokenDocs = tokenDocs.filter(td =>
+        td.id !== attackerDoc?.id &&
+        td.id !== targetDoc?.id &&
+        (!ignoreFriendly || attackerDoc?.disposition !== td?.disposition) &&
+        isBlockingCreatureToken(td)
     );
 
-    const boxes = new Map(blockingTokens.map(t => [t.id, buildCreaturePrism(t.document, ctx, debugTokenShapes)]));
+    const boxes = new Map(blockingTokenDocs.map(td => [td.id, buildCreaturePrism(td, ctx, debugTokenShapes)]));
 
-    const attackerVisionSource = attackerDoc?.getVisionOrigin?.()?.elevation
-        ?? (attackerDoc?.elevation ?? 0) + (getCreatureHeight(attackerDoc, ctx) * 0.5)
-        ?? 0;
-    const targetVisionSource = targetDoc?.getVisionOrigin?.()?.elevation
-        ?? (targetDoc?.elevation ?? 0) + (getCreatureHeight(targetDoc, ctx) * 0.5)
-        ?? 0;
-    let attackerSamples = [];
-    let targetSamples = [];
+    const attackerVisionSource = applyProneMode(
+        attackerDoc,
+        attackerDoc?.getVisionOrigin?.()?.elevation ?? (attackerDoc?.elevation ?? 0)
+    );
+    const targetVisionSource = applyProneMode(
+        targetDoc,
+        targetDoc?.getVisionOrigin?.()?.elevation ?? (targetDoc?.elevation ?? 0)
+    );
+    const attackerSamples = attackerDoc?.getContainmentTestPoints?.()
+        ?? [{ x: attackerDoc.x, y: attackerDoc.y }];
+    const targetSamples = targetDoc?.getContainmentTestPoints?.()
+        ?? [{ x: targetDoc.x, y: targetDoc.y }];
+    const attackerCenterPoint = attackerDoc?.getCenterPoint?.() ?? null;
+    const targetCenterPoint = targetDoc?.getCenterPoint?.() ?? null;
 
-    if (isV14()) {
-        attackerSamples = attackerDoc?.getContainmentTestPoints?.()
-            ?? [{ x: attackerDoc.x, y: attackerDoc.y }];
-        targetSamples = targetDoc?.getContainmentTestPoints?.()
-            ?? [{ x: targetDoc.x, y: targetDoc.y }];
+    const prepareSamples = (samples, doc, elevation, centerPoint) => {
+        const size = doc?.width;
+        const removeCenter = centerPoint
+            && doc?.width === doc?.height
+            && Number.isInteger(size)
+            && size % 2 === 0
+            && size >= 2;
 
-        const attackerCenterPoint = attackerDoc?.getCenterPoint?.() ?? null;
-        const targetCenterPoint = targetDoc?.getCenterPoint?.() ?? null;
+        return samples
+            .filter(point => !removeCenter || !(point.x === centerPoint.x && point.y === centerPoint.y))
+            .map(point => ({
+                ...point,
+                elevation,
+                level: doc?.level ?? ctx.level ?? null
+            }));
+    };
 
-        const prepareSamples = (samples, doc, elevation, centerPoint) => {
-            const size = doc?.width;
-            const removeCenter = centerPoint
-                && doc?.width === doc?.height
-                && Number.isInteger(size)
-                && size % 2 === 0
-                && size >= 2;
-
-            return samples
-                .filter(point => !removeCenter || !(point.x === centerPoint.x && point.y === centerPoint.y))
-                .map(point => ({
-                    ...point,
-                    elevation,
-                    level: doc?.level ?? ctx.level ?? null
-                }));
-        };
-
-        attackerSamples = prepareSamples(attackerSamples, attackerDoc, attackerVisionSource, attackerCenterPoint);
-        targetSamples = prepareSamples(targetSamples, targetDoc, targetVisionSource, targetCenterPoint);
-    }
-    else {
-        attackerSamples = getTokenSampleCenters(attackerDoc);
-        targetSamples = getTokenSampleCenters(targetDoc);
-        for (const point of attackerSamples) {
-            point.elevation = attackerVisionSource;
-        }
-        for (const point of targetSamples) {
-            point.elevation = targetVisionSource;
-        }
-    }
+    const preparedAttackerSamples = prepareSamples(attackerSamples, attackerDoc, attackerVisionSource, attackerCenterPoint);
+    const preparedTargetSamples = prepareSamples(targetSamples, targetDoc, targetVisionSource, targetCenterPoint);
 
     const attackerZ = attackerVisionSource * distancePixels + 0.1;
     const targetZ = targetVisionSource * distancePixels + 0.1;
@@ -676,13 +500,13 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
     const totalLines = grid.isHexagonal ? 6 : (grid.isGridless && isEllipse(targetDoc) ? 8 : 4);
     const threshold = grid.isHexagonal ? 4 : (grid.isGridless && isEllipse(targetDoc) ? 6 : 3);
 
-    for (const tCenter of targetSamples) {
+    for (const tCenter of preparedTargetSamples) {
         const tgtCorners = buildTokenCornersForCenter(tCenter, ctx, targetDoc, insetTargetPx);
         if (!tgtCorners || !tgtCorners.length) continue;
 
         if (debugTokenShapes) debugTokenShapes.target.push(tgtCorners);
 
-        for (const aCenter of attackerSamples) {
+        for (const aCenter of preparedAttackerSamples) {
             const atkCorners = buildTokenCornersForCenter(aCenter, ctx, attackerDoc, insetAttackerPx);
             if (!atkCorners || !atkCorners.length) continue;
 
@@ -782,46 +606,22 @@ export function evaluateLOS(attackerDoc, targetDoc, ctx) {
     if (!attackerDoc || !targetDoc) return { hasLOS: true, targetLosPoints: [] };
     const debugOn = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.DEBUG);
 
-    const origin = isV14()
-        ? (attackerDoc.getVisionOrigin?.() ?? attackerDoc.getCenterPoint?.() ?? {
-            x: attackerDoc.x,
-            y: attackerDoc.y,
-            elevation: attackerDoc?.elevation ?? 0,
-            level: attackerDoc?.level ?? null
-        })
-        : (attackerDoc.getCenterPoint?.() ?? {
-            x: attackerDoc.x,
-            y: attackerDoc.y,
-            elevation: (attackerDoc?.elevation ?? 0) + (getCreatureHeight(attackerDoc, ctx) * 0.5),
-        });
+    const origin = attackerDoc.getVisionOrigin?.() ?? attackerDoc.getCenterPoint?.() ?? {
+        x: attackerDoc.x,
+        y: attackerDoc.y,
+        elevation: attackerDoc?.elevation ?? 0,
+        level: attackerDoc?.level ?? null
+    };
 
     origin.elevation ??= attackerDoc?.elevation ?? 0;
     origin.level ??= attackerDoc?.level ?? ctx.level ?? null;
     const losPolygon = attackerDoc?.object?.vision?.los ?? null;
 
-    if (isWallHeightModuleActive()) origin.elevation = (attackerDoc?.elevation ?? 0) + getCreatureHeight(attackerDoc, ctx);
+    if (isWallHeightModuleActive()) origin.elevation = (attackerDoc?.elevation ?? 0) + getCreatureHeight(attackerDoc);
 
-    let targetTestPoints = [];
-    if (isV14()) {
-        targetTestPoints = targetDoc.getVisibilityTestPoints();
-        for (const point of targetTestPoints) point.level = targetDoc?.level ?? null;
-    }
-    else {
-        const tolerance = ctx.grid.size / 4;
-        const visibility = (ctx.scene === canvas?.scene) ? canvas?.visibility : null;
-        if (!visibility) return { hasLOS: true, targetLosPoints: [] };
-        const testPoints = getTokenSampleCenters(targetDoc).flatMap(samplePoint => {
-            const { tests } = visibility._createVisibilityTestConfig(samplePoint, {
-                tolerance,
-                object: targetDoc.object
-            });
-
-            return tests.map(({ point }) => point);
-        });
-
-        targetTestPoints = getConstrainedTestPoints(testPoints, targetDoc);
-        for (const point of targetTestPoints) point.elevation = (targetDoc?.elevation ?? 0) + (getCreatureHeight(targetDoc, ctx) * 0.5);
-    }
+    const targetTestPoints = targetDoc.getVisibilityTestPoints?.()
+        ?? [{ x: targetDoc.x, y: targetDoc.y, elevation: targetDoc?.elevation ?? 0 }];
+    for (const point of targetTestPoints) point.level = targetDoc?.level ?? null;
 
     const targetLosPoints = [];
     let hasLOS = false;
@@ -843,30 +643,38 @@ export function evaluateLOS(attackerDoc, targetDoc, ctx) {
 }
 
 /**
- * Filter token test points against the token's constrained movement polygon.
+ * Constrain cover-specific token test points against the token's movement area.
+ *
+ * This mirrors Foundry's protected `TokenDocument#_constrainTestPoints` for custom cover corners.
  *
  * @param {TestPoint[]} points The points to constrain. Modified in place.
- * @param {TokenDocument} td The token document that defines the constrained area.
+ * @param {TokenDocument} td The token document whose movement constraints are applied.
  * @returns {TestPoint[]} The constrained points array.
  */
-function getConstrainedTestPoints(points, td) {
-    const level = td.parent?.levels?.get(td?.level) ?? null;
-    const origin = isV14() ? td.getVisionOrigin() : td.getCenterPoint();
+function constrainCoverTestPoints(points, td) {
+    const level = td.parent?.levels.get(td.level);
+    if (!level) return points;
+    const origin = td.getMovementOrigin();
 
-    if ((points.length === 1) && (points[0].x === origin.x) && (points[0].y === origin.y)) {
+    if ((points.length === 1) && (points[0].x === origin.x) && (points[0].y === origin.y)
+        && ((points[0].elevation === undefined) || (points[0].elevation === origin.elevation))) {
         return points;
     }
 
     const { width, height } = td.getSize();
     const boundingBox = new PIXI.Rectangle(td.x, td.y, width, height);
-    const polygon = foundry.canvas.geometry.ClockwiseSweepPolygon.create(origin, { type: "sight", level, boundingBox });
+    const polygon = foundry.canvas.geometry.ClockwiseSweepPolygon.create(origin, { type: "move", level, boundingBox });
+    const options = { type: "move", mode: "any", level };
     for (let i = points.length - 1; i >= 0; i--) {
-        const { x, y } = points[i];
-        if (polygon.contains(x, y)) continue;
+        const point = points[i];
+        if (polygon.contains(point.x, point.y) && ((point.elevation === undefined)
+            || !level.parent.testSurfaceCollision(origin, point, options))) continue;
+
         points[i] = points[points.length - 1];
         points.length--;
     }
 
+    // If all test points are behind a wall/surface, the origin becomes the single test point.
     if (!points.length) points.push(origin);
     return points;
 }

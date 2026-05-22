@@ -36,7 +36,6 @@
  * @property {number} insetAttackerPx The configured attacker inset in pixels.
  * @property {number} insetTargetPx The configured target inset in pixels.
  * @property {number} insetOccluderPx The configured occluder inset in pixels.
- * @property {Token[]} placeables Cached active-canvas placeables for this pass.
  * @property {object|string|null} level Cached active-canvas level for this pass.
  */
 
@@ -86,8 +85,8 @@
  * @typedef {object} CoverRuleFlagObject
  * @property {CoverLevel} [min] The minimum current cover that allows the flag to apply.
  * @property {CoverLevel} [max] The maximum current cover that allows the flag to apply.
- * @property {number} [upgrade] The number of cover steps to add.
- * @property {number} [downgrade] The number of cover steps to remove.
+ * @property {number} [steps] The number of cover steps to add or remove.
+ * @property {string} [condition] The status id required for the flag to apply.
  */
 
 /**

@@ -1,5 +1,5 @@
 /**
- * @import { CoverDebugOptions, DebugPoint, DebugPolygon, DebugSegment } from "../types/shared.types.mjs";
+ * @import { CoverDebugOptions, DebugPoint, DebugPolygon, DebugSegment } from "../_types.mjs";
  */
 
 const DEBUG_Z_INDEX = 1000;
@@ -22,6 +22,15 @@ const DEFAULT_POINT_LINE_WIDTH = 1;
 
 /** @type {PIXI.Graphics|null} */
 let debugGraphics = null;
+
+/**
+ * Register hooks used by the cover debug overlay.
+ *
+ * @returns {void}
+ */
+export function initCoverDebugHooks() {
+  Hooks.on("canvasReady", clearCoverDebug);
+}
 
 /**
  * Lazily create or return the shared debug PIXI.Graphics instance.

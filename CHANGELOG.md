@@ -1,5 +1,40 @@
 # Changelog
 
+## 2.1.0
+
+This release focuses on the V14 transition and long-term maintenance cleanup. With the deeper engine changes introduced in Foundry VTT V14, maintaining dual support for both V13 and V14 became increasingly complex and difficult to sustain. As a result, V13 support is now considered legacy, with 2.0.0 remaining the final dedicated V13 release aside from potential critical 2.0.x hotfixes. 
+Additionally, the future of the Wall Height ecosystem remains uncertain under V14, so future cover handling may gradually shift toward native Region-based blocking behaviors depending on where the Foundry community and ecosystem settle.
+
+- **Removed Foundry V13 support**. Simple Cover 5e now relies on only Foundry V14 token depth and native token geometry.
+- Removed the old configurable Creature Heights menu and Wall Height creature height support. This was already disabled in V14+, so this only removes unused V13-era code.
+- `getCover` and `getCoverForTargets` can now treat embedded cover effects on the target as manual cover when `includeEmbeddedCover` is enabled, allowing effects such as Swallow's Total Cover to take priority over calculated cover.
+- When Midi-QOL cover calculation is set to `simplecover5e`, Simple Cover 5e now behaves like Library Mode and only acts as a cover provider.
+  - In this mode, the cover workflow stays in Midi-QOL's hands to avoid conflicting roll mutations.
+  - Roll dialog cover notes are currently disabled for this Midi-QOL workflow. Midi-QOL calculates cover too late for this feature; set Midi-QOL's cover calculation to `none` as a workaround if you want to use Simple Cover 5e's roll dialog cover notes.
+- Simplified and shortened the roll dialog cover hint text for attacks and Dexterity saving throws.
+  - Fixed hidden NPC names not being respected consistently in attack cover hints.
+- GM-only cover changes are now shown inline on attack target rows and saving throw totals as a hoverable warning icon instead of as a separate chat summary.
+- Aligned attack and saving throw token resolution more closely with the DnD5e roll message workflow.
+  - Saving throws now resolve their target/source tokens from the current speaker and originating usage message where possible.
+- Removed the old `9999` save-bonus workaround for Total Cover on Dexterity saving throws. **Total Cover now marks the roll as blocked**, removes the cover bonus, and prevents the saving throw roll/chat message from being created.
+- Cover cleanup now targets the normal DnD5e cover effects more precisely, avoiding accidental cleanup of embedded/custom cover statuses from other Active Effects.
+- **Prone Mode** now also affects attackers and targets during cover calculation, allowing prone to act as a simple ducking mechanic. For example, with Half Height enabled, a prone attacker uses half height as its attack height.
+- When Midi-QOL is active as the cover provider, cover heights are taken from `getVisionOrigin()`, automatically respecting Midi-QOL's **Vision Test Point Height** setting and per-token height flags. Prone mode applies on top.
+- Blocking creature tokens are now resolved from the current scene document data instead of active canvas placeables.
+  - Hidden and defeated tokens are ignored using Foundry/DnD5e document state instead of hardcoded status assumptions.
+- Changing Gridless Token Default Shape now only affects newly created tokens by default.
+  - Added a button to the Gridless Token Default Shape setting row to explicitly apply the selected shape to existing tokens, with a choice between the current scene and all gridless scenes.
+- Cover cleanup now runs on combat turn changes and on the recorded end of token movement, reducing redundant updates.
+- Token outer radius is now applied consistently across cover and distance calculations.
+- Fixed gridless edge-to-edge distance measurement so external token radius no longer reduce vertical distance when elevations differ.
+- Hover cover/distance labels now match Foundry's waypoint label styling and use localized distance formatting.
+- Updated the German localization.
+- Consolidated the **Ignore Cover for All AoE** and **Ignore Cover for Ranged AoE** boolean settings into a single **AoE Template Cover** dropdown (Never / Ranged AoE / All AoE). Existing world settings are migrated automatically on first load.
+- Revised all setting names and hints
+- Configuration setting menus now use Foundry's core fieldset form template.
+- General cleanup, smaller bug fixes, and performance improvements.
+- Reorganized the project folder structure for better maintainability.
+
 ## 2.0.0
 
 ### Breaking Changes

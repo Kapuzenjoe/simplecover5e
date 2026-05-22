@@ -1,16 +1,8 @@
-import { MODULE_ID, DEFAULT_SIZE, SETTING_KEYS } from "./constants.config.mjs";
-import { SimpleCoverCreatureHeightsConfig, SimpleCoverVariantConfig, SimpleCoverAutomationConfig } from "./menu.config.mjs";
-import { clearCoverDebug } from "../services/cover.debug.mjs";
-import { clearCoverStatusEffect, isV14, changeTokenShapeGlobal } from "../services/cover.service.mjs";
-
-/**
- * Update token shapes on gridless scenes after the related setting changes.
- *
- * @returns {Promise<void>} Resolves after matching token shapes have been updated.
- */
-async function onGridlessTokenShapeChange() {
-  return changeTokenShapeGlobal();
-}
+import { MODULE_ID, SETTING_KEYS } from "./config.mjs";
+import { SimpleCoverVariantConfig } from "./applications/variant-rules-settings.mjs";
+import { SimpleCoverAutomationConfig } from "./applications/automation-settings.mjs";
+import { clearCoverDebug } from "./cover/debug.mjs";
+import { clearSystemCoverEffects } from "./cover/status.mjs";
 
 /**
  * Clear cover debug graphics when debug rendering is disabled.
@@ -119,6 +111,26 @@ const SETTINGS = [
     requiresReload: false,
     config: false
   },
+  {
+    key: SETTING_KEYS.IGNORE_AOE,
+    name: "SIMPLE_COVER_5E.Settings.IgnoreAOECover.Name",
+    hint: "SIMPLE_COVER_5E.Settings.IgnoreAOECover.Hint",
+    scope: "world",
+    type: new foundry.data.fields.StringField({
+      choices: {
+        none: "SIMPLE_COVER_5E.Settings.IgnoreAOECover.Options.None",
+        range: "SIMPLE_COVER_5E.Settings.IgnoreAOECover.Options.Range",
+        all: "SIMPLE_COVER_5E.Settings.IgnoreAOECover.Options.All"
+      },
+      initial: "none",
+      required: true,
+      blank: false,
+      trim: true
+    }),
+    requiresReload: false,
+    config: false
+  },
+  // Legacy — superseded by IGNORE_AOE; kept registered for migration in migration.mjs
   {
     key: SETTING_KEYS.IGNORE_DISTANCE_AOE,
     name: "SIMPLE_COVER_5E.Settings.IgnoreDistanceAOE.Name",
@@ -275,8 +287,7 @@ const SETTINGS = [
       blank: false,
       trim: true
     }),
-    requiresReload: false,
-    onChange: onGridlessTokenShapeChange
+    requiresReload: false
   },
   {
     key: SETTING_KEYS.DEBUG,
@@ -327,7 +338,7 @@ const SETTINGS = [
     scope: "world",
     config: false,
     type: new foundry.data.fields.NumberField({
-      initial: 3,
+      initial: 6,
       required: true,
       nullable: false,
       min: 0,
@@ -356,22 +367,6 @@ const SETTINGS = [
     requiresReload: false
   },
   {
-    key: SETTING_KEYS.CREATURE_HEIGHTS,
-    name: "SIMPLE_COVER_5E.Settings.CreatureHeights.Name",
-    hint: "SIMPLE_COVER_5E.Settings.CreatureHeights.Hint",
-    scope: "world",
-    type: new foundry.data.fields.SchemaField({
-      tiny: new foundry.data.fields.NumberField({ initial: DEFAULT_SIZE.tiny, required: true, nullable: false, min: 0 }),
-      sm: new foundry.data.fields.NumberField({ initial: DEFAULT_SIZE.sm, required: true, nullable: false, min: 0 }),
-      med: new foundry.data.fields.NumberField({ initial: DEFAULT_SIZE.med, required: true, nullable: false, min: 0 }),
-      lg: new foundry.data.fields.NumberField({ initial: DEFAULT_SIZE.lg, required: true, nullable: false, min: 0 }),
-      huge: new foundry.data.fields.NumberField({ initial: DEFAULT_SIZE.huge, required: true, nullable: false, min: 0 }),
-      grg: new foundry.data.fields.NumberField({ initial: DEFAULT_SIZE.grg, required: true, nullable: false, min: 0 })
-    }),
-    requiresReload: false,
-    config: false
-  },
-  {
     key: SETTING_KEYS.LIBRARY_MODE,
     name: "SIMPLE_COVER_5E.Settings.LibraryMode.Name",
     hint: "SIMPLE_COVER_5E.Settings.LibraryMode.Hint",
@@ -383,24 +378,23 @@ const SETTINGS = [
 ];
 
 /**
+ * Initialize module settings and setting-related hooks.
+ *
+ * @returns {void}
+ */
+export function initSettings() {
+  registerSettings();
+  Hooks.on("getSceneControlButtons", getSceneControlButtons);
+}
+
+/**
  * Register all module settings and configuration menus.
  *
  * @returns {void}
  */
-export function registerSettings() {
+function registerSettings() {
   for (const { key, ...data } of SETTINGS) {
     game.settings.register(MODULE_ID, key, data);
-  }
-
-  if (!isV14()) {
-    game.settings.registerMenu(MODULE_ID, "creatureHeightsMenu", {
-      name: "SIMPLE_COVER_5E.Settings.HeightsMenu.Name",
-      label: "SIMPLE_COVER_5E.Settings.HeightsMenu.Label",
-      hint: "SIMPLE_COVER_5E.Settings.HeightsMenu.Hint",
-      icon: "fas fa-ruler-vertical",
-      type: SimpleCoverCreatureHeightsConfig,
-      restricted: true
-    });
   }
 
   game.settings.registerMenu(MODULE_ID, "variantRulesMenu", {
@@ -430,13 +424,13 @@ export function registerSettings() {
  * @param {Record<string, SceneControl>} controls The current scene control configuration.
  * @returns {void}
  */
-export function getSceneControlButtons(controls) {
+function getSceneControlButtons(controls) {
   if (!game.user.isGM) return;
   controls.tokens.tools[MODULE_ID] = {
     name: MODULE_ID,
     title: "SIMPLE_COVER_5E.Controls.ClearCover.Title",
     icon: "fa-solid fa-shield-exclamation",
-    onChange: (event, active) => clearCoverStatusEffect(),
+    onChange: (event, active) => clearSystemCoverEffects(),
     button: true
   };
 }

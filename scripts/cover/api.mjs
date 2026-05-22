@@ -1,28 +1,17 @@
 /**
- * @import { CoverContext, CoverEvaluationResult, CoverLevel, CoverTargetResult, DialogNoteData, LosResult, Position } from "../types/shared.types.mjs";
+ * @import { CoverContext, CoverEvaluationResult, CoverTargetResult, DialogNoteData, LosResult, Position } from "../_types.mjs";
  */
 
-import { MODULE_ID, SETTING_KEYS } from "../config/constants.config.mjs";
+import { MODULE_ID, COVER, SETTING_KEYS } from "../config.mjs";
 import {
     buildCoverContext,
     evaluateCoverFromOccluders,
     evaluateLOS,
-} from "../services/cover.engine.mjs";
-import { ignoresCover } from "../utils/rules.cover.mjs";
-import { drawCoverDebug, clearCoverDebug } from "../services/cover.debug.mjs";
-import { measureTokenDistance } from "../utils/distance.mjs";
-
-/**
- * Resolve the effective cover level for an activity, including ignore-cover rules.
- *
- * @param {Activity5e} activity The activity being evaluated.
- * @param {CoverLevel} cover The computed/requested cover level.
- * @param {Actor5e|null} [targetActor=null] The targeted actor.
- * @returns {{cover: CoverLevel, bonus: (0|2|5|null)}} The effective cover level and its corresponding bonus.
- */
-export function getIgnoreCover(activity, cover, targetActor = null) {
-    return ignoresCover(activity, cover, targetActor);
-}
+} from "./engine.mjs";
+import { ignoresCover } from "./rules.mjs";
+import { drawCoverDebug, clearCoverDebug } from "./debug.mjs";
+import { measureTokenDistance } from "../canvas/distance.mjs";
+import { getActorCoverStates } from "./status.mjs";
 
 /**
  * Evaluate line of sight (LOS) from an attacker to a target.
@@ -53,14 +42,45 @@ function getTokenTokenDistance(sourceToken, targetToken) {
 }
 
 /**
- * Build the cover evaluation context.
+ * Evaluate the cover workflow for a prepared attacker/target pair.
  *
- * @param {Scene} [scene=canvas.scene] The scene for which to build the cover context.
- * @returns {CoverContext|null} The cover evaluation context, or null if no scene is available.
+ * @param {TokenDocument|Position} attackerDoc The attacking token document or a generic position.
+ * @param {TokenDocument} targetDoc The target token document.
+ * @param {CoverContext} ctx The cover evaluation context.
+ * @param {object} [options={}] Cover workflow options.
+ * @param {boolean} [options.debug=false] Whether debug geometry should be collected.
+ * @param {boolean} [options.losCheck=false] Whether wall line-of-sight can force total cover.
+ * @param {Activity5e|null} [options.activity=null] The activity being evaluated for cover rules.
+ * @param {boolean} [options.includeEmbeddedCover=false] Whether embedded cover effects should be considered.
+ * @returns {{ result: CoverEvaluationResult, los: LosResult }} The final cover result and LOS data.
  */
-function buildContext(scene = canvas?.scene) {
-    if (!scene) return null;
-    return buildCoverContext(scene);
+function evaluateTargetCover(attackerDoc, targetDoc, ctx, { debug = false, losCheck = false, activity = null, includeEmbeddedCover = false } = {}) {
+    const los = losCheck
+        ? evaluateLOS(attackerDoc, targetDoc, ctx)
+        : { hasLOS: true, targetLosPoints: [] };
+
+    const result = los.hasLOS
+        ? evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, { debug })
+        : { cover: "total", bonus: null };
+
+    let cover = result.cover ?? "none";
+    let bonus = result.bonus;
+
+    if (includeEmbeddedCover) {
+        const { embeddedCover } = getActorCoverStates(targetDoc?.actor);
+        if (COVER.ORDER[embeddedCover] > COVER.ORDER[cover]) {
+            cover = embeddedCover;
+            bonus = COVER.BONUS[embeddedCover];
+        }
+    }
+
+    if (activity) {
+        ({ cover, bonus } = ignoresCover(activity, cover, targetDoc?.actor));
+    }
+
+    result.cover = cover;
+    result.bonus = bonus;
+    return { result, los };
 }
 
 /**
@@ -69,45 +89,40 @@ function buildContext(scene = canvas?.scene) {
  * @param {object} [options={}] Options controlling the cover evaluation.
  * @param {Token|TokenDocument|Position} options.attacker The attacking token, token document, or generic position.
  * @param {Token|TokenDocument} options.target The target token or token document.
- * @param {Scene} [options.scene=canvas.scene] The scene on which to evaluate cover.
+ * @param {Scene} [options.scene] The scene on which to evaluate cover.
  * @param {boolean|null} [options.debug=null] Whether to force debug output. Null uses the module debug setting.
  * @param {boolean} [options.losCheck=false] Whether to perform a wall line-of-sight check.
  * @param {Activity5e|null} [options.activity=null] The activity being evaluated for cover.
+ * @param {boolean} [options.includeEmbeddedCover=false] Whether embedded cover effects on the target should be considered.
  * @returns {CoverEvaluationResult|null} The computed cover result, or null if inputs are invalid.
  */
-export function getCover({ attacker, target, scene = canvas?.scene, debug = null, losCheck = false, activity = null } = {}) {
-    if (!attacker || !target || !scene) return null;
+export function getCover({ attacker, target, scene, debug = null, losCheck = false, activity = null, includeEmbeddedCover = false } = {}) {
+    if (!attacker || !target) return null;
 
     const attackerDoc = attacker.document ?? attacker;
     const targetDoc = target.document ?? target;
     if (!attackerDoc || !targetDoc) return null;
+
+    scene ??= attackerDoc.parent ?? canvas?.scene;
+    if (!scene) return null;
+    if (targetDoc.parent !== scene) return null;
 
     const settingDebug = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.DEBUG);
     const debugOn = (debug === null) ? settingDebug : !!debug;
 
     if (debugOn && game.users.activeGM) clearCoverDebug();
 
-    const ctx = buildContext(scene);
+    const ctx = buildCoverContext(scene);
     if (!ctx) return null;
 
-    const result = evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, { debug: debugOn })
+    const { result, los } = evaluateTargetCover(attackerDoc, targetDoc, ctx, {
+        debug: debugOn,
+        losCheck,
+        activity,
+        includeEmbeddedCover
+    });
 
-    let los = { hasLOS: true, targetLosPoints: [] };
-    if (losCheck) {
-        los = evaluateLOS(attackerDoc, targetDoc, ctx)
-        if (!los.hasLOS) {
-            result.cover = "total";
-            result.bonus = null;
-        }
-    }
-
-    if (activity) {
-        const { cover: desiredCover, bonus: desiredBonus } = getIgnoreCover(activity, result?.cover ?? "none", targetDoc?.actor);
-        result.cover = desiredCover;
-        result.bonus = desiredBonus;
-    }
-
-    if (debugOn && result.debugSegments?.length && game.users.activeGM) {
+    if (debugOn && game.users.activeGM && (result.debugSegments?.length || los.targetLosPoints?.length)) {
         drawCoverDebug({
             segments: result.debugSegments ?? [],
             tokenShapes: result.debugTokenShapes,
@@ -123,24 +138,28 @@ export function getCover({ attacker, target, scene = canvas?.scene, debug = null
  * @param {object} [options={}] Options controlling the cover evaluation.
  * @param {Token|TokenDocument|Position} options.attacker The attacking token, token document, or generic position.
  * @param {Token[]|TokenDocument[]|null} [options.targets] Explicit targets, or the user's current targets.
- * @param {Scene} [options.scene=canvas.scene] The scene on which to evaluate cover.
+ * @param {Scene} [options.scene] The scene on which to evaluate cover.
  * @param {boolean|null} [options.debug=null] Whether to force debug output. Null uses the module debug setting.
  * @param {boolean} [options.losCheck=false] Whether to perform a wall line-of-sight check.
  * @param {Activity5e|null} [options.activity=null] The activity being evaluated for cover.
+ * @param {boolean} [options.includeEmbeddedCover=false] Whether embedded cover effects on targets should be considered.
  * @returns {CoverTargetResult[]} The per-target cover results.
  */
-export function getCoverForTargets({ attacker, targets = null, scene = canvas?.scene, debug = null, losCheck = false, activity = null } = {}) {
-    if (!attacker || !scene) return [];
+export function getCoverForTargets({ attacker, targets = null, scene, debug = null, losCheck = false, activity = null, includeEmbeddedCover = false } = {}) {
+    if (!attacker) return [];
 
     const attackerDoc = attacker.document ?? attacker;
     if (!attackerDoc) return [];
+
+    scene ??= attackerDoc.parent ?? canvas?.scene;
+    if (!scene) return [];
 
     const settingDebug = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.DEBUG);
     const debugOn = (debug === null) ? settingDebug : !!debug;
 
     if (debugOn && game.users.activeGM) clearCoverDebug();
 
-    const ctx = buildContext(scene);
+    const ctx = buildCoverContext(scene);
     if (!ctx) return [];
 
     const list = targets
@@ -151,23 +170,14 @@ export function getCoverForTargets({ attacker, targets = null, scene = canvas?.s
     for (const t of list) {
         const targetDoc = t?.document ?? t;
         if (!targetDoc) continue;
+        if (targetDoc.parent !== scene) continue;
 
-        const result = evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, { debug: debugOn })
-
-        let los = { hasLOS: true, targetLosPoints: [] };
-        if (losCheck) {
-            los = evaluateLOS(attackerDoc, targetDoc, ctx)
-            if (!los.hasLOS) {
-                result.cover = "total";
-                result.bonus = null;
-            }
-        }
-
-        if (activity) {
-            const { cover: desiredCover, bonus: desiredBonus } = getIgnoreCover(activity, result?.cover ?? "none", targetDoc?.actor);
-            result.cover = desiredCover;
-            result.bonus = desiredBonus;
-        }
+        const { result, los } = evaluateTargetCover(attackerDoc, targetDoc, ctx, {
+            debug: debugOn,
+            losCheck,
+            activity,
+            includeEmbeddedCover
+        });
 
         out.push({ target: t, result, los });
     }
@@ -192,39 +202,36 @@ export function getCoverForTargets({ attacker, targets = null, scene = canvas?.s
  * @param {DialogNoteData} [note={}] The note definition.
  * @returns {void}
  */
-export function setDialogNote(dialogConfig, { cover, target, icon = "", label = "", hint = "" } = {}) {
+export function setDialogNote(dialogConfig, note = {}) {
     if (!dialogConfig) return;
 
     dialogConfig.options ??= {};
     const data = (dialogConfig.options[MODULE_ID] ??= {});
     data.notes ??= [];
 
+    const { cover, target, icon = "", label = "", hint = "", ...metadata } = note;
+    const targetId = target == null ? null : String(target);
     const noteData = {
+        ...metadata,
         cover: cover ?? null,
-        target: String(target) ?? null,
+        target: targetId,
         icon: String(icon ?? ""),
         label: String(label ?? ""),
         hint: String(hint ?? "")
     };
 
-    const existingIndex = data.notes.findIndex(note => String(note.target) === String(target) && note.target != null);
-
-    if (existingIndex !== -1) {
-        data.notes[existingIndex] = noteData;
-    } else {
-        data.notes.push(noteData);
-    }
-
-    data.rendered = false;
+    const existingIndex = targetId === null ? -1 : data.notes.findIndex(note => note.target === targetId);
+    if (existingIndex !== -1) data.notes[existingIndex] = noteData;
+    else data.notes.push(noteData);
 }
 
 /**
- * Get whether the module is currently operating in library mode.
+ * Get whether the configured Library Mode setting is enabled.
  *
- * @returns {boolean} True if library mode is enabled.
+ * @returns {boolean} True if the Library Mode setting is enabled.
  */
 function getLibraryMode() {
-    return !!game.settings.get(MODULE_ID, SETTING_KEYS.LIBRARY_MODE);
+    return game.settings.get(MODULE_ID, SETTING_KEYS.LIBRARY_MODE);
 }
 
 /**
@@ -251,7 +258,6 @@ export function initApi() {
         getCoverForTargets,
         getLibraryMode,
         setLibraryMode,
-        getIgnoreCover,
         getLOS,
         getTokenTokenDistance,
         setDialogNote,

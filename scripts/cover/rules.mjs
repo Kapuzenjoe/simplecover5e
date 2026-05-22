@@ -1,8 +1,8 @@
 /**
- * @import { CoverLevel, CoverRuleFlagObject } from "../types/shared.types.mjs";
+ * @import { CoverLevel, CoverRuleFlagObject } from "../_types.mjs";
  */
 
-import { MODULE_ID, COVER, SETTING_KEYS } from "../config/constants.config.mjs";
+import { MODULE_ID, COVER, SETTING_KEYS } from "../config.mjs";
 
 const EXCLUDED_UNITS = new Set(["self", "touch", "special"]);
 const EXCLUDED_TEMPLATE_TYPES = new Set(["", "radius"]);
@@ -13,6 +13,21 @@ const WAND_OF_THE_WAR_MAGE_IDENTIFIERS = new Set([
   "wand-of-the-war-mage-2",
   "wand-of-the-war-mage-3"
 ]);
+
+/**
+ * Test actor items by system identifier first, with a name fallback for legacy/custom data.
+ *
+ * @param {Collection<Item5e>|null} items The actor item collection.
+ * @param {string} identifier The preferred system identifier.
+ * @param {string} name The fallback item name.
+ * @returns {boolean} Whether a matching item exists.
+ */
+function hasActorItem(items, identifier, name) {
+  return Boolean(
+    items?.some(i => (i?.system?.identifier ?? "") === identifier)
+    || items?.getName?.(name)
+  );
+}
 
 /**
  * Parse a cover-rule flag value from actor data.
@@ -26,6 +41,7 @@ const parseFlagValue = value => {
   if (typeof value !== "string") return value;
 
   const trimmed = value.trim();
+  if (trimmed === "") return null;
   if (trimmed === "true") return true;
   if (trimmed === "false") return false;
 
@@ -62,10 +78,6 @@ export function ignoresCover(activity, cover = "none", targetActor = null) {
   const actionType = activity?.actionType;
   const properties = item?.system?.properties;
   const templateType = activity?.target?.template?.type ?? "";
-
-  const hasFeat = (name, identifier) => Boolean(
-    items?.getName?.(name) || items?.some(i => (i?.system?.identifier ?? "") === identifier)
-  );
 
   // ------------------------------------------------------------
   // 1) TARGET: Upgrade Cover
@@ -175,17 +187,17 @@ export function ignoresCover(activity, cover = "none", targetActor = null) {
     }
 
     if (isAttack && (effectiveCover !== "total")) {
-      if ((actionType === "rwak") && hasFeat("Sharpshooter", "sharpshooter")) {
+      if ((actionType === "rwak") && hasActorItem(items, "sharpshooter", "Sharpshooter")) {
         effectiveCover = "none";
       }
-      if ((actionType === "rsak") && hasFeat("Spell Sniper", "spell-sniper")) {
+      if ((actionType === "rsak") && hasActorItem(items, "spell-sniper", "Spell Sniper")) {
         effectiveCover = "none";
       }
     }
 
     if (isAttack && (effectiveCover === "half") && ((actionType === "rsak") || (actionType === "msak"))) {
       const wand = items?.find(i =>
-        /wand of the war mage/i.test(i?.name ?? "") || WAND_OF_THE_WAR_MAGE_IDENTIFIERS.has(i?.system?.identifier)
+        WAND_OF_THE_WAR_MAGE_IDENTIFIERS.has(i?.system?.identifier) || /wand of the war mage/i.test(i?.name ?? "")
       );
 
       if ((wand?.system?.equipped === true) && (wand?.system?.attuned === true)) {
@@ -212,14 +224,13 @@ export function ignoresCover(activity, cover = "none", targetActor = null) {
   // 4) SOURCE TEMPLATES: AoE / Distance / Space
   // ------------------------------------------------------------
   if (effectiveCover !== "none") {
-    const ignoreAllAoe = game.settings.get(MODULE_ID, SETTING_KEYS.IGNORE_ALL_AOE);
-    const ignoreDistanceAoe = game.settings.get(MODULE_ID, SETTING_KEYS.IGNORE_DISTANCE_AOE);
+    const ignoreAoe = game.settings.get(MODULE_ID, SETTING_KEYS.IGNORE_AOE);
     const ignoreDistanceSpace = game.settings.get(MODULE_ID, SETTING_KEYS.IGNORE_DISTANCE_SPACE);
 
-    if (ignoreAllAoe) {
+    if (ignoreAoe === "all") {
       if (templateType !== "") effectiveCover = "none";
     }
-    else if (ignoreDistanceAoe) {
+    else if (ignoreAoe === "range") {
       const rangeValue = activity?.range?.value ?? 0;
       const rangeUnits = activity?.range?.units ?? "";
 

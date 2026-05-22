@@ -1,6 +1,16 @@
-import { MODULE_ID, SETTING_KEYS, HOVER, COVER_ICON_PATHS } from "../config/constants.config.mjs";
-import { measureTokenDistance } from "../utils/distance.mjs";
-import { getCover } from "../utils/api.mjs";
+import { MODULE_ID, SETTING_KEYS, HOVER, COVER } from "../config.mjs";
+import { measureTokenDistance } from "./distance.mjs";
+import { getCover } from "../cover/api.mjs";
+
+/**
+ * Register hooks used by the token hover cover display.
+ *
+ * @returns {void}
+ */
+export function initHoverHooks() {
+  Hooks.on("hoverToken", onHoverToken);
+  Hooks.on("preDeleteToken", onPreDeleteToken);
+}
 
 /**
  * Remove any hover label elements previously attached to a token.
@@ -27,8 +37,8 @@ function removeHoverDecorations(token) {
  * @param {string} userId The ID of the user who initiated the deletion.
  * @returns {void}
  */
-export function onPreDeleteToken(td, options, userId){
-  removeHoverDecorations(td?.object)
+function onPreDeleteToken(td, options, userId) {
+  removeHoverDecorations(td?.object);
 }
 
 /**
@@ -39,9 +49,9 @@ export function onPreDeleteToken(td, options, userId){
  * @memberof hookEvents
  * @param {Token5e} token The hovered token.
  * @param {boolean} hoverState True when hover starts, or false when hover ends.
- * @returns {Promise<void>} Resolves after the hover label has been updated.
+ * @returns {void}
  */
-export async function onHoverToken(token, hoverState) {
+async function onHoverToken(token, hoverState) {
   const hoveredToken = token;
   if (!hoveredToken) return;
 
@@ -66,26 +76,27 @@ export async function onHoverToken(token, hoverState) {
     return;
   }
 
-  const nameplate = hoveredToken.nameplate;
-  if (!nameplate) {
-    removeHoverDecorations(hoveredToken);
-    return;
-  }
-
   let coverKey = "";
   if (hoverMode === "coverOnly" || hoverMode === "coverAndDistance") {
     const losCheck = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.LOS_CHECK);
-    const result = getCover({ attacker: actorToken, target: hoveredToken, scene: hoveredToken.scene, debug: false, losCheck: losCheck });
+    const result = getCover({
+      attacker: actorToken,
+      target: hoveredToken,
+      scene: hoveredToken.scene,
+      debug: false,
+      losCheck,
+      includeEmbeddedCover: true
+    });
 
     if (result?.cover !== "none") {
       coverKey = result?.cover || "";
     }
   }
 
-  const showCoverIcon =
-    (hoverMode === "coverOnly" || hoverMode === "coverAndDistance") && !!coverKey;
+  const showCoverIcon = !!coverKey;
 
-  let labelText = "";
+  let distanceText = "";
+  let units = "";
   if (hoverMode === "coverAndDistance") {
     const distance = measureTokenDistance(
       actorToken.document,
@@ -97,21 +108,15 @@ export async function onHoverToken(token, hoverState) {
       return;
     }
 
-    const unit = hoveredToken?.scene?.grid?.units ?? "";
-    labelText = unit ? `${distance} ${unit}` : `${distance}`;
+    units = hoveredToken?.scene?.grid?.units ?? "";
+    distanceText = distance.toNearest(0.01).toLocaleString(game.i18n.lang);
   }
 
-  const showDistance = hoverMode === "coverAndDistance" && !!labelText;
+  const showDistance = hoverMode === "coverAndDistance" && !!distanceText;
 
   if (!showCoverIcon && !showDistance) {
     removeHoverDecorations(hoveredToken);
     return;
-  }
-
-  let fontSize = nameplate.style?.fontSize ?? 16;
-  if (typeof fontSize === "string") {
-    const parsed = parseInt(fontSize, 10);
-    if (!Number.isNaN(parsed)) fontSize = parsed;
   }
 
   const measurementHud = document.querySelector("#hud #measurement");
@@ -120,44 +125,42 @@ export async function onHoverToken(token, hoverState) {
     return;
   }
 
-  /** @type {HTMLDivElement} */
-  let htmlLabel = hoveredToken[HOVER.DISTANCE_LABEL_PROP];
+  removeHoverDecorations(hoveredToken);
 
-  if (!htmlLabel || !(htmlLabel instanceof HTMLElement)) {
+  const uiScale = canvas.dimensions.uiScale;
+  let htmlLabel;
+
+  if (showDistance) {
+    const rendered = await foundry.applications.handlebars.renderTemplate(
+      "templates/hud/waypoint-label.hbs",
+      {
+        cssClass: "hover-distance-label",
+        action: { icon: "fa-solid fa-ruler" },
+        distance: { total: distanceText },
+        units,
+        uiScale
+      }
+    );
+    if (!hoveredToken.hover) return;
+    htmlLabel = foundry.utils.parseHTML(rendered);
+  }
+  else {
     htmlLabel = document.createElement("div");
     htmlLabel.classList.add("waypoint-label", "hover-distance-label");
-    measurementHud.appendChild(htmlLabel);
-    hoveredToken[HOVER.DISTANCE_LABEL_PROP] = htmlLabel;
   }
 
-  let distanceRowHtml = "";
-  if (showDistance) {
-    distanceRowHtml = `
-      <div class="distance-row">
-        <span class="icon"><i class="fa-solid fa-ruler"></i></span>
-        <span class="total-measurement">${labelText}</span>
-      </div>
-    `;
-  }
-
-  let coverRowHtml = "";
   if (showCoverIcon) {
-    const iconPath = COVER_ICON_PATHS[coverKey];
-    if (iconPath) {
-      const coverHtml = `
-        <span class="img cover-icon" style="background-image: url('${iconPath}');"></span>
-      `;
-      coverRowHtml = `<div class="cover-row">${coverHtml}</div>`;
-    }
+    const iconPath = CONFIG.statusEffects[COVER.IDS[coverKey]].img;
+    const coverIcon = document.createElement("span");
+    coverIcon.classList.add("img");
+    coverIcon.style.backgroundImage = `url("${iconPath}")`;
+    htmlLabel.append(coverIcon);
   }
 
-  htmlLabel.innerHTML = `
-    ${distanceRowHtml}
-    ${coverRowHtml}
-  `;
+  measurementHud.appendChild(htmlLabel);
+  hoveredToken[HOVER.DISTANCE_LABEL_PROP] = htmlLabel;
 
   const center = hoveredToken.center ?? { x: hoveredToken.x, y: hoveredToken.y };
-  const uiScale = canvas.dimensions?.uiScale ?? 1;
 
   let posX = center.x;
   let posY = center.y;

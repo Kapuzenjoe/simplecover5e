@@ -1,5 +1,5 @@
 /**
- * @import { CoverLevel } from "../types/shared.types.mjs";
+ * @import { CoverLevel } from "./_types.mjs";
  */
 
 /**
@@ -12,20 +12,16 @@ export const MODULE_ID = "simplecover5e";
  * Central cover constants.
  *
  * - IDS: maps cover levels to system effect ids (or null for none).
- * - EFFECT_IDS: list of system effect ids used for cover automation.
  * - BONUS: maps cover levels to AC/DEX bonus (null for total cover).
  * - ORDER: numeric ordering for comparing cover levels.
- * - FA_ICONS: Font Awesome class strings per cover level.
  * - I18N: localization keys used for cover labels and roll dialog hints.
  *
  * @readonly
  * @type {{
  *   IDS: { none: null, half: string, threeQuarters: string, total: string },
- *   EFFECT_IDS: Array<[("half"|"threeQuarters"|"total"), string]>,
  *   BONUS: { none: number, half: number, threeQuarters: number, total: (number|null) },
  *   ORDER: { none: number, half: number, threeQuarters: number, total: number },
  *   KEYS: CoverLevel[],
- *   FA_ICONS: { none: string, half: string, threeQuarters: string, total: string },
  *   I18N: {
  *     LABEL_PREFIX_KEY: string,
  *     LABEL: { none: string, half: string, threeQuarters: string, total: string },
@@ -43,11 +39,6 @@ export const COVER = Object.freeze({
     threeQuarters: "coverThreeQuarters",
     total: "coverTotal"
   }),
-  EFFECT_IDS: Object.freeze([
-    ["total", "dnd5ecoverTotal0"],
-    ["threeQuarters", "dnd5ecoverThreeQ"],
-    ["half", "dnd5ecoverHalf00"]
-  ]),
   BONUS: Object.freeze({
     none: 0,
     half: 2,
@@ -61,12 +52,6 @@ export const COVER = Object.freeze({
     total: 3
   }),
   KEYS: Object.freeze(["none", "half", "threeQuarters", "total"]),
-  FA_ICONS: Object.freeze({
-    none: "",
-    half: "fa-solid fa-shield-halved",
-    threeQuarters: "fa-solid fa-shield-quartered",
-    total: "fa-solid fa-shield"
-  }),
   I18N: Object.freeze({
     LABEL_PREFIX_KEY: "DND5E.Cover",
     LABEL: {
@@ -106,11 +91,11 @@ export const SETTING_KEYS = {
   RMV_ON_MOVE: "rmvCovMovement",
   LOS_CHECK: "losCheck",
   CREATURES_HALF_ONLY: "creaturesHalfCoverOnly",
-  IGNORE_DISTANCE_AOE: "IgnoreDistanceAOE",
-  IGNORE_ALL_AOE: "IgnoreAllAOE",
+  IGNORE_AOE: "ignoreAOECover",
+  IGNORE_DISTANCE_AOE: "IgnoreDistanceAOE", // Legacy
+  IGNORE_ALL_AOE: "IgnoreAllAOE", // Legacy
   IGNORE_DISTANCE_SPACE: "IgnoreDistanceSpace",
   DEBUG: "debugCover",
-  CREATURE_HEIGHTS: "creatureHeights",
   HOVER: "hover",
   LIBRARY_MODE: "libraryMode",
   HOVER_LABEL_POSITION: "hoverLabelPosition",
@@ -129,45 +114,13 @@ export const SETTING_KEYS = {
 };
 
 /**
- * Default creature heights in grid units by size category.
- *
- * @type {Record<string, number>}
- */
-export const DEFAULT_SIZE = Object.freeze({
-  tiny: 1,
-  sm: 3,
-  med: 6,
-  lg: 12,
-  huge: 24,
-  grg: 48
-});
-
-/**
- * Base size keys used for iteration and configuration UIs.
- * @type {string[]}
- */
-export const BASE_KEYS = Object.freeze(Object.keys(DEFAULT_SIZE));
-
-/**
  * Constants related to hover labels and icons used by this module.
  *
  * @readonly
- * @type {{DISTANCE_LABEL_PROP:string, DISTANCE_LABEL_NAME:string, COVER_ICON_PROP:string, COVER_ICON_NAME:string}}
+ * @type {{DISTANCE_LABEL_PROP:string}}
  */
 export const HOVER = {
-  DISTANCE_LABEL_PROP: `_${MODULE_ID}HoverDistanceLabel`,
-  DISTANCE_LABEL_NAME: `${MODULE_ID}-hover-distance-label`,
-  COVER_ICON_PROP: `_${MODULE_ID}HoverCoverIcon`,
-  COVER_ICON_NAME: `${MODULE_ID}-hover-cover-icon`
-};
-
-/**
- * Icon paths for DnD5e cover status indicators used by the hover label.
- */
-export const COVER_ICON_PATHS = {
-  half: "systems/dnd5e/icons/svg/statuses/cover-half.svg",
-  threeQuarters: "systems/dnd5e/icons/svg/statuses/cover-three-quarters.svg",
-  total: "systems/dnd5e/icons/svg/statuses/cover-total.svg"
+  DISTANCE_LABEL_PROP: `_${MODULE_ID}HoverDistanceLabel`
 };
 
 const DAE_FLAG_SCOPES = Object.freeze(["all", "attack", "save"]);

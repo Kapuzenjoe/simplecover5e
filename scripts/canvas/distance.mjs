@@ -1,6 +1,5 @@
-import { MODULE_ID, SETTING_KEYS } from "../config/constants.config.mjs";
-import { getCreatureHeight, isV14 } from "../services/cover.service.mjs";
-import { getTokenSampleCenters } from "../services/cover.engine.mjs";
+import { MODULE_ID, SETTING_KEYS } from "../config.mjs";
+import { getCreatureHeight, getTokenExternalRadius } from "../cover/token.mjs";
 
 /**
  * Measure the minimal 3D distance between two tokens in scene grid units.
@@ -24,8 +23,8 @@ export function measureTokenDistance(sourceToken, targetToken) {
 
   if (grid.isGridless && mode === "edgeEdge") {
     const distancePixels = scene?.dimensions?.distancePixels ?? 1;
-    const sourceRadius = sourceDoc.object?.externalRadius ?? 0;
-    const targetRadius = targetDoc.object?.externalRadius ?? 0;
+    const sourceRadius = getTokenExternalRadius(sourceDoc) ?? 0;
+    const targetRadius = getTokenExternalRadius(targetDoc) ?? 0;
 
     const sourceCenter = sourceDoc.getCenterPoint();
     const targetCenter = targetDoc.getCenterPoint();
@@ -40,19 +39,23 @@ export function measureTokenDistance(sourceToken, targetToken) {
       { ...targetCenter }
     ];
 
+    const externalAdjust = (sourceRadius + targetRadius) / distancePixels;
     for (const s of sourceCenters) {
       for (const t of targetCenters) {
-        const d = grid.measurePath([s, t]);
-        if (d.cost < minDistance) minDistance = d.cost;
+        const horizontal = grid.measurePath([
+          { x: s.x, y: s.y },
+          { x: t.x, y: t.y }
+        ]).cost;
+        const horizontalEdge = Math.max(0, horizontal - externalAdjust);
+        const vertical = Math.abs((s.elevation ?? 0) - (t.elevation ?? 0));
+        const distance = Math.hypot(horizontalEdge, vertical);
+        if (distance < minDistance) minDistance = distance;
       }
     }
-
-    const externalAdjust = (sourceRadius + targetRadius) / distancePixels;
-    minDistance = minDistance - externalAdjust;
   }
   else {
-    let sourceCenters = isV14() ? sourceDoc.getContainmentTestPoints() : getTokenSampleCenters(sourceDoc);
-    let targetCenters = isV14() ? targetDoc.getContainmentTestPoints() : getTokenSampleCenters(targetDoc);
+    let sourceCenters = sourceDoc.getContainmentTestPoints();
+    let targetCenters = targetDoc.getContainmentTestPoints();
 
     sourceCenters = sourceCenters.flatMap(point => [
       { ...point, elevation: sourceDoc.elevation + sourceHeight },
