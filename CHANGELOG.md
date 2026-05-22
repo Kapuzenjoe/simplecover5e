@@ -2,6 +2,9 @@
 
 ## 2.1.0
 
+This release focuses on the V14 transition and long-term maintenance cleanup. With the deeper engine changes introduced in Foundry VTT V14, maintaining dual support for both V13 and V14 became increasingly complex and difficult to sustain. As a result, V13 support is now considered legacy, with 2.0.0 remaining the final dedicated V13 release aside from potential critical 2.0.x hotfixes. 
+Additionally, the future of the Wall Height ecosystem remains uncertain under V14, so future cover handling may gradually shift toward native Region-based blocking behaviors depending on where the Foundry community and ecosystem settle.
+
 - **Removed Foundry V13 support**. Simple Cover 5e now relies on only Foundry V14 token depth and native token geometry.
 - Removed the old configurable Creature Heights menu and Wall Height creature height support. This was already disabled in V14+, so this only removes unused V13-era code.
 - `getCover` and `getCoverForTargets` can now treat embedded cover effects on the target as manual cover when `includeEmbeddedCover` is enabled, allowing effects such as Swallow's Total Cover to take priority over calculated cover.
