@@ -35,7 +35,7 @@ You can find the possible settings in the Wiki: [Settings](https://github.com/Ka
 
 Simple Cover 5e exposes a small API that other modules can use to query cover without relying on Active Effects or automatic roll mutation. The API is available via the module entry:
 
-The functions and usage of Library Mode can be found in the Wiki: [API-(Library-Mode)](https://github.com/Kapuzenjoe/simplecover5e/wiki/API-(Library-Mode)).
+The functions and usage of Library Mode can be found in the Wiki: [API-(Library-Mode)](https://github.com/Kapuzenjoe/simplecover5e/wiki/API).
 
 ## Compatibility
 
