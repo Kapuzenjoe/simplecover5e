@@ -153,6 +153,33 @@ function onPreRollAttack(config, dialog, message) {
 }
 
 /**
+ * Resolve the AoE origin position from a placed template region for a saving throw. 
+ *
+ * @param {Activity5e} activity The activity triggering the saving throw.
+ * @param {Token5e} targetToken The token making the saving throw.
+ * @returns {{x:number, y:number, elevation:number, level:string|null}|null} The AoE origin
+ */
+function resolveAoEOrigin(activity, targetToken) {
+  const itemUuid = activity.item?.uuid;
+  if (!itemUuid) return null;
+
+  const regions = canvas.regions?.placeables?.filter(
+    r => r.document.flags?.dnd5e?.item === itemUuid
+  ) ?? [];
+
+  const targetDoc = targetToken.document;
+  const containing = regions.find(r => r.document.tokens.has(targetDoc));
+  if (!containing) return null;
+
+  return {
+    x: containing.center.x,
+    y: containing.center.y,
+    elevation: containing.document.elevation.bottom ?? 0,
+    level: targetDoc.level ?? null,
+  };
+}
+
+/**
  * Apply cover adjustments before a dexterity saving throw roll is built.
  *
  * @function dnd5e.preRollSavingThrow
@@ -181,9 +208,27 @@ function onPreRollSavingThrow(config, dialog, message) {
   const sourceScene = source?.scene ?? source?.document?.parent ?? targetToken.scene ?? targetToken?.document?.parent ?? canvas?.scene;
   if (!source || !activity || !sourceScene) return;
 
+  const templateType = activity.target?.template?.type ?? "";
+  if (templateType === "wall" || templateType === "ring") return;
+
+  let attacker = source;
+  if (templateType) {
+    const rangeUnits = activity.range?.units ?? "";
+    if (rangeUnits !== "self" && rangeUnits !== "touch" && rangeUnits !== "special") {
+      const origin = resolveAoEOrigin(activity, targetToken);
+      if (!origin) {
+        void setCoverStatusViaGM(actor.uuid, "none");
+        setSaveCoverBonus(config.rolls?.[0], 0, "none");
+        setCoverTarget(message, actor, "none");
+        return;
+      }
+      attacker = origin;
+    }
+  }
+
   const losCheck = !!game.settings.get(MODULE_ID, SETTING_KEYS.LOS_CHECK);
   const result = getCover({
-    attacker: source,
+    attacker,
     target: targetToken,
     scene: sourceScene,
     losCheck,

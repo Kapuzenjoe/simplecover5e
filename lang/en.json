@@ -53,10 +53,10 @@
         "Hint": "Cover checks ignore tokens that are friendly to the attacker."
       },
       "IgnoreAOECover": {
-        "Name": "AoE Template Cover",
-        "Hint": "Controls cover behavior for area-of-effect templates. Ranged AoE skips cover for templates at range (range > 1, not self/touch/special). All AoE skips cover whenever any template is defined.",
+        "Name": "Ignore Cover: AoE Templates",
+        "Hint": "When to skip cover checks for area-of-effect templates. Ranged AoE skips cover for templates with a ranged origin (not self/touch/special). All AoE skips cover whenever any template is defined.",
         "Options": {
-          "None": "Never",
+          "None": "Disabled",
           "Range": "Ranged AoE",
           "All": "All AoE"
         }

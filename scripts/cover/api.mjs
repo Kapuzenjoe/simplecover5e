@@ -10,7 +10,7 @@ import {
 } from "./engine.mjs";
 import { ignoresCover } from "./rules.mjs";
 import { drawCoverDebug, clearCoverDebug } from "./debug.mjs";
-import { measureTokenDistance } from "../canvas/distance.mjs";
+import { getTokenTokenDistance } from "../canvas/distance.mjs";
 import { getActorCoverStates } from "./status.mjs";
 
 /**
@@ -30,16 +30,6 @@ function getLOS(attackerDoc, targetDoc, ctx = null) {
     return evaluateLOS(attackerDoc, targetDoc, ctx);
 }
 
-/**
- * Measure the minimal 3D distance between two tokens in scene grid units.
- *
- * @param {Token|TokenDocument} sourceToken The source token or document.
- * @param {Token|TokenDocument} targetToken The target token or document.
- * @returns {number} The minimal distance in grid units.
- */
-function getTokenTokenDistance(sourceToken, targetToken) {
-    return measureTokenDistance(sourceToken, targetToken);
-}
 
 /**
  * Evaluate the cover workflow for a prepared attacker/target pair.

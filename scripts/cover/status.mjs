@@ -1,6 +1,26 @@
 import { MODULE_ID, SETTING_KEYS, COVER } from "../config.mjs";
 
 /**
+ * Apply a cover status directly on the current client.
+ * Requires the caller to have write permission on the actor.
+ *
+ * @param {Actor5e} actor The actor to update.
+ * @param {"none"|"half"|"threeQuarters"|"total"} cover The desired cover level.
+ * @returns {Promise<void>}
+ */
+async function _applyCoverStatus(actor, cover) {
+  const desiredStatusId = COVER.IDS[cover];
+  for (const statusId of [COVER.IDS.total, COVER.IDS.threeQuarters, COVER.IDS.half]) {
+    if (statusId !== desiredStatusId && actor.statuses.has(statusId)) {
+      await actor.toggleStatusEffect(statusId, { active: false, overlay: false });
+    }
+  }
+  if (desiredStatusId && !actor.statuses.has(desiredStatusId)) {
+    await actor.toggleStatusEffect(desiredStatusId, { active: true, overlay: false });
+  }
+}
+
+/**
  * Register GM query handlers used to synchronize dnd5e cover statuses.
  *
  * @returns {void}
@@ -12,7 +32,7 @@ export function initCoverStatusQueries() {
   /**
    * Handle the GM-side query used to synchronize a dnd5e cover status.
    * @param {{actorUuid?: string, cover?: "none"|"half"|"threeQuarters"|"total"}|null|undefined} data The query payload.
-   * @returns {Promise<{ok: boolean, changed?: boolean, reason?: string}>} The query result.
+   * @returns {Promise<{ok: boolean, reason?: string}>} The query result.
    */
   CONFIG.queries[`${MODULE_ID}.setCoverStatus`] = async (data) => {
     try {
@@ -26,20 +46,8 @@ export function initCoverStatusQueries() {
         return { ok: false, reason: "no-actor" };
       }
 
-      const desiredStatusId = COVER.IDS[cover];
-      if (desiredStatusId) {
-        if (actor.statuses.has(desiredStatusId)) return { ok: true, changed: false };
-        await actor.toggleStatusEffect(desiredStatusId, { active: true, overlay: false });
-        return { ok: true, changed: true };
-      }
-
-      let changed = false;
-      for (const statusId of [COVER.IDS.total, COVER.IDS.threeQuarters, COVER.IDS.half]) {
-        if (!actor.statuses.has(statusId)) continue;
-        const result = await actor.toggleStatusEffect(statusId, { active: false, overlay: false });
-        changed ||= result === false;
-      }
-      return { ok: true, changed };
+      await _applyCoverStatus(actor, cover);
+      return { ok: true };
     } catch (err) {
       console.warn(`[${MODULE_ID}] query setCoverStatus failed:`, err, data);
       return { ok: false, reason: "exception" };
@@ -55,6 +63,14 @@ export function initCoverStatusQueries() {
  * @returns {Promise<boolean>} True if the GM handled the request successfully.
  */
 export async function setCoverStatusViaGM(actorUuid, cover) {
+  if (game.user.isGM) {
+    if (!COVER.KEYS.includes(cover)) return false;
+    const actor = await fromUuid(actorUuid);
+    if (!actor) return false;
+    await _applyCoverStatus(actor, cover);
+    return true;
+  }
+
   const gm = game.users.activeGM;
   if (!gm) { console.warn(`[${MODULE_ID}] no active GM`); return false; }
 
@@ -182,24 +198,27 @@ export function getActorCoverStates(actor) {
  * This is typically called when combat state changes or at end-of-turn boundaries.
  *
  * @param {Combat|null} combat The active combat, if any.
- * @returns {Promise<void>} Resolves when all status toggles have settled.
+ * @returns {Promise<void>} Resolves when the batch delete operation has settled.
  */
 export async function clearSystemCoverEffects(combat) {
   const scope = game.settings.get(MODULE_ID, SETTING_KEYS.COVER_SCOPE);
   const targets = resolveTokensForScope(combat, scope);
   const systemCoverEffects = getSystemCoverEffects();
-  const jobs = [];
+  const operations = [];
 
   for (const { actor } of targets) {
     if (!actor) continue;
-
+    const ids = [];
     for (const { statusId, effectId } of systemCoverEffects) {
-      const hasSystemEffect = actor.statuses?.has?.(statusId) && actor.appliedEffects?.some(effect => effect.id === effectId);
-      if (hasSystemEffect) {
-        jobs.push(actor.toggleStatusEffect(statusId, { active: false, overlay: false }));
+      if (!effectId) continue;
+      if (actor.statuses?.has?.(statusId) && actor.appliedEffects?.some(e => e.id === effectId)) {
+        ids.push(effectId);
       }
+    }
+    if (ids.length) {
+      operations.push({ action: "delete", documentName: "ActiveEffect", parent: actor, ids });
     }
   }
 
-  if (jobs.length) await Promise.allSettled(jobs);
+  if (operations.length) await foundry.documents.modifyBatch(operations);
 }

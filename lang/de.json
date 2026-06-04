@@ -53,10 +53,10 @@
         "Hint": "Deckungsprüfungen ignorieren Figuren, die dem Angreifer freundlich gesinnt sind."
       },
       "IgnoreAOECover": {
-        "Name": "AoE-Schablonen-Deckung",
-        "Hint": "Steuert das Deckungsverhalten bei Wirkungsbereich-Schablonen. Entfernungs-AoE überspringt Deckungsprüfungen für Schablonen auf Entfernung (Reichweite > 1, nicht Selbst/Berührung/Spezial). Alle AoE ignoriert Deckung, sobald eine Schablone definiert ist.",
+        "Name": "Deckung ignorieren: AoE-Schablonen",
+        "Hint": "Wann Deckungsprüfungen für Wirkungsbereich-Schablonen übersprungen werden. Entfernungs-AoE überspringt Deckungsprüfungen für Schablonen mit Entfernungsursprung (nicht Selbst/Berührung/Spezial). Alle AoE ignoriert Deckung, sobald eine Schablone definiert ist.",
         "Options": {
-          "None": "Nie",
+          "None": "Deaktiviert",
           "Range": "AoE auf Entfernung",
           "All": "Alle AoE"
         }

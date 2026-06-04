@@ -5,7 +5,6 @@
 import { MODULE_ID, COVER, SETTING_KEYS } from "../config.mjs";
 
 const EXCLUDED_UNITS = new Set(["self", "touch", "special"]);
-const EXCLUDED_TEMPLATE_TYPES = new Set(["", "radius"]);
 const WAND_OF_THE_WAR_MAGE_IDENTIFIERS = new Set([
   "1-wand-of-the-war-mage",
   "wand-of-the-war-mage",
@@ -109,7 +108,7 @@ export function ignoresCover(activity, cover = "none", targetActor = null) {
         parsed = Number(value.steps);
       }
 
-      if ((parsed === 1) || (parsed === 2)) upgrade = Math.max(upgrade, parsed);
+      if (parsed >= 1) upgrade = Math.max(upgrade, parsed);
     }
 
     if (upgrade) {
@@ -147,7 +146,7 @@ export function ignoresCover(activity, cover = "none", targetActor = null) {
           parsed = Number(value.steps);
         }
 
-        if ((parsed === 1) || (parsed === 2)) downgrade = Math.max(downgrade, parsed);
+        if (parsed >= 1) downgrade = Math.max(downgrade, parsed);
       }
     }
 
@@ -223,7 +222,7 @@ export function ignoresCover(activity, cover = "none", targetActor = null) {
   // ------------------------------------------------------------
   // 4) SOURCE TEMPLATES: AoE / Distance / Space
   // ------------------------------------------------------------
-  if (effectiveCover !== "none") {
+  if (isSave && (effectiveCover !== "none")) {
     const ignoreAoe = game.settings.get(MODULE_ID, SETTING_KEYS.IGNORE_AOE);
     const ignoreDistanceSpace = game.settings.get(MODULE_ID, SETTING_KEYS.IGNORE_DISTANCE_SPACE);
 
@@ -231,13 +230,11 @@ export function ignoresCover(activity, cover = "none", targetActor = null) {
       if (templateType !== "") effectiveCover = "none";
     }
     else if (ignoreAoe === "range") {
-      const rangeValue = activity?.range?.value ?? 0;
       const rangeUnits = activity?.range?.units ?? "";
 
       if (
-        (rangeValue > 1)
-        && !EXCLUDED_UNITS.has(rangeUnits)
-        && !EXCLUDED_TEMPLATE_TYPES.has(templateType)
+        !EXCLUDED_UNITS.has(rangeUnits)
+        && (templateType !== "")
       ) {
         effectiveCover = "none";
       }

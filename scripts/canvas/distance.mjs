@@ -9,7 +9,7 @@ import { getCreatureHeight, getTokenExternalRadius } from "../cover/token.mjs";
  * @param {Token|TokenDocument} targetToken The target token or document.
  * @returns {number} The minimal distance in grid units, clamped to 0 or greater.
  */
-export function measureTokenDistance(sourceToken, targetToken) {
+export function getTokenTokenDistance(sourceToken, targetToken) {
   const sourceDoc = sourceToken.document ?? sourceToken;
   const targetDoc = targetToken.document ?? targetToken;
 

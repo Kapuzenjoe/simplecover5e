@@ -58,7 +58,7 @@ Simple Cover 5e provides a dedicated configuration menu for rules that influence
 
 ### Cover Rules
 
-These settings enable or disable optional cover rules. This page lists what can be configured; the mechanical rule details are documented in [Cover Rules](rules.md).
+These settings enable or disable optional cover rules. This page lists what can be configured; the mechanical rule details are documented in [Cover Rules](Cover-Rules).
 
 - **Wall Line of Sight Check**
   Performs an additional wall-only line-of-sight check.
@@ -72,11 +72,8 @@ These settings enable or disable optional cover rules. This page lists what can 
 - **Prone Creature Height Adjustment**
   Controls how prone creatures are treated for 3D cover. Options are **None** (default), **Treat as one size smaller**, and **Treat as half as tall**.
 
-- **Ignore Cover for All Area Effects**
-  Skips cover checks for activities that use an area template.
-
-- **Ignore Cover for Ranged AoE Templates**
-  Skips cover checks for ranged activities that create an area effect.
+- **Ignore Cover: AoE Templates**
+  Controls when cover checks are skipped for area-of-effect templates. Options are **Disabled** (default), **Ranged AoE** (skips cover for templates with a ranged origin — not self, touch, or special range), and **All AoE** (skips cover whenever any template is defined).
 
 - **Ignore Cover for Ranged Space Targeting**
   Skips cover checks when an activity targets a space at range.

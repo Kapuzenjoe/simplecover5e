@@ -113,15 +113,15 @@ export class SimpleCoverBaseConfigApp extends HandlebarsApplicationMixin(Applica
             const setting = game.settings.settings.get(id);
             if (!setting) continue;
 
-            const priorValue = game.settings.get(setting.namespace, setting.key, { document: true })?._source.value;
+            const prior = game.settings.get(setting.namespace, setting.key);
             let updated;
             try {
-                updated = await game.settings.set(setting.namespace, setting.key, value, { document: true });
+                updated = await game.settings.set(setting.namespace, setting.key, value);
             } catch (error) {
                 ui.notifications.error(error);
             }
 
-            if (priorValue === updated?._source.value) continue;
+            if (prior === updated) continue;
             requiresClientReload ||= (setting.scope !== CONST.SETTING_SCOPES.WORLD) && setting.requiresReload;
             requiresWorldReload ||= (setting.scope === CONST.SETTING_SCOPES.WORLD) && setting.requiresReload;
         }

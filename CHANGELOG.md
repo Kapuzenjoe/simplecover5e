@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.1.1
+
+- Dexterity saving throws triggered by a placed AoE template (range other than *self* or *touch*) now calculate cover from the **template's origin**, not the caster's position. This aligns with the rules ("energy erupts from the point of origin"). 
+  - Wall-type templates are excluded entirely since they do not have a discrete origin point.
+  - If the token is outside the template region or the region no longer exists, no cover is calculated.
+  - The **Ignore Cover: AoE Templates** setting (`Ranged AoE` / `All AoE`) still suppresses cover for these saves as before.
+- Renamed the **AoE Template Cover** setting to **Ignore Cover: AoE Templates** for improved clarity; the *Never* option is now labeled *Disabled*.
+- Fixed the *Ranged AoE* cover suppression not applying to area spells with a range value of 1 (e.g. Meteor Swarm).
+- Fixed cover status sometimes not being cleared when switching between cover levels manually in the roll dialog.
+- Improved cover status socket performance.
+
 ## 2.1.0
 
 This release focuses on the V14 transition and long-term maintenance cleanup. With the deeper engine changes introduced in Foundry VTT V14, maintaining dual support for both V13 and V14 became increasingly complex and difficult to sustain. As a result, V13 support is now considered legacy, with 2.0.0 remaining the final dedicated V13 release aside from potential critical 2.0.x hotfixes. 

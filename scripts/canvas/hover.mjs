@@ -1,5 +1,5 @@
 import { MODULE_ID, SETTING_KEYS, HOVER, COVER } from "../config.mjs";
-import { measureTokenDistance } from "./distance.mjs";
+import { getTokenTokenDistance } from "./distance.mjs";
 import { getCover } from "../cover/api.mjs";
 
 /**
@@ -52,27 +52,26 @@ function onPreDeleteToken(td, options, userId) {
  * @returns {void}
  */
 async function onHoverToken(token, hoverState) {
-  const hoveredToken = token;
-  if (!hoveredToken) return;
+  if (!token) return;
 
   const hoverMode = game.settings.get(MODULE_ID, SETTING_KEYS.HOVER);
 
   if (!hoverState || hoverMode === "off") {
-    removeHoverDecorations(hoveredToken);
+    removeHoverDecorations(token);
     return;
   }
 
   const controlled = canvas?.tokens?.controlled ?? [];
   if (controlled.length !== 1) {
-    removeHoverDecorations(hoveredToken);
+    removeHoverDecorations(token);
     return;
   }
 
   const actorToken = controlled[0];
 
   const actorIsOwner = actorToken?.document?.isOwner || game.user.isGM;
-  if (!actorIsOwner || actorToken === hoveredToken) {
-    removeHoverDecorations(hoveredToken);
+  if (!actorIsOwner || actorToken === token) {
+    removeHoverDecorations(token);
     return;
   }
 
@@ -81,8 +80,8 @@ async function onHoverToken(token, hoverState) {
     const losCheck = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.LOS_CHECK);
     const result = getCover({
       attacker: actorToken,
-      target: hoveredToken,
-      scene: hoveredToken.scene,
+      target: token,
+      scene: token.scene,
       debug: false,
       losCheck,
       includeEmbeddedCover: true
@@ -98,34 +97,34 @@ async function onHoverToken(token, hoverState) {
   let distanceText = "";
   let units = "";
   if (hoverMode === "coverAndDistance") {
-    const distance = measureTokenDistance(
+    const distance = getTokenTokenDistance(
       actorToken.document,
-      hoveredToken.document
+      token.document
     );
 
     if (!Number.isFinite(distance)) {
-      removeHoverDecorations(hoveredToken);
+      removeHoverDecorations(token);
       return;
     }
 
-    units = hoveredToken?.scene?.grid?.units ?? "";
+    units = token?.scene?.grid?.units ?? "";
     distanceText = distance.toNearest(0.01).toLocaleString(game.i18n.lang);
   }
 
   const showDistance = hoverMode === "coverAndDistance" && !!distanceText;
 
   if (!showCoverIcon && !showDistance) {
-    removeHoverDecorations(hoveredToken);
+    removeHoverDecorations(token);
     return;
   }
 
   const measurementHud = document.querySelector("#hud #measurement");
   if (!measurementHud) {
-    removeHoverDecorations(hoveredToken);
+    removeHoverDecorations(token);
     return;
   }
 
-  removeHoverDecorations(hoveredToken);
+  removeHoverDecorations(token);
 
   const uiScale = canvas.dimensions.uiScale;
   let htmlLabel;
@@ -141,7 +140,7 @@ async function onHoverToken(token, hoverState) {
         uiScale
       }
     );
-    if (!hoveredToken.hover) return;
+    if (!token.hover) return;
     htmlLabel = foundry.utils.parseHTML(rendered);
   }
   else {
@@ -158,9 +157,9 @@ async function onHoverToken(token, hoverState) {
   }
 
   measurementHud.appendChild(htmlLabel);
-  hoveredToken[HOVER.DISTANCE_LABEL_PROP] = htmlLabel;
+  token[HOVER.DISTANCE_LABEL_PROP] = htmlLabel;
 
-  const center = hoveredToken.center ?? { x: hoveredToken.x, y: hoveredToken.y };
+  const center = token.center ?? { x: token.x, y: token.y };
 
   let posX = center.x;
   let posY = center.y;
@@ -173,7 +172,7 @@ async function onHoverToken(token, hoverState) {
     game.settings.get(MODULE_ID, SETTING_KEYS.HOVER_LABEL_X_OFFSET) ?? 0
   );
 
-  const tokenHalfHeight = (hoveredToken.h ?? hoveredToken.height ?? 0) / 2;
+  const tokenHalfHeight = (token.h ?? token.height ?? 0) / 2;
 
   htmlLabel.style.setProperty("--transformX", "-50%");
 

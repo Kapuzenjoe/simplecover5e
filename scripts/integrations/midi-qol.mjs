@@ -4,10 +4,8 @@
  * @returns {boolean} True if Midi-QOL owns cover automation for the current workflow.
  */
 export function isMidiAutomation() {
-  const midi = game.modules.get("midi-qol")?.api ?? globalThis.MidiQOL;
-  const coverCalculation =
-    midi?.currentConfigSettings?.optionalRules?.coverCalculation ??
-    midi?.configSettings?.()?.optionalRules?.coverCalculation;
-
+  if (!game.modules.get("midi-qol")?.active) return false;
+  const coverCalculation = game.settings.get("midi-qol", "ConfigSettings")
+    ?.optionalRules?.coverCalculation;
   return coverCalculation === "simplecover5e";
 }

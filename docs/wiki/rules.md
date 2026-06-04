@@ -111,36 +111,22 @@ When enabled:
 
 When enabled, friendly tokens are ignored as creature occluders during cover evaluation.
 
-### Ignore Cover for All Area Effects
+### Ignore Cover: AoE Templates
 
-- **Setting:** `IgnoreAllAOE`
-- **UI Name:** *Ignore cover for all area effects*
+- **Setting:** `ignoreAOECover`
+- **UI Name:** *Ignore Cover: AoE Templates*
+- **Options:** `Disabled` / `Ranged AoE` / `All AoE`
 
-If an activity defines any area template, cover checks are skipped and effective cover becomes `none`.
+Controls when cover checks are skipped for area-of-effect templates.
 
-Rule:
+**All AoE:**
 - If `activity.target.template.type !== ""`, the result becomes `none` / `0`.
 
-### Ignore Cover for Ranged AoE Templates
-
-- **Setting:** `IgnoreDistanceAOE`
-- **UI Name:** *Ignore cover for ranged AoE templates*
-
-Skips cover checks for activities that create an area **at range** (e.g. Fireball).
-
-Rule:
+**Ranged AoE:**
 - Applies when:
-  - `activity.range.value > 1`
+  - `activity.target.template.type !== ""`
   - range units are not `self`, `touch`, `special`
-  - template type is not in the excluded list (empty or radius-only)
 - If matched, the result becomes `none` / `0`.
-
-Excluded range units:
-- `self`, `touch`, `special`
-
-Excluded template types:
-- `""` (none)
-- `"radius"`
 
 ### Ignore Cover for Ranged Space Targeting
 
