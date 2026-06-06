@@ -1,5 +1,5 @@
 import { MODULE_ID, SETTING_KEYS } from "../config.mjs";
-import { getCreatureHeight, getTokenExternalRadius } from "../cover/token.mjs";
+import { getTokenExternalRadius } from "../cover/token.mjs";
 
 /**
  * Measure the minimal 3D distance between two tokens in scene grid units.
@@ -16,8 +16,23 @@ export function getTokenTokenDistance(sourceToken, targetToken) {
   const scene = sourceDoc.parent;
   const grid = scene.grid;
   const mode = game.settings.get(MODULE_ID, SETTING_KEYS.GRIDLESS_DISTANCE_MODE) ?? "edgeToCenter";
-  const sourceHeight = getCreatureHeight(sourceDoc);
-  const targetHeight = getCreatureHeight(targetDoc);
+
+  const sourceBottom = sourceDoc.elevation;
+  const sourceTop = sourceDoc.elevation + (sourceDoc.depth ?? 0) * grid.distance;
+  const targetBottom = targetDoc.elevation;
+  const targetTop = targetDoc.elevation + (targetDoc.depth ?? 0) * grid.distance;
+
+  let sourceElevation, targetElevation;
+  if (sourceBottom <= targetTop && targetBottom <= sourceTop) {
+    const shared = Math.max(sourceBottom, targetBottom);
+    sourceElevation = targetElevation = shared;
+  } else if (sourceBottom > targetTop) {
+    sourceElevation = sourceBottom;
+    targetElevation = targetTop;
+  } else {
+    sourceElevation = sourceTop;
+    targetElevation = targetBottom;
+  }
 
   let minDistance = Infinity;
 
@@ -29,42 +44,20 @@ export function getTokenTokenDistance(sourceToken, targetToken) {
     const sourceCenter = sourceDoc.getCenterPoint();
     const targetCenter = targetDoc.getCenterPoint();
 
-    const sourceCenters = [
-      { ...sourceCenter, elevation: sourceDoc.elevation + sourceHeight },
-      { ...sourceCenter }
-    ];
-
-    const targetCenters = [
-      { ...targetCenter, elevation: targetDoc.elevation + targetHeight },
-      { ...targetCenter }
-    ];
-
     const externalAdjust = (sourceRadius + targetRadius) / distancePixels;
-    for (const s of sourceCenters) {
-      for (const t of targetCenters) {
-        const horizontal = grid.measurePath([
-          { x: s.x, y: s.y },
-          { x: t.x, y: t.y }
-        ]).cost;
-        const horizontalEdge = Math.max(0, horizontal - externalAdjust);
-        const vertical = Math.abs((s.elevation ?? 0) - (t.elevation ?? 0));
-        const distance = Math.hypot(horizontalEdge, vertical);
-        if (distance < minDistance) minDistance = distance;
-      }
-    }
+    const horizontal = grid.measurePath([
+      { x: sourceCenter.x, y: sourceCenter.y },
+      { x: targetCenter.x, y: targetCenter.y }
+    ]).cost;
+    const horizontalEdge = Math.max(0, horizontal - externalAdjust);
+    const vertical = Math.abs(sourceElevation - targetElevation);
+    minDistance = Math.hypot(horizontalEdge, vertical);
   }
   else {
-    let sourceCenters = sourceDoc.getContainmentTestPoints();
-    let targetCenters = targetDoc.getContainmentTestPoints();
-
-    sourceCenters = sourceCenters.flatMap(point => [
-      { ...point, elevation: sourceDoc.elevation + sourceHeight },
-      { ...point, elevation: sourceDoc.elevation}
-    ]);
-    targetCenters = targetCenters.flatMap(point => [
-      { ...point, elevation: targetDoc.elevation + targetHeight },
-      { ...point, elevation: targetDoc.elevation }
-    ]);
+    const sourceCenters = sourceDoc.getContainmentTestPoints()
+      .map(p => ({ ...p, elevation: sourceElevation }));
+    const targetCenters = targetDoc.getContainmentTestPoints()
+      .map(p => ({ ...p, elevation: targetElevation }));
 
     for (const s of sourceCenters) {
       for (const t of targetCenters) {
@@ -74,6 +67,5 @@ export function getTokenTokenDistance(sourceToken, targetToken) {
     }
   }
 
-  minDistance = Math.round(minDistance * 100) / 100 || 0;
-  return minDistance < 0 ? 0 : minDistance;
+  return minDistance === Infinity ? 0 : Math.max(0, minDistance.toNearest(0.01));
 }

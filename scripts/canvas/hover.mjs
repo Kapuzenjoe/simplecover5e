@@ -108,7 +108,7 @@ async function onHoverToken(token, hoverState) {
     }
 
     units = token?.scene?.grid?.units ?? "";
-    distanceText = distance.toNearest(0.01).toLocaleString(game.i18n.lang);
+    distanceText = distance.toLocaleString(game.i18n.lang);
   }
 
   const showDistance = hoverMode === "coverAndDistance" && !!distanceText;
@@ -172,13 +172,11 @@ async function onHoverToken(token, hoverState) {
     game.settings.get(MODULE_ID, SETTING_KEYS.HOVER_LABEL_X_OFFSET) ?? 0
   );
 
-  const tokenHalfHeight = (token.h ?? token.height ?? 0) / 2;
-
   htmlLabel.style.setProperty("--transformX", "-50%");
 
   switch (positionSetting) {
     case "above": {
-      posY = center.y - tokenHalfHeight;
+      posY = center.y - (token.h * 0.5) - (16 * uiScale);
       htmlLabel.style.setProperty("--transformY", "-100%");
       break;
     }
@@ -189,7 +187,7 @@ async function onHoverToken(token, hoverState) {
     }
     case "below":
     default: {
-      posY = center.y + tokenHalfHeight;
+      posY = center.y + (token.h * 0.5) + (16 * uiScale);
       htmlLabel.style.setProperty("--transformY", "0%");
       break;
     }

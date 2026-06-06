@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.1.2
+
+- Improved 3D token distance calculation: elevation pairing now selects the closest vertical endpoints between the two token extents instead of testing all top/bottom combinations. 
+- Hover labels set to the Above or Below position now include a default small gap between the token top edge and the label, aligning with Foundry's waypoint label placement.
+
 ## 2.1.1
 
 - Dexterity saving throws triggered by a placed AoE template (range other than *self* or *touch*) now calculate cover from the **template's origin**, not the caster's position. This aligns with the rules ("energy erupts from the point of origin"). 
