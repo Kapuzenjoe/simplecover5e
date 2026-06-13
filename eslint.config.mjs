@@ -39,5 +39,10 @@ export default [
       },
       sourceType: "module"
     }
+  },
+  {
+    rules: {
+      "foundry/sort-object-keys": "off"
+    }
   }
 ];

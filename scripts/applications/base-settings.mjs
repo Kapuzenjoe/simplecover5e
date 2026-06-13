@@ -29,12 +29,12 @@ export class SimpleCoverBaseConfigApp extends HandlebarsApplicationMixin(Applica
    * @inheritdoc
    */
   static PARTS = {
-    footer: {
-      template: "templates/generic/form-footer.hbs"
-    },
     form: {
       scrollable: [""],
       template: "templates/generic/form-fields.hbs"
+    },
+    footer: {
+      template: "templates/generic/form-footer.hbs"
     }
   };
 
