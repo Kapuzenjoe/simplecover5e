@@ -8,19 +8,19 @@ import { FLAGS } from "../config.mjs";
 export function initDaeIntegration() {
   Hooks.once("dae.setupComplete", () => {
     const dae = globalThis.DAE;
-    if (!dae) return;
+    if ( !dae ) return;
 
     const fields = Object.keys(FLAGS);
     dae.addAutoFields?.(fields);
     dae.localizationMap ??= {};
 
-    for (const field of fields) {
+    for ( const field of fields ) {
       const localization = FLAGS[field];
-      if (!localization) continue;
+      if ( !localization ) continue;
 
       dae.localizationMap[field] = {
-        name: game.i18n.localize(localization.name),
-        description: game.i18n.localize(localization.hint)
+        description: game.i18n.localize(localization.hint),
+        name: game.i18n.localize(localization.name)
       };
     }
   });

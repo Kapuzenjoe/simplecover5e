@@ -5,7 +5,7 @@
  * @returns {boolean} True if the token has Rideable riders.
  */
 export function hasRideableRiders(tokenDoc) {
-  if (game.modules.get("Rideable")?.active !== true) return false;
+  if ( game.modules.get("Rideable")?.active !== true ) return false;
 
-  return tokenDoc?.flags?.["Rideable"]?.RidersFlag?.length > 0;
+  return tokenDoc?.flags?.Rideable?.RidersFlag?.length > 0;
 }

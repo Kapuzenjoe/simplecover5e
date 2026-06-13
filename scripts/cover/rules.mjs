@@ -36,16 +36,16 @@ function hasActorItem(items, identifier, name) {
  * @returns {string|number|boolean|CoverRuleFlagObject|null} The parsed flag value.
  */
 const parseFlagValue = value => {
-  if ((value == null) || (value === "")) return null;
-  if (typeof value !== "string") return value;
+  if ( (value == null) || (value === "") ) return null;
+  if ( typeof value !== "string" ) return value;
 
   const trimmed = value.trim();
-  if (trimmed === "") return null;
-  if (trimmed === "true") return true;
-  if (trimmed === "false") return false;
+  if ( trimmed === "" ) return null;
+  if ( trimmed === "true" ) return true;
+  if ( trimmed === "false" ) return false;
 
   const number = Number(trimmed);
-  if (!Number.isNaN(number)) return number;
+  if ( !Number.isNaN(number) ) return number;
   try {
     return JSON.parse(
       trimmed.replace(/([{,]\s*)([A-Za-z_]\w*)(\s*:)/g, '$1"$2"$3')
@@ -55,6 +55,8 @@ const parseFlagValue = value => {
   }
 };
 
+/* -------------------------------------------- */
+
 /**
  * Resolve the effective cover level for an activity, including ignore-cover rules.
  *
@@ -63,7 +65,7 @@ const parseFlagValue = value => {
  * @param {Actor5e|null} [targetActor=null] The targeted actor, if any.
  * @returns {{ cover: CoverLevel, bonus: (0|2|5|null) }} The effective cover result.
  */
-export function ignoresCover(activity, cover = "none", targetActor = null) {
+export function ignoresCover(activity, cover="none", targetActor=null) {
   let effectiveCover = cover;
 
   const type = activity?.type;
@@ -85,33 +87,33 @@ export function ignoresCover(activity, cover = "none", targetActor = null) {
   const targetStatuses = targetActor?.statuses;
 
   // `upgradeCover` improves the cover of the actor who has the flag.
-  if (upgradeFlags) {
+  if ( upgradeFlags ) {
     const current = COVER.ORDER[effectiveCover] ?? COVER.ORDER.none;
     let upgrade = 0;
 
-    for (const raw of [upgradeFlags.all, isAttack ? upgradeFlags.attack : isSave ? upgradeFlags.save : null]) {
-      const value = parseFlagValue(raw)
-      if (value == null) continue;
-      if (typeof value?.condition === "string"
-        && value.condition.trim() !== ""
+    for ( const raw of [upgradeFlags.all, isAttack ? upgradeFlags.attack : isSave ? upgradeFlags.save : null] ) {
+      const value = parseFlagValue(raw);
+      if ( value == null ) continue;
+      if ( (typeof value?.condition === "string")
+        && (value.condition.trim() !== "")
         && !targetStatuses?.has(value.condition)
       ) continue;
 
       let parsed = 0;
-      if (typeof value !== "object") {
+      if ( typeof value !== "object" ) {
         parsed = Number(value);
       }
       else {
         const min = COVER.ORDER[value.min ?? "none"] ?? COVER.ORDER.none;
         const max = COVER.ORDER[value.max ?? "total"] ?? COVER.ORDER.total;
-        if ((current < Math.min(min, max)) || (current > Math.max(min, max))) continue;
+        if ( (current < Math.min(min, max)) || (current > Math.max(min, max)) ) continue;
         parsed = Number(value.steps);
       }
 
-      if (parsed >= 1) upgrade = Math.max(upgrade, parsed);
+      if ( parsed >= 1 ) upgrade = Math.max(upgrade, parsed);
     }
 
-    if (upgrade) {
+    if ( upgrade ) {
       effectiveCover = COVER.KEYS[Math.min(COVER.ORDER.total, current + upgrade)] ?? effectiveCover;
     }
   }
@@ -119,38 +121,41 @@ export function ignoresCover(activity, cover = "none", targetActor = null) {
   // ------------------------------------------------------------
   // 2) SOURCE: downgrade / ignore cover
   // ------------------------------------------------------------
-  if ((isAttack || isSave) && (effectiveCover !== "none")) {
+  if ( (isAttack || isSave) && (effectiveCover !== "none") ) {
     const current = COVER.ORDER[effectiveCover] ?? COVER.ORDER.none;
     const sourceStatuses = sourceActor?.statuses;
     let downgradeFlags = sourceFlags?.downgradeCover;
     let downgrade = 0;
 
     // `downgradeCover` reduces the target’s cover for actions made by the actor who has the flag.
-    if (downgradeFlags) {
-      for (const raw of [downgradeFlags.all, isAttack ? downgradeFlags.attack : isSave ? downgradeFlags.save : null]) {
-        const value = parseFlagValue(raw)
-        if (value == null) continue;
-        if (typeof value?.condition === "string"
-          && value.condition.trim() !== ""
+    if ( downgradeFlags ) {
+      for ( const raw of [
+        downgradeFlags.all,
+        isAttack ? downgradeFlags.attack : isSave ? downgradeFlags.save : null
+      ] ) {
+        const value = parseFlagValue(raw);
+        if ( value == null ) continue;
+        if ( (typeof value?.condition === "string")
+          && (value.condition.trim() !== "")
           && !sourceStatuses?.has(value.condition)
         ) continue;
 
         let parsed = 0;
-        if (typeof value !== "object") {
+        if ( typeof value !== "object" ) {
           parsed = Number(value);
         }
         else {
           const min = COVER.ORDER[value.min ?? "half"] ?? COVER.ORDER.half;
           const max = COVER.ORDER[value.max ?? "total"] ?? COVER.ORDER.total;
-          if ((current < Math.min(min, max)) || (current > Math.max(min, max))) continue;
+          if ( (current < Math.min(min, max)) || (current > Math.max(min, max)) ) continue;
           parsed = Number(value.steps);
         }
 
-        if (parsed >= 1) downgrade = Math.max(downgrade, parsed);
+        if ( parsed >= 1 ) downgrade = Math.max(downgrade, parsed);
       }
     }
 
-    if (downgrade) {
+    if ( downgrade ) {
       effectiveCover = COVER.KEYS[Math.max(COVER.ORDER.none, current - downgrade)] ?? effectiveCover;
     }
 
@@ -160,54 +165,55 @@ export function ignoresCover(activity, cover = "none", targetActor = null) {
     const ignoreAll = Boolean(
       sourceFlags?.ignoreAllCover?.all
       || sourceFlags?.ignoreAllCover?.[ignoreType]
-      || (isAttack && sourceFlags?.ignoreAllCover === true)
+      || (isAttack && (sourceFlags?.ignoreAllCover === true))
     );
 
     const ignoreThreeQuarters = Boolean(
       sourceFlags?.ignoreThreeQuartersCover?.all
       || sourceFlags?.ignoreThreeQuartersCover?.[ignoreType]
-      || (isAttack && sourceFlags?.ignoreThreeQuartersCover === true)
+      || (isAttack && (sourceFlags?.ignoreThreeQuartersCover === true))
     );
 
     const ignoreHalf = Boolean(
       sourceFlags?.ignoreHalfCover?.all
       || sourceFlags?.ignoreHalfCover?.[ignoreType]
-      || (isAttack && sourceFlags?.ignoreHalfCover === true)
+      || (isAttack && (sourceFlags?.ignoreHalfCover === true))
     );
 
-    if (ignoreAll) {
+    if ( ignoreAll ) {
       effectiveCover = "none";
     }
-    else if (ignoreThreeQuarters && ((effectiveCover === "threeQuarters") || (effectiveCover === "half"))) {
+    else if ( ignoreThreeQuarters && ((effectiveCover === "threeQuarters") || (effectiveCover === "half")) ) {
       effectiveCover = "none";
     }
-    else if (ignoreHalf && (effectiveCover === "half")) {
+    else if ( ignoreHalf && (effectiveCover === "half") ) {
       effectiveCover = "none";
     }
 
-    if (isAttack && (effectiveCover !== "total")) {
-      if ((actionType === "rwak") && hasActorItem(items, "sharpshooter", "Sharpshooter")) {
+    if ( isAttack && (effectiveCover !== "total") ) {
+      if ( (actionType === "rwak") && hasActorItem(items, "sharpshooter", "Sharpshooter") ) {
         effectiveCover = "none";
       }
-      if ((actionType === "rsak") && hasActorItem(items, "spell-sniper", "Spell Sniper")) {
+      if ( (actionType === "rsak") && hasActorItem(items, "spell-sniper", "Spell Sniper") ) {
         effectiveCover = "none";
       }
     }
 
-    if (isAttack && (effectiveCover === "half") && ((actionType === "rsak") || (actionType === "msak"))) {
-      const wand = items?.find(i =>
-        WAND_OF_THE_WAR_MAGE_IDENTIFIERS.has(i?.system?.identifier) || /wand of the war mage/i.test(i?.name ?? "")
+    if ( isAttack && (effectiveCover === "half") && ((actionType === "rsak") || (actionType === "msak")) ) {
+      const wand = items?.find(i => {
+        return WAND_OF_THE_WAR_MAGE_IDENTIFIERS.has(i?.system?.identifier) || /wand of the war mage/i.test(i?.name ?? "");
+      }
       );
 
-      if ((wand?.system?.equipped === true) && (wand?.system?.attuned === true)) {
+      if ( (wand?.system?.equipped === true) && (wand?.system?.attuned === true) ) {
         effectiveCover = "none";
       }
     }
   }
 
-  if (isSave && (effectiveCover !== "none")) {
-    const sacredFlame = item?.system?.identifier === "sacred-flame" || item?.name === "Sacred Flame";
-    if (sacredFlame && (effectiveCover !== "total")) {
+  if ( isSave && (effectiveCover !== "none") ) {
+    const sacredFlame = (item?.system?.identifier === "sacred-flame") || (item?.name === "Sacred Flame");
+    if ( sacredFlame && (effectiveCover !== "total") ) {
       effectiveCover = "none";
     }
   }
@@ -215,21 +221,21 @@ export function ignoresCover(activity, cover = "none", targetActor = null) {
   // ------------------------------------------------------------
   // 3) SOURCE ITEM: ignoreCover property
   // ------------------------------------------------------------
-  if ((effectiveCover !== "none") && properties?.has?.("ignoreCover")) {
+  if ( (effectiveCover !== "none") && properties?.has?.("ignoreCover") ) {
     effectiveCover = "none";
   }
 
   // ------------------------------------------------------------
   // 4) SOURCE TEMPLATES: AoE / Distance / Space
   // ------------------------------------------------------------
-  if (isSave && (effectiveCover !== "none")) {
+  if ( isSave && (effectiveCover !== "none") ) {
     const ignoreAoe = game.settings.get(MODULE_ID, SETTING_KEYS.IGNORE_AOE);
     const ignoreDistanceSpace = game.settings.get(MODULE_ID, SETTING_KEYS.IGNORE_DISTANCE_SPACE);
 
-    if (ignoreAoe === "all") {
-      if (templateType !== "") effectiveCover = "none";
+    if ( ignoreAoe === "all" ) {
+      if ( templateType !== "" ) effectiveCover = "none";
     }
-    else if (ignoreAoe === "range") {
+    else if ( ignoreAoe === "range" ) {
       const rangeUnits = activity?.range?.units ?? "";
 
       if (
@@ -240,16 +246,16 @@ export function ignoresCover(activity, cover = "none", targetActor = null) {
       }
     }
 
-    if (ignoreDistanceSpace) {
+    if ( ignoreDistanceSpace ) {
       const rangeValue = activity?.range?.value ?? 0;
-      if ((rangeValue > 1) && ((activity?.target?.affects?.type ?? "") === "space")) {
+      if ( (rangeValue > 1) && ((activity?.target?.affects?.type ?? "") === "space") ) {
         effectiveCover = "none";
       }
     }
   }
 
   return {
-    cover: effectiveCover,
-    bonus: COVER.BONUS[effectiveCover]
+    bonus: COVER.BONUS[effectiveCover],
+    cover: effectiveCover
   };
 }

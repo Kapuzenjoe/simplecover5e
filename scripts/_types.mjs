@@ -112,3 +112,39 @@
  * @property {string} [label=""] The note label shown in the dialog.
  * @property {string} [hint=""] The note hint shown in the dialog.
  */
+
+/**
+ * @typedef {object} CoverLevelStrings
+ * @property {string} none
+ * @property {string} half
+ * @property {string} threeQuarters
+ * @property {string} total
+ */
+
+/**
+ * @typedef {object} CoverHintKeys
+ * @property {CoverLevelStrings} Attack
+ * @property {CoverLevelStrings} Save
+ */
+
+/**
+ * @typedef {object} CoverI18N
+ * @property {string} LABEL_PREFIX_KEY
+ * @property {CoverLevelStrings} LABEL
+ * @property {CoverHintKeys} HINT_KEYS
+ */
+
+/**
+ * @typedef {object} CoverConstants
+ * @property {{ none: null, half: string, threeQuarters: string, total: string }} IDS
+ * @property {{ none: number, half: number, threeQuarters: number, total: (number|null) }} BONUS
+ * @property {{ none: number, half: number, threeQuarters: number, total: number }} ORDER
+ * @property {CoverLevel[]} KEYS
+ * @property {CoverI18N} I18N
+ */
+
+/**
+ * @typedef {object} ActorCoverStates
+ * @property {CoverLevel} statusCover The highest active system cover status, or "none".
+ * @property {CoverLevel} embeddedCover The highest active embedded cover effect, or "none".
+ */

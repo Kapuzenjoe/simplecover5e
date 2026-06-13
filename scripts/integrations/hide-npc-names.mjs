@@ -5,9 +5,9 @@
  * @returns {string|null} The replacement name, or null when unavailable.
  */
 export function getHiddenNpcName(actor) {
-    if (!actor) return null;
-    if (game.modules?.get?.("hide-npc-names")?.active !== true) return null;
-    if (!game.hnn) return null;
+  if ( !actor ) return null;
+  if ( game.modules?.get?.("hide-npc-names")?.active !== true ) return null;
+  if ( !game.hnn ) return null;
 
-    return game.hnn.getReplacementInfo(actor)?.displayName ?? null;
+  return game.hnn.getReplacementInfo(actor)?.displayName ?? null;
 }
