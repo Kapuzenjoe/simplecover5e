@@ -4,6 +4,7 @@
 
 - Improved 3D token distance calculation: elevation pairing now selects the closest vertical endpoints between the two token extents instead of testing all top/bottom combinations. 
 - Hover labels set to the Above or Below position now include a default small gap between the token top edge and the label, aligning with Foundry's waypoint label placement.
+- Fixed walls no longer fail to block cover or sight lines when the Wall-Height module is active in V14 (#36).
 
 ## 2.1.1
 

@@ -26,12 +26,12 @@ export function wallHeightBlocks(A, B, collisions) {
     if ( !Number.isFinite(coverLineZ) ) continue;
 
     for ( const edge of edgeSet ) {
-      const wallDoc = edge?.object?.document;
-      const flags = wallDoc?.flags?.["wall-height"];
-      if ( !flags ) continue;
+      const wallDoc = edge?.object;
+      if ( !wallDoc ) continue;
+      const flags = wallDoc.flags?.["wall-height"];
 
-      const wallTop = flags.top != null ? Number(flags.top) : Infinity;
-      const wallBottom = flags.bottom != null ? Number(flags.bottom) : -Infinity;
+      const wallTop = flags?.top != null ? Number(flags.top) : Infinity;
+      const wallBottom = flags?.bottom != null ? Number(flags.bottom) : -Infinity;
 
       if ( (wallTop === Infinity) && (wallBottom === -Infinity) ) return true;
       if ( (A.elevation >= wallBottom) && (A.elevation <= wallTop) ) return true;
