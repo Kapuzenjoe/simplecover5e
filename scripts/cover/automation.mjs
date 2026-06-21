@@ -379,7 +379,7 @@ function resolveAoEOrigin(activity, targetToken) {
   if ( !itemUuid ) return null;
 
   const regions = canvas.regions?.placeables?.filter(
-    r => r.document.flags?.dnd5e?.item === itemUuid
+    r => r.document.getFlag("dnd5e", "item") === itemUuid
   ) ?? [];
 
   const targetDoc = targetToken.document;

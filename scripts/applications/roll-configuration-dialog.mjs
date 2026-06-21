@@ -74,7 +74,7 @@ export function initRollDialogHooks() {
 function getCoverHint(type, cover, targetName) {
   const tokenName = foundry.utils.escapeHTML(targetName);
   return type === "attack"
-    ? game.i18n.format(COVER.I18N.HINT_KEYS.Attack[cover], { tokenName })
+    ? _loc(COVER.I18N.HINT_KEYS.Attack[cover], { tokenName })
     : game.i18n.localize(COVER.I18N.HINT_KEYS.Save[cover]);
 }
 
@@ -114,11 +114,11 @@ function onRenderChatMessage(chatMessage, html) {
 
   if ( !game.settings.get(MODULE_ID, SETTING_KEYS.COVER_HINTS_GM_MESSAGE) ) return;
 
-  const changedTargets = (chatMessage.flags?.[MODULE_ID]?.targets ?? [])
+  const changedTargets = (chatMessage.getFlag(MODULE_ID, "targets") ?? [])
     .filter(target => (target.newCover != null) && (target.newCover !== target.originalCover));
   if ( !changedTargets.length ) return;
 
-  const rollType = chatMessage.flags?.dnd5e?.roll?.type;
+  const rollType = chatMessage.getFlag("dnd5e", "roll.type");
   const changedByUuid = new Map(changedTargets.map(target => [target.uuid, target]));
 
   const getCoverChangeTooltip = target => {

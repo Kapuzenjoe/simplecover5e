@@ -602,7 +602,7 @@ function wallsBlock(aCorner, bCorner, ctx, losPolygon=null) {
       let t11 = (toLevel.elevation.top - A.elevation) / delta;
       if ( t10 > t11 ) [t10, t11] = [t11, t10];
 
-      tSplit = ((t11 > 0) && (t01 < t11)) ? Math.min(Math.max(t01, t10), 1) : 1;
+      tSplit = ((t11 > 0) && (t01 < t11)) ? Math.clamp(t01, t10, 1) : 1;
       if ( tSplit < 0 ) tSplit = 0;
     }
   }

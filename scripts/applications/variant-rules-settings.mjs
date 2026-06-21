@@ -84,7 +84,7 @@ export class SimpleCoverVariantConfig extends SimpleCoverBaseConfigApp {
     if ( (scope !== "scene") && (scope !== "all") ) return;
 
     const count = await changeTokenShapes({ scene: scope === "scene" ? currentScene : null });
-    ui.notifications.info(game.i18n.format("SIMPLE_COVER_5E.Settings.GridlessTokenShape.ApplyUpdated", { count }));
+    ui.notifications.info(_loc("SIMPLE_COVER_5E.Settings.GridlessTokenShape.ApplyUpdated", { count }));
   }
 
   /* -------------------------------------------- */

@@ -7,5 +7,5 @@
 export function hasRideableRiders(tokenDoc) {
   if ( game.modules.get("Rideable")?.active !== true ) return false;
 
-  return tokenDoc?.flags?.Rideable?.RidersFlag?.length > 0;
+  return tokenDoc?.getFlag("Rideable", "RidersFlag")?.length > 0;
 }

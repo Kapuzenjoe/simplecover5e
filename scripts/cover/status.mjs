@@ -178,14 +178,15 @@ export async function setCoverStatusViaGM(actorUuid, cover) {
  */
 async function _applyCoverStatus(actor, cover) {
   const desiredStatusId = COVER.IDS[cover];
-  for ( const statusId of [COVER.IDS.total, COVER.IDS.threeQuarters, COVER.IDS.half] ) {
-    if ( (statusId !== desiredStatusId) && actor.statuses.has(statusId) ) {
-      await actor.toggleStatusEffect(statusId, { active: false, overlay: false });
-    }
-  }
-  if ( desiredStatusId && !actor.statuses.has(desiredStatusId) ) {
+
+  if ( desiredStatusId ) {
+    if ( actor.statuses.has(desiredStatusId) ) return;
     await actor.toggleStatusEffect(desiredStatusId, { active: true, overlay: false });
+    return;
   }
+
+  const activeStatusId = [COVER.IDS.total, COVER.IDS.threeQuarters, COVER.IDS.half].find(id => actor.statuses.has(id));
+  if ( activeStatusId ) await actor.toggleStatusEffect(activeStatusId, { active: false, overlay: false });
 }
 
 /* -------------------------------------------- */

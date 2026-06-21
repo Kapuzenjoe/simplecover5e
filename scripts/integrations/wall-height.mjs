@@ -28,14 +28,15 @@ export function wallHeightBlocks(A, B, collisions) {
     for ( const edge of edgeSet ) {
       const wallDoc = edge?.object;
       if ( !wallDoc ) continue;
-      const flags = wallDoc.flags?.["wall-height"];
 
-      const wallTop = flags?.top != null ? Number(flags.top) : Infinity;
-      const wallBottom = flags?.bottom != null ? Number(flags.bottom) : -Infinity;
+      const top = wallDoc.getFlag("wall-height", "top");
+      const bottom = wallDoc.getFlag("wall-height", "bottom");
+      const wallTop = top != null ? Number(top) : Infinity;
+      const wallBottom = bottom != null ? Number(bottom) : -Infinity;
 
       if ( (wallTop === Infinity) && (wallBottom === -Infinity) ) return true;
-      if ( (A.elevation >= wallBottom) && (A.elevation <= wallTop) ) return true;
-      if ( (coverLineZ >= wallBottom) && (coverLineZ <= wallTop) ) return true;
+      if ( A.elevation.between(wallBottom, wallTop) ) return true;
+      if ( coverLineZ.between(wallBottom, wallTop) ) return true;
     }
   }
 
@@ -58,7 +59,7 @@ function getLineHeightAtVertex(A, B, vertex) {
   const useX = Math.abs(dx) >= Math.abs(dy);
   const denom = (useX ? dx : dy) || 1e-9;
   const raw = useX ? (vertex.x - A.x) / denom : (vertex.y - A.y) / denom;
-  const t = Math.min(Math.max(raw, 0), 1);
+  const t = Math.clamp(raw, 0, 1);
 
   return A.elevation + (t * (B.elevation - A.elevation));
 }

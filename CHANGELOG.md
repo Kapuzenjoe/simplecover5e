@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.1.3
+
+- Fixed a timing issue when cover switched between cover effects that could cause console errors (#39).
+
 ## 2.1.2
 
 - Improved 3D token distance calculation: elevation pairing now selects the closest vertical endpoints between the two token extents instead of testing all top/bottom combinations. 

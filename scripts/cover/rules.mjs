@@ -23,7 +23,7 @@ const WAND_OF_THE_WAR_MAGE_IDENTIFIERS = new Set([
  */
 function hasActorItem(items, identifier, name) {
   return Boolean(
-    items?.some(i => (i?.system?.identifier ?? "") === identifier)
+    items?.some(i => (i?.identifier ?? "") === identifier)
     || items?.getName?.(name)
   );
 }
@@ -83,7 +83,7 @@ export function ignoresCover(activity, cover="none", targetActor=null) {
   // ------------------------------------------------------------
   // 1) TARGET: Upgrade Cover
   // ------------------------------------------------------------
-  const upgradeFlags = targetActor?.flags?.[MODULE_ID]?.upgradeCover;
+  const upgradeFlags = targetActor?.getFlag(MODULE_ID, "upgradeCover");
   const targetStatuses = targetActor?.statuses;
 
   // `upgradeCover` improves the cover of the actor who has the flag.
@@ -201,7 +201,7 @@ export function ignoresCover(activity, cover="none", targetActor=null) {
 
     if ( isAttack && (effectiveCover === "half") && ((actionType === "rsak") || (actionType === "msak")) ) {
       const wand = items?.find(i => {
-        return WAND_OF_THE_WAR_MAGE_IDENTIFIERS.has(i?.system?.identifier) || /wand of the war mage/i.test(i?.name ?? "");
+        return WAND_OF_THE_WAR_MAGE_IDENTIFIERS.has(i?.identifier) || /wand of the war mage/i.test(i?.name ?? "");
       }
       );
 
@@ -212,7 +212,7 @@ export function ignoresCover(activity, cover="none", targetActor=null) {
   }
 
   if ( isSave && (effectiveCover !== "none") ) {
-    const sacredFlame = (item?.system?.identifier === "sacred-flame") || (item?.name === "Sacred Flame");
+    const sacredFlame = (item?.identifier === "sacred-flame") || (item?.name === "Sacred Flame");
     if ( sacredFlame && (effectiveCover !== "total") ) {
       effectiveCover = "none";
     }
