@@ -166,6 +166,11 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options=
 
   const boxes = new Map(blockingTokenDocs.map(td => [td.id, buildCreaturePrism(td, ctx, debugTokenShapes)]));
 
+  const obstacleBehaviors = (ctx.scene?.regions?.contents ?? [])
+    .flatMap(region => region.behaviors.contents)
+    .filter(b => !b.disabled && (b.type === "simplecover5e.coverObstacle"))
+    .map(b => b.system);
+
   const attackerVisionSource = applyProneMode(
     attackerDoc,
     attackerDoc?.getVisionOrigin?.()?.elevation ?? (attackerDoc?.elevation ?? 0)
@@ -235,6 +240,7 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options=
           const target = { x: tCorner.x, y: tCorner.y, z: targetZ };
 
           let cBlocked = false;
+          let oBlocked = false;
           if ( !wBlocked ) {
             for ( const prisms of boxes.values() ) {
               for ( const b of prisms ) {
@@ -245,9 +251,19 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options=
               }
               if ( cBlocked ) break;
             }
+
+            if ( !cBlocked ) {
+              const segmentContext = { attackerToken: attackerDoc, targetToken: targetDoc };
+              for ( const obstacle of obstacleBehaviors ) {
+                if ( obstacle.blocksSegment(aCorner, tCorner, segmentContext) ) {
+                  oBlocked = true;
+                  break;
+                }
+              }
+            }
           }
 
-          const isBlocked = wBlocked || cBlocked;
+          const isBlocked = wBlocked || cBlocked || oBlocked;
           if ( isBlocked ) {
             if ( wBlocked ) blockedWalls += 1;
             else blockedCreatures += 1;
@@ -255,6 +271,7 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options=
 
           segs.push({
             cBlocked,
+            oBlocked,
             wallResult,
             wBlocked,
             a: aCorner,

@@ -1,7 +1,7 @@
 {
   "id": "simplecover5e",
   "title": "Simple Cover 5e",
-  "version": "2.1.3",
+  "version": "2.2.0",
   "authors": [
     {
       "name": "Peterlankton",
@@ -63,8 +63,13 @@
       }
     ]
   },
+  "documentTypes": {
+    "RegionBehavior": {
+      "coverObstacle": {}
+    }
+  },
   "url": "https://github.com/Kapuzenjoe/simplecover5e",
   "manifest": "https://github.com/Kapuzenjoe/simplecover5e/releases/latest/download/module.json",
-  "download": "https://github.com/Kapuzenjoe/simplecover5e/releases/download/2.1.3/module.zip",
-  "description": ""
+  "download": "https://github.com/Kapuzenjoe/simplecover5e/releases/download/2.2.0/module.zip",
+  "description": "Simple Cover 5e automatically evaluates cover for the DnD5e system in Foundry VTT during attack rolls and saving throws."
 }

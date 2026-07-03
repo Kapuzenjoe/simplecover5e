@@ -19,7 +19,7 @@ export function initCoverHooks() {
   ignoreCoverProperties();
   Hooks.on("combatTurnChange", clearCoverOnCombatTurnChange);
   Hooks.on("deleteCombat", clearCoverOnDeleteCombat);
-  Hooks.on("recordToken", clearCoverOnMovement);
+  Hooks.on("moveToken", clearCoverOnMovement);
   Hooks.on("preCreateToken", onPreCreateToken);
   Hooks.on("dnd5e.preRollAttack", onPreRollAttack);
   Hooks.on("dnd5e.preRollSavingThrow", onPreRollSavingThrow);
@@ -107,11 +107,11 @@ async function clearCoverOnDeleteCombat(combat) {
 /* -------------------------------------------- */
 
 /**
- * Clear cover after token movement has been recorded during active combat.
+ * Clear cover after a token movement segment resolves during active combat.
  *
- * @function recordToken
+ * @function moveToken
  * @memberof hookEvents
- * @param {TokenDocument} token The token document whose movement was recorded.
+ * @param {TokenDocument} token The token document that moved.
  * @returns {Promise<void>} Resolves after any cover cleanup has finished.
  */
 async function clearCoverOnMovement(token) {

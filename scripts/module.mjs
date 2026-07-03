@@ -3,6 +3,7 @@ import { initHoverHooks } from "./canvas/hover.mjs";
 import { initApi, readyApi } from "./cover/api.mjs";
 import { initCoverHooks } from "./cover/automation.mjs";
 import { initCoverDebugHooks } from "./cover/debug.mjs";
+import { initCoverObstacleRegionBehavior } from "./cover/region-behavior.mjs";
 import { initCoverStatusQueries } from "./cover/status.mjs";
 import { initDaeIntegration } from "./integrations/dae.mjs";
 import { readyMigration } from "./migration.mjs";
@@ -13,6 +14,7 @@ Hooks.once("init", () => {
   initCoverStatusQueries();
   initCoverHooks();
   initCoverDebugHooks();
+  initCoverObstacleRegionBehavior();
   initDaeIntegration();
   initRollDialogHooks();
   initHoverHooks();

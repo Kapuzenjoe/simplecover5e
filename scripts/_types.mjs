@@ -54,6 +54,7 @@
  * @typedef {object} DebugSegment
  * @property {DebugPoint} a The start point of the sampled segment.
  * @property {DebugPoint} b The end point of the sampled segment.
+ * @property {boolean} oBlocked Whether a Region obstacle blocked the sampled segment.
  * @property {boolean} blocked Whether the sampled segment is blocked.
  */
 

@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.2.0
+
+- **New Feature: Cover Obstacle Regions** a new **Cover Obstacle** Region Behavior lets Regions block Cover Lines like a creature would.
+  - Optional Size / Creature Type filters exempt matching tokens (attacker and target).
+  - **Interior Block Distance**: blank never blocks while both are inside the Region, `0` always blocks, otherwise blocks once they're that far apart.
+  - Cover Lines only - use Walls for line of sight.
+- Fixed issue when cover switched between cover effects on turn change - again... (#39).
+
 ## 2.1.3
 
 - Fixed a timing issue when cover switched between cover effects that could cause console errors (#39).
