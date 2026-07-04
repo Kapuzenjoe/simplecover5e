@@ -1,3 +1,4 @@
+import { initCoverObstacleRegionBehaviorSheet } from "./applications/region-behavior-config.mjs";
 import { initRollDialogHooks } from "./applications/roll-configuration-dialog.mjs";
 import { initHoverHooks } from "./canvas/hover.mjs";
 import { initApi, readyApi } from "./cover/api.mjs";
@@ -15,6 +16,7 @@ Hooks.once("init", () => {
   initCoverHooks();
   initCoverDebugHooks();
   initCoverObstacleRegionBehavior();
+  initCoverObstacleRegionBehaviorSheet();
   initDaeIntegration();
   initRollDialogHooks();
   initHoverHooks();

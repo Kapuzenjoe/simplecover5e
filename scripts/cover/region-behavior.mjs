@@ -4,7 +4,7 @@
 
 import { getTokenTokenDistance } from "../canvas/distance.mjs";
 
-const { NumberField, SetField, StringField } = foundry.data.fields;
+const { BooleanField, NumberField, SetField, StringField } = foundry.data.fields;
 
 /**
  * A Region Behavior that blocks Cover Lines through a Region, like a creature would.
@@ -21,11 +21,23 @@ export default class CoverObstacleRegionBehaviorType extends foundry.data.region
   /** @override */
   static defineSchema() {
     return {
+      cover: new StringField({
+        required: true,
+        blank: false,
+        initial: "threeQuarters",
+        choices: {
+          half: "SIMPLE_COVER_5E.RegionBehavior.CoverObstacle.FIELDS.cover.Options.half",
+          threeQuarters: "SIMPLE_COVER_5E.RegionBehavior.CoverObstacle.FIELDS.cover.Options.threeQuarters"
+        }
+      }),
       ignoredSizes: new SetField(new StringField({ choices: () => CONFIG.DND5E.actorSizes })),
       ignoredTypes: new SetField(new StringField({ choices: () => CONFIG.DND5E.creatureTypes })),
+      interiorNeverBlocks: new BooleanField(),
       interiorBlockDistance: new NumberField({ required: false, initial: 0, min: 0 })
     };
   }
+
+  /* -------------------------------------------- */
 
   /**
    * Determine whether this obstacle blocks the Cover Line between two points.
@@ -33,24 +45,31 @@ export default class CoverObstacleRegionBehaviorType extends foundry.data.region
    * @param {TestPoint} a The attacker corner.
    * @param {TestPoint} b The target corner.
    * @param {{ attackerToken: TokenDocument, targetToken: TokenDocument }} context The attacker/target documents.
-   * @returns {boolean} True if this obstacle blocks the Cover Line.
+   * @returns {{ blocked: boolean, cover: CoverLevel }} Whether this obstacle blocks the Cover Line, and the
+   *   Cover Line level it contributes.
    */
   blocksSegment(a, b, { attackerToken, targetToken }) {
-    if ( this.#isIgnoredToken(attackerToken) && this.#isIgnoredToken(targetToken) ) return false;
+    const notBlocked = { blocked: false, cover: "none" };
+    const blockedAtCover = { blocked: true, cover: this.cover };
+
+    if ( this.#isIgnoredToken(attackerToken) && this.#isIgnoredToken(targetToken) ) return notBlocked;
 
     const aInside = this.region.testPoint({ x: a.x, y: a.y, elevation: a.elevation ?? 0 });
     const bInside = this.region.testPoint({ x: b.x, y: b.y, elevation: b.elevation ?? 0 });
 
     if ( aInside && bInside ) {
-      if ( this.interiorBlockDistance === 0 ) return true;
-      return getTokenTokenDistance(attackerToken, targetToken) >= this.interiorBlockDistance;
+      if ( this.interiorNeverBlocks ) return notBlocked;
+      if ( this.interiorBlockDistance === 0 ) return blockedAtCover;
+      return getTokenTokenDistance(attackerToken, targetToken) > this.interiorBlockDistance
+        ? blockedAtCover : notBlocked;
     }
 
     const waypoints = [
       { x: a.x, y: a.y, elevation: a.elevation ?? 0 },
       { x: b.x, y: b.y, elevation: b.elevation ?? 0 }
     ];
-    return this.region.segmentizeMovementPath(waypoints, [{ x: 0, y: 0 }]).length > 0;
+    return this.region.segmentizeMovementPath(waypoints, [{ x: 0, y: 0 }]).length > 0
+      ? blockedAtCover : notBlocked;
   }
 
   /* -------------------------------------------- */
@@ -80,5 +99,4 @@ export function initCoverObstacleRegionBehavior() {
   CONFIG.RegionBehavior.dataModels["simplecover5e.coverObstacle"] = CoverObstacleRegionBehaviorType;
   CONFIG.RegionBehavior.typeLabels["simplecover5e.coverObstacle"] = "SIMPLE_COVER_5E.RegionBehavior.CoverObstacle.label";
   CONFIG.RegionBehavior.typeHints["simplecover5e.coverObstacle"] = "SIMPLE_COVER_5E.RegionBehavior.CoverObstacle.hint";
-  CONFIG.RegionBehavior.typeIcons["simplecover5e.coverObstacle"] = "fa-solid fa-shield-halved";
 }

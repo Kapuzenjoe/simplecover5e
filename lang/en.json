@@ -282,9 +282,21 @@
             "label": "Ignored Creature Types",
             "hint": "Tokens of these creature types ignore this obstacle."
           },
+          "interiorNeverBlocks": {
+            "label": "Infinite",
+            "hint": "Cover is never blocked while both tokens are inside this Region."
+          },
           "interiorBlockDistance": {
-            "label": "Interior Block Distance (Grid Units)",
-            "hint": "Blocks cover once the distance between two tokens inside this Region reaches this value, in grid units. 0 always blocks."
+            "label": "Interior Block Distance",
+            "hint": "Blocks cover once two tokens inside this Region are farther apart than this value. 0 always blocks; check Infinite to never block."
+          },
+          "cover": {
+            "label": "Cover",
+            "hint": "The Cover Line level this obstacle grants when it blocks.",
+            "Options": {
+              "half": "Half Cover",
+              "threeQuarters": "Three-Quarters Cover"
+            }
           }
         }
       }

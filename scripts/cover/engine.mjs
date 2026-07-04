@@ -170,6 +170,7 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options=
     .flatMap(region => region.behaviors.contents)
     .filter(b => !b.disabled && (b.type === "simplecover5e.coverObstacle"))
     .map(b => b.system);
+  const segmentContext = { attackerToken: attackerDoc, targetToken: targetDoc };
 
   const attackerVisionSource = applyProneMode(
     attackerDoc,
@@ -228,82 +229,59 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options=
       if ( debugTokenShapes ) debugTokenShapes.attacker.push(atkCorners);
 
       for ( const aCorner of atkCorners ) {
-        let blockedWalls = 0;
-        let blockedCreatures = 0;
+        let halfLines = 0;
+        let threeQuartersLines = 0;
         const segs = [];
 
         for ( const tCorner of tgtCorners ) {
           const wallResult = wallsBlock(aCorner, tCorner, ctx);
-          const wBlocked = wallResult.blocked;
-
           const attacker = { x: aCorner.x, y: aCorner.y, z: attackerZ };
           const target = { x: tCorner.x, y: tCorner.y, z: targetZ };
 
-          let cBlocked = false;
-          let oBlocked = false;
-          if ( !wBlocked ) {
+          let lineCover = "none";
+          if ( wallResult.blocked ) {
+            lineCover = "threeQuarters";
+          } else {
+            let creatureBlocked = false;
             for ( const prisms of boxes.values() ) {
               for ( const b of prisms ) {
-                if ( segIntersectsAABB3D(attacker, target, b) ) {
-                  cBlocked = true;
-                  break;
-                }
+                if ( segIntersectsAABB3D(attacker, target, b) ) { creatureBlocked = true; break; }
               }
-              if ( cBlocked ) break;
+              if ( creatureBlocked ) break;
             }
+            if ( creatureBlocked ) lineCover = creaturesHalfOnly ? "half" : "threeQuarters";
 
-            if ( !cBlocked ) {
-              const segmentContext = { attackerToken: attackerDoc, targetToken: targetDoc };
-              for ( const obstacle of obstacleBehaviors ) {
-                if ( obstacle.blocksSegment(aCorner, tCorner, segmentContext) ) {
-                  oBlocked = true;
-                  break;
-                }
+            for ( const obstacle of obstacleBehaviors ) {
+              if ( lineCover === "threeQuarters" ) break;
+              const obstacleResult = obstacle.blocksSegment(aCorner, tCorner, segmentContext);
+              if ( obstacleResult.blocked && (COVER.ORDER[obstacleResult.cover] > COVER.ORDER[lineCover]) ) {
+                lineCover = obstacleResult.cover;
               }
             }
           }
 
-          const isBlocked = wBlocked || cBlocked || oBlocked;
-          if ( isBlocked ) {
-            if ( wBlocked ) blockedWalls += 1;
-            else blockedCreatures += 1;
-          }
+          if ( lineCover === "half" ) halfLines += 1;
+          else if ( lineCover === "threeQuarters" ) threeQuartersLines += 1;
 
-          segs.push({
-            cBlocked,
-            oBlocked,
-            wallResult,
-            wBlocked,
-            a: aCorner,
-            b: tCorner,
-            blocked: isBlocked
-          });
+          segs.push({ lineCover, wallResult, a: aCorner, b: tCorner, blocked: lineCover !== "none" });
         }
 
         const missingLines = Math.max(0, totalLines - tgtCorners.length);
         const filteredBlocked = filteredTargetPoints === "blocked" ? missingLines : 0;
+        threeQuartersLines += filteredBlocked;
+
         const activeLines = filteredTargetPoints === "dynamic" ? tgtCorners.length : totalLines;
         const threeQuartersThreshold = filteredTargetPoints === "dynamic"
           ? Math.max(1, Math.floor(tgtCorners.length * 0.75))
           : threshold;
 
-        const totalBlocked = blockedWalls + blockedCreatures + filteredBlocked;
-        const reachable = Math.max(0, activeLines - totalBlocked);
-
-        let coverLevel;
-        if ( creaturesHalfOnly ) {
-          const effWalls = blockedWalls + filteredBlocked;
-          if ( effWalls >= threeQuartersThreshold ) coverLevel = 2;
-          else if ( effWalls >= 1 ) coverLevel = 1;
-          else if ( blockedCreatures >= 1 ) coverLevel = 1;
-          else coverLevel = 0;
-        } else if ( totalBlocked >= threeQuartersThreshold ) coverLevel = 2;
-        else if ( totalBlocked >= 1 ) coverLevel = 1;
-        else coverLevel = 0;
+        const reachable = Math.max(0, activeLines - halfLines - threeQuartersLines);
+        const coverLevel = threeQuartersLines >= threeQuartersThreshold
+          ? 2 : ((halfLines + threeQuartersLines) >= 1 ? 1 : 0);
 
         if ( (reachable > best.reachable) || ((reachable === best.reachable) && (coverLevel < best.coverLevel)) ) {
           best = { coverLevel, reachable, segs };
-          if ( !debug && (coverLevel === 0) && (totalBlocked === 0) && (activeLines === totalLines) ) {
+          if ( !debug && (coverLevel === 0) && (activeLines === totalLines) ) {
             const cover = "none";
             const bonus = COVER.BONUS[cover] || 0;
             return debug ? { bonus, cover, debugTokenShapes, debugSegments: best.segs } : { bonus, cover };
