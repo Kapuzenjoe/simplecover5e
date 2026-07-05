@@ -274,11 +274,11 @@
         "label": "Cover Obstacle",
         "hint": "Blocks cover rays passing through this Region.",
         "FIELDS": {
-          "ignoredSizes": {
+          "sizes": {
             "label": "Ignored Sizes",
             "hint": "Tokens of these sizes ignore this obstacle."
           },
-          "ignoredTypes": {
+          "types": {
             "label": "Ignored Creature Types",
             "hint": "Tokens of these creature types ignore this obstacle."
           },

@@ -138,8 +138,8 @@ export function buildCreaturePrism(td, ctx, debugTokenShapes) {
 
 /**
  * Evaluate DMG-style cover for an attacker against a target.
- * The evaluator tests rays against sight-blocking walls and creature occluder prisms and returns the best
- * (least blocked) sampling outcome.
+ * The evaluator tests Cover Lines against sight-blocking walls, creature occluder prisms, and Region
+ * Obstacle behaviors, and returns the best (least blocked) sampling outcome.
  *
  * @param {TokenDocument|Position} attackerDoc The attacking token document or a generic position.
  * @param {TokenDocument} targetDoc The target token document.
@@ -170,7 +170,10 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options=
     .flatMap(region => region.behaviors.contents)
     .filter(b => !b.disabled && (b.type === "simplecover5e.coverObstacle"))
     .map(b => b.system);
-  const segmentContext = { attackerToken: attackerDoc, targetToken: targetDoc };
+  const obstacleResults = obstacleBehaviors.map(obstacle => ({
+    obstacle,
+    tokenResult: obstacle.evaluateTokens(attackerDoc, targetDoc)
+  }));
 
   const attackerVisionSource = applyProneMode(
     attackerDoc,
@@ -251,9 +254,9 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options=
             }
             if ( creatureBlocked ) lineCover = creaturesHalfOnly ? "half" : "threeQuarters";
 
-            for ( const obstacle of obstacleBehaviors ) {
+            for ( const { obstacle, tokenResult } of obstacleResults ) {
               if ( lineCover === "threeQuarters" ) break;
-              const obstacleResult = obstacle.blocksSegment(aCorner, tCorner, segmentContext);
+              const obstacleResult = tokenResult ?? obstacle.blocksLine(aCorner, tCorner);
               if ( obstacleResult.blocked && (COVER.ORDER[obstacleResult.cover] > COVER.ORDER[lineCover]) ) {
                 lineCover = obstacleResult.cover;
               }
