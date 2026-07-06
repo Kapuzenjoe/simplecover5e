@@ -386,8 +386,11 @@ function resolveAoEOrigin(activity, targetToken) {
   const containing = regions.find(r => r.document.tokens.has(targetDoc));
   if ( !containing ) return null;
 
+  const bottom = containing.document.elevation.bottom;
+  const elevation = Number.isFinite(bottom) ? bottom : (targetDoc.elevation ?? 0);
+
   return {
-    elevation: containing.document.elevation.bottom ?? 0,
+    elevation,
     level: targetDoc.level ?? null,
     x: containing.center.x,
     y: containing.center.y

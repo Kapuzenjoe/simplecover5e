@@ -72,7 +72,7 @@ export default class CoverObstacleRegionBehaviorType extends foundry.data.region
   evaluateTokens(attackerToken, targetToken) {
     const notBlocked = { blocked: false, cover: "none" };
 
-    if ( this.#isIgnoredToken(attackerToken) && this.#isIgnoredToken(targetToken) ) return notBlocked;
+    if ( this.#isIgnoredToken(targetToken) ) return notBlocked;
     const aInside = attackerToken?.testInsideRegion?.(this.region)
       ?? this.region.testPoint({ x: attackerToken.x, y: attackerToken.y, elevation: attackerToken.elevation ?? 0 });
     const bInside = targetToken?.testInsideRegion?.(this.region);

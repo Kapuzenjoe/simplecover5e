@@ -276,11 +276,11 @@
         "FIELDS": {
           "sizes": {
             "label": "Ignored Sizes",
-            "hint": "Tokens of these sizes ignore this obstacle."
+            "hint": "Target Tokens of these sizes ignore this obstacle."
           },
           "types": {
             "label": "Ignored Creature Types",
-            "hint": "Tokens of these creature types ignore this obstacle."
+            "hint": "Target Tokens of these creature types ignore this obstacle."
           },
           "interiorNeverBlocks": {
             "label": "Infinite",
