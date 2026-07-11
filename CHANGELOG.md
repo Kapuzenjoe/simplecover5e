@@ -5,6 +5,7 @@
 - **New Feature: Cover Obstacle Regions** a new **Cover Obstacle** Region Behavior lets Regions block Cover Lines like a creature would.
   - Optional Size / Creature Type filters exempt matching tokens (attacker and target).
   - **Interior Block Distance**: blank/infinity never blocks while both are inside the Region, `0` always blocks, otherwise blocks once they're that far apart.
+- Occluder Tokens now use PIXI polygons based on the token's actual shape instead of the custom square grid. This does not change behavior for square grids, but hex grids and ellipse-shaped tokens now use their true token geometry.
 - Fixed issue when cover switched between cover effects on turn change - again... (#39).
 
 ## 2.1.3

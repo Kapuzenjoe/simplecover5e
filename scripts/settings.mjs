@@ -226,7 +226,6 @@ const SETTINGS = [
   },
   {
     config: true,
-    default: 0,
     hint: "SIMPLE_COVER_5E.Settings.HoverLabelYOffset.Hint",
     key: SETTING_KEYS.HOVER_LABEL_Y_OFFSET,
     name: "SIMPLE_COVER_5E.Settings.HoverLabelYOffset.Name",
@@ -240,7 +239,6 @@ const SETTINGS = [
   },
   {
     config: true,
-    default: 0,
     hint: "SIMPLE_COVER_5E.Settings.HoverLabelXOffset.Hint",
     key: SETTING_KEYS.HOVER_LABEL_X_OFFSET,
     name: "SIMPLE_COVER_5E.Settings.HoverLabelXOffset.Name",
@@ -301,7 +299,6 @@ const SETTINGS = [
   },
   {
     config: false,
-    default: 1,
     hint: "SIMPLE_COVER_5E.Settings.insetAttacker.Hint",
     key: SETTING_KEYS.INSET_ATTACKER,
     name: "SIMPLE_COVER_5E.Settings.insetAttacker.Name",
@@ -317,7 +314,6 @@ const SETTINGS = [
   },
   {
     config: false,
-    default: 3,
     hint: "SIMPLE_COVER_5E.Settings.insetTarget.Hint",
     key: SETTING_KEYS.INSET_TARGET,
     name: "SIMPLE_COVER_5E.Settings.insetTarget.Name",
@@ -333,7 +329,6 @@ const SETTINGS = [
   },
   {
     config: false,
-    default: 6,
     hint: "SIMPLE_COVER_5E.Settings.insetOccluder.Hint",
     key: SETTING_KEYS.INSET_OCCLUDER,
     name: "SIMPLE_COVER_5E.Settings.insetOccluder.Name",

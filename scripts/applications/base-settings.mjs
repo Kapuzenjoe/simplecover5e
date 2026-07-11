@@ -4,12 +4,12 @@ const { HandlebarsApplicationMixin, ApplicationV2 } = foundry.applications.api;
 
 /**
  * A base configuration form used by Simple Cover 5e.
- *
  * @extends {ApplicationV2}
+ * @mixes HandlebarsApplicationMixin
  */
 export class SimpleCoverBaseConfigApp extends HandlebarsApplicationMixin(ApplicationV2) {
   /**
-   * @inheritdoc
+   * @override
    */
   static DEFAULT_OPTIONS = {
     form: {
@@ -26,7 +26,7 @@ export class SimpleCoverBaseConfigApp extends HandlebarsApplicationMixin(Applica
   static FIELDSETS = [];
 
   /**
-   * @inheritdoc
+   * @override
    */
   static PARTS = {
     form: {

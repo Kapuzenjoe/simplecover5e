@@ -51,6 +51,7 @@ export class SimpleCoverVariantConfig extends SimpleCoverBaseConfigApp {
 
   /**
    * Apply the selected gridless token shape to existing tokens after explicit confirmation.
+   * @this {SimpleCoverVariantConfig}
    *
    * @returns {Promise<void>} Resolves after matching tokens have been updated.
    */

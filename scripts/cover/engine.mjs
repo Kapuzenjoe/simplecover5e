@@ -47,91 +47,54 @@ export function buildCoverContext(scene) {
 /* -------------------------------------------- */
 
 /**
- * Build one or more 3D occluder prisms for a creature token.
- * The prism shape depends on grid mode and token-shape settings (e.g., gridless circle uses an inscribed AABB).
+ * Build the 3D occluder prism for a creature token.
+ * The prism shape depends on grid mode and token-shape settings.
  *
  * @param {TokenDocument} td The token document to build prisms for.
  * @param {CoverContext} ctx The cover evaluation context.
  * @param {DebugTokenShapes|null} [debugTokenShapes=null] Optional debug shape collector.
- * @returns {OccluderPrism[]} The occluder prisms in canvas pixel space.
+ * @returns {OccluderPrism} The occluder prism in canvas pixel space.
  */
 export function buildCreaturePrism(td, ctx, debugTokenShapes) {
-  const { grid, halfGridSize, insetOccluderPx, distancePixels } = ctx;
+  const { grid, insetOccluderPx, distancePixels } = ctx;
   const elevation = Number(td?.elevation ?? 0);
   const zMin = elevation * distancePixels;
-  let height = getCreatureHeight(td);
-
-  const zMax = zMin + (height * distancePixels);
-  const prisms = [];
-  const radius = getTokenExternalRadius(td) ?? 0;
+  const zMax = zMin + (getCreatureHeight(td) * distancePixels);
   const { x, y } = td.getCenterPoint();
-  const insetToCenter = insetOccluderPx / Math.SQRT2;
 
-  if ( grid.isGridless && isEllipse(td) ) {
-    const innerHalf = radius / Math.SQRT2;
-    const halfEff = Math.max(innerHalf, 0);
+  let shape;
 
-    prisms.push({
-      maxX: x + halfEff - insetToCenter,
-      maxY: y + halfEff - insetToCenter,
-      maxZ: zMax - 0.1,
-      minX: x - halfEff + insetToCenter,
-      minY: y - halfEff + insetToCenter,
-      minZ: zMin + 0.1
-    });
-  }
-  else if ( grid.isHexagonal ) {
-    const centers = td.getContainmentTestPoints({ depth: 0 });
-
-    let halfCenter = Math.max(radius * 0.80, 0);
-
-    if ( centers?.length > 1 ) {
-      const halfNeighbor = Math.max(halfGridSize * 0.80, 0);
-      halfCenter = Math.max(radius * 0.60, 0);
-      for ( const c of centers ) {
-        if ( (c.x === x) && (c.y === y) ) continue;
-        prisms.push({
-          maxX: c.x + halfNeighbor - insetToCenter,
-          maxY: c.y + halfNeighbor - insetToCenter,
-          maxZ: zMax - 0.1,
-          minX: c.x - halfNeighbor + insetToCenter,
-          minY: c.y - halfNeighbor + insetToCenter,
-          minZ: zMin + 0.1
-        });
-      }
+  if ( grid.isGridless ) {
+    if ( isEllipse(td) ) {
+      const radius = Math.max((getTokenExternalRadius(td) ?? 0) - insetOccluderPx, 0);
+      shape = new PIXI.Circle(x, y, radius).toPolygon();
     }
-
-    prisms.push({
-      maxX: x + halfCenter - insetToCenter,
-      maxY: y + halfCenter - insetToCenter,
-      maxZ: zMax - 0.1,
-      minX: x - halfCenter + insetToCenter,
-      minY: y - halfCenter + insetToCenter,
-      minZ: zMin + 0.1
-    });
+    else {
+      const { width, height } = td.getSize();
+      const inset = insetOccluderPx / Math.SQRT2;
+      const w = Math.max(width - (2 * inset), 0);
+      const h = Math.max(height - (2 * inset), 0);
+      shape = new PIXI.Rectangle(x - (w / 2), y - (h / 2), w, h).toPolygon();
+    }
   }
   else {
-    prisms.push({
-      maxX: x + radius - insetToCenter,
-      maxY: y + radius - insetToCenter,
-      maxZ: zMax - 0.1,
-      minX: x - radius + insetToCenter,
-      minY: y - radius + insetToCenter,
-      minZ: zMin + 0.1
-    });
+    const points = td.getGridSpacePolygon().map(p => ({ x: p.x + td.x, y: p.y + td.y }));
+    const cx = points.reduce((sum, p) => sum + p.x, 0) / points.length;
+    const cy = points.reduce((sum, p) => sum + p.y, 0) / points.length;
+    shape = new PIXI.Polygon(points.map(p => {
+      const dx = p.x - cx;
+      const dy = p.y - cy;
+      const L = Math.hypot(dx, dy) || 1;
+      return { x: p.x - ((dx / L) * insetOccluderPx), y: p.y - ((dy / L) * insetOccluderPx) };
+    }));
   }
 
-  for ( const b of prisms ) {
-    if ( !debugTokenShapes ) continue;
+  const prism = { polygon: shape, minZ: zMin + 0.1, maxZ: zMax - 0.1 };
 
-    debugTokenShapes.occluders.push([
-      { x: b.minX, y: b.minY },
-      { x: b.maxX, y: b.minY },
-      { x: b.maxX, y: b.maxY },
-      { x: b.minX, y: b.maxY }
-    ]);
+  if ( debugTokenShapes ) {
+    debugTokenShapes.occluders.push(polygonToPoints(shape));
   }
-  return prisms;
+  return prism;
 }
 
 /* -------------------------------------------- */
@@ -164,7 +127,7 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options=
   }
   );
 
-  const boxes = new Map(blockingTokenDocs.map(td => [td.id, buildCreaturePrism(td, ctx, debugTokenShapes)]));
+  const occluderPrisms = new Map(blockingTokenDocs.map(td => [td.id, buildCreaturePrism(td, ctx, debugTokenShapes)]));
 
   const obstacleBehaviors = (ctx.scene?.regions?.contents ?? [])
     .flatMap(region => region.behaviors.contents)
@@ -246,11 +209,8 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options=
             lineCover = "threeQuarters";
           } else {
             let creatureBlocked = false;
-            for ( const prisms of boxes.values() ) {
-              for ( const b of prisms ) {
-                if ( segIntersectsAABB3D(attacker, target, b) ) { creatureBlocked = true; break; }
-              }
-              if ( creatureBlocked ) break;
+            for ( const prism of occluderPrisms.values() ) {
+              if ( segIntersectsPolygonPrism(attacker, target, prism) ) { creatureBlocked = true; break; }
             }
             if ( creatureBlocked ) lineCover = creaturesHalfOnly ? "half" : "threeQuarters";
 
@@ -353,87 +313,6 @@ export function evaluateLOS(attackerDoc, targetDoc, ctx) {
 /* -------------------------------------------- */
 
 /**
- * Build inset box corners around a center point.
- * Each corner is moved by `insetPx` towards the center along the diagonal.
- *
- * @param {{ x: number, y: number }} center The box center in canvas pixels.
- * @param {number} radius Half of the box edge length in pixels.
- * @param {number} insetPx The inset distance in pixels towards the center.
- * @returns {{ x: number, y: number }[]} The corner points.
- */
-function buildBoxCorners(center, radius, insetPx) {
-  const { x: cx, y: cy } = center;
-  const d = insetPx / Math.SQRT2;
-
-  return [
-    { x: cx - radius + d, y: cy - radius + d },
-    { x: cx + radius - d, y: cy - radius + d },
-    { x: cx + radius - d, y: cy + radius - d },
-    { x: cx - radius + d, y: cy + radius - d }
-  ];
-}
-
-/* -------------------------------------------- */
-
-/**
- * Build a set of inset "corners" on the circumference of a circle.
- * Each point is moved by `insetPx` towards the center along the radius.
- *
- * @param {{ x: number, y: number }} center The circle center in canvas pixels.
- * @param {number} radius The circle radius in pixels.
- * @param {number} insetPx The inset distance in pixels towards the center.
- * @returns {{ x: number, y: number }[]} The points, clockwise from angle 0 degrees.
- */
-function buildCircleCorners(center, radius, insetPx) {
-  const { x: cx, y: cy } = center;
-  const r = radius - insetPx;
-  const k = Math.SQRT1_2;
-
-  return [
-    { x: cx + r, y: cy }, //   0°
-    { x: cx + (r * k), y: cy + (r * k) }, //  45°
-    { x: cx, y: cy + r }, //  90°
-    { x: cx - (r * k), y: cy + (r * k) }, // 135°
-    { x: cx - r, y: cy }, // 180°
-    { x: cx - (r * k), y: cy - (r * k) }, // 225°
-    { x: cx, y: cy - r }, // 270°
-    { x: cx + (r * k), y: cy - (r * k) } // 315°
-  ];
-}
-
-/* -------------------------------------------- */
-
-/**
- * Build inset corners for a hex cell at a given center.
- * Each corner is moved by `insetPx` towards the center along the diagonal.
- *
- * @param {{ x: number, y: number }} center The hex cell center in canvas pixels.
- * @param {number} radius The effective hex radius in pixels.
- * @param {number} insetPx The inset distance in pixels.
- * @param {Grid} grid The current scene grid.
- * @returns {{ x: number, y: number }[]} The inset hex corner points.
- */
-function buildHexCorners(center, radius, insetPx, grid) {
-  const { x: cx, y: cy } = center;
-  const verts = grid.getVertices(center);
-
-  const scale = Math.min(1, (2 * radius) / grid.size);
-
-  return verts.map(v => {
-    const dx = v.x - cx;
-    const dy = v.y - cy;
-    const L = Math.hypot(dx, dy) || 1;
-
-    return {
-      x: cx + (dx * scale) - ((dx / L) * insetPx),
-      y: cy + (dy * scale) - ((dy / L) * insetPx)
-    };
-  });
-}
-
-/* -------------------------------------------- */
-
-/**
  * Build token test points for a sample center based on grid mode and token shape.
  *
  * @param {TestPoint} center The sample center in canvas pixels.
@@ -460,103 +339,82 @@ function buildTokenCornersForCenter(center, ctx, td, inset) {
 
   let corners = [];
   if ( grid.isHexagonal ) {
-    corners = buildHexCorners(center, radius, inset, grid);
+    const scale = Math.min(1, (2 * radius) / grid.size);
+    corners = grid.getShape().map(v => {
+      const L = Math.hypot(v.x, v.y) || 1;
+      return {
+        x: center.x + (v.x * scale) - ((v.x / L) * inset),
+        y: center.y + (v.y * scale) - ((v.y / L) * inset)
+      };
+    });
   }
   else if ( useCircleShape ) {
-    corners = buildCircleCorners(center, radius, inset);
+    const r = Math.max(radius - inset, 0);
+    corners = polygonToPoints(new PIXI.Circle(center.x, center.y, r).toPolygon({ density: 8 }));
   }
-  else corners = buildBoxCorners(center, radius, inset);
+  else {
+    const d = inset / Math.SQRT2;
+    const side = Math.max((radius * 2) - (2 * d), 0);
+    corners = polygonToPoints(new PIXI.Rectangle(center.x - radius + d, center.y - radius + d, side, side).toPolygon());
+  }
 
   corners.forEach(c => c.elevation = center?.elevation ?? 0);
   corners.forEach(c => c.level = center?.level ?? null);
 
-  return constrainCoverTestPoints(corners, td);
+  td._constrainTestPoints(corners, {});
+  return corners;
 }
 
 /* -------------------------------------------- */
 
 /**
- * Constrain cover-specific token test points against the token's movement area.
+ * Convert a PIXI.Polygon's flat point list into an array of point objects.
  *
- * This mirrors Foundry's protected `TokenDocument#_constrainTestPoints` for custom cover corners.
- *
- * @param {TestPoint[]} points The points to constrain. Modified in place.
- * @param {TokenDocument} td The token document whose movement constraints are applied.
- * @returns {TestPoint[]} The constrained points array.
+ * @param {PIXI.Polygon} polygon The polygon to read points from.
+ * @returns {{ x: number, y: number }[]} The polygon's corner points.
  */
-function constrainCoverTestPoints(points, td) {
-  const level = td.parent?.levels.get(td.level);
-  if ( !level ) return points;
-  const origin = td.getMovementOrigin();
-
-  if ( (points.length === 1) && (points[0].x === origin.x) && (points[0].y === origin.y)
-        && ((points[0].elevation === undefined) || (points[0].elevation === origin.elevation)) ) {
-    return points;
-  }
-
-  const { width, height } = td.getSize();
-  const boundingBox = new PIXI.Rectangle(td.x, td.y, width, height);
-  const polygon = foundry.canvas.geometry.ClockwiseSweepPolygon.create(origin, { boundingBox, level, type: "move" });
-  const options = { level, mode: "any", type: "move" };
-  for ( let i = points.length - 1; i >= 0; i-- ) {
-    const point = points[i];
-    if ( polygon.contains(point.x, point.y) && ((point.elevation === undefined)
-            || !level.parent.testSurfaceCollision(origin, point, options)) ) continue;
-
-    points[i] = points[points.length - 1];
-    points.length--;
-  }
-
-  // If all test points are behind a wall/surface, the origin becomes the single test point.
-  if ( !points.length ) points.push(origin);
+function polygonToPoints(polygon) {
+  const points = [];
+  for ( let i = 0; i < polygon.points.length; i += 2 ) points.push({ x: polygon.points[i], y: polygon.points[i + 1] });
   return points;
 }
 
 /* -------------------------------------------- */
 
 /**
- * Test whether a 3D segment intersects a 3D axis-aligned bounding box (AABB).
- * This uses Liang–Barsky style clipping and rejects near-zero intersections using a small epsilon.
+ * Test whether a 3D segment intersects a vertically extruded polygon prism.
+ * Clips the segment to the prism's elevation band, then tests the reduced 2D segment against the polygon.
  *
  * @param {{ x: number, y: number, z: number }} p The segment start point.
  * @param {{ x: number, y: number, z: number }} q The segment end point.
- * @param {{ minX: number, minY: number, maxX: number, maxY: number, minZ: number, maxZ: number }} b The AABB.
- * @returns {boolean} True if the segment intersects the AABB.
+ * @param {{ polygon: PIXI.Polygon, minZ: number, maxZ: number }} prism The polygon prism.
+ * @returns {boolean} True if the segment intersects the prism.
  */
-function segIntersectsAABB3D(p, q, b) {
-  let t0 = 0;
-  let t1 = 1;
+function segIntersectsPolygonPrism(p, q, prism) {
+  const { polygon, minZ, maxZ } = prism;
+  let a = p;
+  let b = q;
 
-  const d = { x: q.x - p.x, y: q.y - p.y, z: q.z - p.z };
-
-  /**
-   * Clip the current segment interval against a single axis plane.
-   * @param {number} pv The projected segment delta on the axis.
-   * @param {number} qv The projected offset from the boundary.
-   * @returns {boolean} True if the clipped interval still intersects the box.
-   */
-  function clip(pv, qv) {
-    if ( pv === 0 ) return qv >= 0;
-    const t = qv / pv;
-    if ( pv < 0 ) {
-      if ( t > t1 ) return false;
-      if ( t > t0 ) t0 = t;
-    } else {
-      if ( t < t0 ) return false;
-      if ( t < t1 ) t1 = t;
-    }
-    return true;
+  if ( p.z !== q.z ) {
+    const t1 = (minZ - p.z) / (q.z - p.z);
+    const t2 = (maxZ - p.z) / (q.z - p.z);
+    const tLo = Math.max(0, Math.min(t1, t2));
+    const tHi = Math.min(1, Math.max(t1, t2));
+    if ( tLo > tHi ) return false;
+    a = { x: Math.mix(p.x, q.x, tLo), y: Math.mix(p.y, q.y, tLo) };
+    b = { x: Math.mix(p.x, q.x, tHi), y: Math.mix(p.y, q.y, tHi) };
   }
+  else if ( (p.z < minZ) || (p.z > maxZ) ) return false;
 
-  if ( !clip(-d.x, p.x - b.minX) ) return false;
-  if ( !clip(d.x, b.maxX - p.x) ) return false;
-  if ( !clip(-d.y, p.y - b.minY) ) return false;
-  if ( !clip(d.y, b.maxY - p.y) ) return false;
-  if ( !clip(-d.z, p.z - b.minZ) ) return false;
-  if ( !clip(d.z, b.maxZ - p.z) ) return false;
+  if ( polygon.contains(a.x, a.y) || polygon.contains(b.x, b.y) ) return true;
 
-  const EPS = 1e-3;
-  return (t0 + EPS) < (t1 - EPS);
+  const pts = polygon.points;
+  for ( let i = 0; i < pts.length; i += 2 ) {
+    const edgeA = { x: pts[i], y: pts[i + 1] };
+    const edgeB = { x: pts[(i + 2) % pts.length], y: pts[(i + 3) % pts.length] };
+    if ( foundry.utils.lineSegmentIntersection(a, b, edgeA, edgeB) ) return true;
+  }
+  return false;
 }
 
 /* -------------------------------------------- */

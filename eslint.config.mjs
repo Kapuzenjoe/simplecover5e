@@ -35,7 +35,8 @@ export default [
         renderTemplate: "readonly",
         fromUuid: "readonly",
         fromUuidSync: "readonly",
-        getDocumentClass: "readonly"
+        getDocumentClass: "readonly",
+        _loc: "readonly"
       },
       sourceType: "module"
     }

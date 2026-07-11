@@ -75,7 +75,7 @@ function getCoverHint(type, cover, targetName) {
   const tokenName = foundry.utils.escapeHTML(targetName);
   return type === "attack"
     ? _loc(COVER.I18N.HINT_KEYS.Attack[cover], { tokenName })
-    : game.i18n.localize(COVER.I18N.HINT_KEYS.Save[cover]);
+    : _loc(COVER.I18N.HINT_KEYS.Save[cover]);
 }
 
 /* -------------------------------------------- */
@@ -218,7 +218,6 @@ async function prepareDialogNote(note) {
   const icon = String(note?.icon ?? "");
   const isIconPath = /[/.](svg|png|webp|jpg|jpeg|gif)$/i.test(icon) || icon.includes("/");
   const enrichedHint = await foundry.applications.ux.TextEditor.enrichHTML(String(note?.hint ?? ""), {
-    async: true,
     secrets: true
   });
   const content = document.createElement("template");

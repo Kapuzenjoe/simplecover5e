@@ -74,10 +74,7 @@
 
 /**
  * @typedef {object} OccluderPrism
- * @property {number} minX The minimum X boundary in pixels.
- * @property {number} minY The minimum Y boundary in pixels.
- * @property {number} maxX The maximum X boundary in pixels.
- * @property {number} maxY The maximum Y boundary in pixels.
+ * @property {PIXI.Polygon} polygon The occluder's 2D footprint in canvas pixels.
  * @property {number} minZ The minimum Z boundary in pixels.
  * @property {number} maxZ The maximum Z boundary in pixels.
  */
