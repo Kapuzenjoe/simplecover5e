@@ -2,11 +2,14 @@
 
 ## 2.2.0
 
-- **New Feature: Cover Obstacle Regions** a new **Cover Obstacle** Region Behavior lets Regions block Cover Lines like a creature would.
+- **New Feature: Cover Obstacle Regions.** A new Region Behavior lets Regions block Cover Lines like a creature would (#40).
   - Optional Size / Creature Type filters exempt matching tokens (attacker and target).
   - **Interior Block Distance**: blank/infinity never blocks while both are inside the Region, `0` always blocks, otherwise blocks once they're that far apart.
-- Occluder Tokens now use PIXI polygons based on the token's actual shape instead of the custom square grid. This does not change behavior for square grids, but hex grids and ellipse-shaped tokens now use their true token geometry.
-- Fixed issue when cover switched between cover effects on turn change - again... (#39).
+- Blocking creature tokens now use their true token shape instead of an approximated square. Standard square-grid tokens are unaffected, but hex-grid creatures, gridless circles/ellipses, and non-square multi-cell tokens (e.g. a 2×1 creature) now use their real footprint.
+- Fixed hex-grid creature tokens occluding cover from an incorrect position when not exactly centered on their grid cell (e.g. after moving with grid snapping disabled).
+- Fixed another timing issue when cover switched between cover effects on turn change (#39).
+- Removed the **Ranged Space Targeting** setting. Cover checks are now always skipped for saves that target a space rather than a creature (e.g. certain summon-adjacent effects), matching how self/touch/special-range effects are already handled.
+- Moved **Ignore Cover: AoE Templates** from the Variant Rules settings menu to the Automation settings menu, since it only affects the module's own native saving-throw automation, not Library Mode or Midi-QOL's own cover handling.
 
 ## 2.1.3
 

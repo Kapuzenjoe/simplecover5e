@@ -21,6 +21,7 @@ export class SimpleCoverAutomationConfig extends SimpleCoverBaseConfigApp {
       keys: [
         SETTING_KEYS.COVER_HINTS,
         SETTING_KEYS.COVER_HINTS_GM_MESSAGE,
+        SETTING_KEYS.IGNORE_AOE,
         SETTING_KEYS.COVER_SCOPE,
         SETTING_KEYS.ONLY_IN_COMBAT,
         SETTING_KEYS.RMV_ON_COMBAT,

@@ -111,33 +111,6 @@ When enabled:
 
 When enabled, friendly tokens are ignored as creature occluders during cover evaluation.
 
-### Ignore Cover: AoE Templates
-
-- **Setting:** `ignoreAOECover`
-- **UI Name:** *Ignore Cover: AoE Templates*
-- **Options:** `Disabled` / `Ranged AoE` / `All AoE`
-
-Controls when cover checks are skipped for area-of-effect templates.
-
-**All AoE:**
-- If `activity.target.template.type !== ""`, the result becomes `none` / `0`.
-
-**Ranged AoE:**
-- Applies when:
-  - `activity.target.template.type !== ""`
-  - range units are not `self`, `touch`, `special`
-- If matched, the result becomes `none` / `0`.
-
-### Ignore Cover for Ranged Space Targeting
-
-- **Setting:** `IgnoreDistanceSpace`
-- **UI Name:** *Ignore cover for ranged space targeting*
-
-Skips cover checks when an activity targets a space at range. This is useful for summon features/spells where the *actual* effect originates from the summoned creature.
-
-Rule:
-- If `activity.range.value > 1` and `activity.target.affects.type === "space"`, the result becomes `none` / `0`.
-
 ## Optional Rules (Actor Flags)
 
 Simple Cover 5e supports actor-scoped overrides via flags. Each flag supports the scopes `.all`, `.attack`, and `.save`.

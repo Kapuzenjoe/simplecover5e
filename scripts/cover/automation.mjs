@@ -8,6 +8,7 @@ import { clearCoverDebug } from "./debug.mjs";
 import { clearSystemCoverEffects, setCoverStatusViaGM } from "./status.mjs";
 import { isDefeatedToken } from "./token.mjs";
 
+const EXCLUDED_UNITS = new Set(["self", "touch", "special"]);
 const COVER_TARGETS_PATH = `data.flags.${MODULE_ID}.targets`;
 
 /**
@@ -331,19 +332,26 @@ function onPreRollSavingThrow(config, dialog, message) {
   const templateType = activity.target?.template?.type ?? "";
   if ( (templateType === "wall") || (templateType === "ring") ) return;
 
+  const rangeUnits = activity.range?.units ?? "";
+  const ignoreAoe = game.settings.get(MODULE_ID, SETTING_KEYS.IGNORE_AOE);
+
   let attacker = source;
-  if ( templateType ) {
-    const rangeUnits = activity.range?.units ?? "";
-    if ( (rangeUnits !== "self") && (rangeUnits !== "touch") && (rangeUnits !== "special") ) {
-      const origin = resolveAoEOrigin(activity, targetToken);
-      if ( !origin ) {
-        void setCoverStatusViaGM(actor.uuid, "none");
-        setSaveCoverBonus(config.rolls?.[0], 0, "none");
-        setCoverTarget(message, actor, "none");
-        return;
-      }
-      attacker = origin;
-    }
+  let forceNoCover = (templateType !== "") && (
+    (ignoreAoe === "all") || ((ignoreAoe === "range") && !EXCLUDED_UNITS.has(rangeUnits))
+  );
+  forceNoCover ||= (activity.target?.affects?.type ?? "") === "space";
+
+  if ( !forceNoCover && templateType && !EXCLUDED_UNITS.has(rangeUnits) ) {
+    const origin = resolveAoEOrigin(activity, targetToken);
+    if ( !origin ) forceNoCover = true;
+    else attacker = origin;
+  }
+
+  if ( forceNoCover ) {
+    void setCoverStatusViaGM(actor.uuid, "none");
+    setSaveCoverBonus(config.rolls?.[0], 0, "none");
+    setCoverTarget(message, actor, "none");
+    return;
   }
 
   const losCheck = !!game.settings.get(MODULE_ID, SETTING_KEYS.LOS_CHECK);
@@ -357,7 +365,7 @@ function onPreRollSavingThrow(config, dialog, message) {
   });
 
   const resolvedCover = result?.cover ?? "none";
-  const resolvedBonus = result?.bonus ?? COVER.BONUS[resolvedCover];
+  const resolvedBonus = COVER.BONUS[resolvedCover];
 
   void setCoverStatusViaGM(actor.uuid, resolvedCover);
   setSaveCoverBonus(config.rolls?.[0], resolvedBonus, resolvedCover);

@@ -61,10 +61,6 @@
           "All": "Alle AoE"
         }
       },
-      "IgnoreDistanceSpace": {
-        "Name": "Entfernter Zielbereich",
-        "Hint": "Überspringt Deckungsprüfungen bei Entfernungszielen vom Typ \"Bereich\" (Reichweite > 1). Typisch bei Beschwörungen, bei denen Effekte von der beschworenen Kreatur ausgehen."
-      },
       "Hover": {
         "Name": "Deckungsanzeige beim Hovern",
         "Hint": "Steuert, ob und wie Deckungsinformationen und Entfernung beim Hovern über eine Figur angezeigt werden.",

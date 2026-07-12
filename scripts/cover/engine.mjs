@@ -247,7 +247,7 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options=
           if ( !debug && (coverLevel === 0) && (activeLines === totalLines) ) {
             const cover = "none";
             const bonus = COVER.BONUS[cover] || 0;
-            return debug ? { bonus, cover, debugTokenShapes, debugSegments: best.segs } : { bonus, cover };
+            return { bonus, cover };
           }
         }
       }

@@ -2,9 +2,8 @@
  * @import { CoverLevel, CoverRuleFlagObject } from "../_types.mjs";
  */
 
-import { MODULE_ID, COVER, SETTING_KEYS } from "../config.mjs";
+import { MODULE_ID, COVER } from "../config.mjs";
 
-const EXCLUDED_UNITS = new Set(["self", "touch", "special"]);
 const WAND_OF_THE_WAR_MAGE_IDENTIFIERS = new Set([
   "1-wand-of-the-war-mage",
   "wand-of-the-war-mage",
@@ -78,7 +77,6 @@ export function ignoresCover(activity, cover="none", targetActor=null) {
   const items = sourceActor?.items;
   const actionType = activity?.actionType;
   const properties = item?.system?.properties;
-  const templateType = activity?.target?.template?.type ?? "";
 
   // ------------------------------------------------------------
   // 1) TARGET: Upgrade Cover
@@ -223,35 +221,6 @@ export function ignoresCover(activity, cover="none", targetActor=null) {
   // ------------------------------------------------------------
   if ( (effectiveCover !== "none") && properties?.has?.("ignoreCover") ) {
     effectiveCover = "none";
-  }
-
-  // ------------------------------------------------------------
-  // 4) SOURCE TEMPLATES: AoE / Distance / Space
-  // ------------------------------------------------------------
-  if ( isSave && (effectiveCover !== "none") ) {
-    const ignoreAoe = game.settings.get(MODULE_ID, SETTING_KEYS.IGNORE_AOE);
-    const ignoreDistanceSpace = game.settings.get(MODULE_ID, SETTING_KEYS.IGNORE_DISTANCE_SPACE);
-
-    if ( ignoreAoe === "all" ) {
-      if ( templateType !== "" ) effectiveCover = "none";
-    }
-    else if ( ignoreAoe === "range" ) {
-      const rangeUnits = activity?.range?.units ?? "";
-
-      if (
-        !EXCLUDED_UNITS.has(rangeUnits)
-        && (templateType !== "")
-      ) {
-        effectiveCover = "none";
-      }
-    }
-
-    if ( ignoreDistanceSpace ) {
-      const rangeValue = activity?.range?.value ?? 0;
-      if ( (rangeValue > 1) && ((activity?.target?.affects?.type ?? "") === "space") ) {
-        effectiveCover = "none";
-      }
-    }
   }
 
   return {

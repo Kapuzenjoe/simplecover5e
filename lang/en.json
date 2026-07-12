@@ -61,10 +61,6 @@
           "All": "All AoE"
         }
       },
-      "IgnoreDistanceSpace": {
-        "Name": "Ranged Space Targeting",
-        "Hint": "Skips cover checks when targeting a space at range (range > 1, affects type \"space\"). Typically used with summon features where effects originate from the summoned creature."
-      },
       "Hover": {
         "Name": "Hover Cover Display",
         "Hint": "Controls whether and how cover information and distance are shown when hovering a token.",

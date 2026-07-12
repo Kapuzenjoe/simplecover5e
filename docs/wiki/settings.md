@@ -36,6 +36,10 @@ Choose which tokens are affected when cover effects are cleared:
 - **Player-Owned Tokens Only**
   Clears cover only from tokens that are player-owned.
 
+### Ignore Cover: AoE Templates
+
+Controls when cover checks are skipped for area-of-effect templates. Options are **Disabled** (default), **Ranged AoE** (skips cover for templates with a ranged origin — not self, touch, or special range), and **All AoE** (skips cover whenever any template is defined).
+
 ### Apply Cover Only In Combat
 
 When enabled, Simple Cover 5e only performs automatic cover calculation while a combat encounter is active.
@@ -71,12 +75,6 @@ These settings enable or disable optional cover rules. This page lists what can 
 
 - **Prone Creature Height Adjustment**
   Controls how prone creatures are treated for 3D cover. Options are **None** (default), **Treat as one size smaller**, and **Treat as half as tall**.
-
-- **Ignore Cover: AoE Templates**
-  Controls when cover checks are skipped for area-of-effect templates. Options are **Disabled** (default), **Ranged AoE** (skips cover for templates with a ranged origin — not self, touch, or special range), and **All AoE** (skips cover whenever any template is defined).
-
-- **Ignore Cover for Ranged Space Targeting**
-  Skips cover checks when an activity targets a space at range.
 
 ### Measurement Rules
 

@@ -151,15 +151,6 @@ const SETTINGS = [
   },
   {
     config: false,
-    hint: "SIMPLE_COVER_5E.Settings.IgnoreDistanceSpace.Hint",
-    key: SETTING_KEYS.IGNORE_DISTANCE_SPACE,
-    name: "SIMPLE_COVER_5E.Settings.IgnoreDistanceSpace.Name",
-    requiresReload: false,
-    scope: "world",
-    type: new foundry.data.fields.BooleanField({ initial: false })
-  },
-  {
-    config: false,
     hint: "SIMPLE_COVER_5E.Settings.IgnoreFriendly.Hint",
     key: SETTING_KEYS.IGNORE_FRIENDLY,
     name: "SIMPLE_COVER_5E.Settings.IgnoreFriendly.Name",
@@ -219,7 +210,7 @@ const SETTINGS = [
         below: "SIMPLE_COVER_5E.Settings.HoverLabelPosition.Options.Below",
         on: "SIMPLE_COVER_5E.Settings.HoverLabelPosition.Options.On"
       },
-      initial: "below",
+      initial: "above",
       required: true,
       trim: true
     })

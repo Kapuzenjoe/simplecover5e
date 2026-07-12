@@ -88,7 +88,6 @@ export const SETTING_KEYS = {
   IGNORE_ALL_AOE: "IgnoreAllAOE",
   IGNORE_AOE: "ignoreAOECover",
   IGNORE_DISTANCE_AOE: "IgnoreDistanceAOE",
-  IGNORE_DISTANCE_SPACE: "IgnoreDistanceSpace",
   IGNORE_FRIENDLY: "ignoreFriendly",
   INSET_ATTACKER: "insetAttacker",
   INSET_OCCLUDER: "insetOccluder",
