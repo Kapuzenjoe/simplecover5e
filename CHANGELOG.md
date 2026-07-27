@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.2.1
+
+- Fixed Darkness light sources incorrectly blocking cover and LoS checks. Darkness does not grant cover per the rules.
+- Fixed the wall-based LoS check depending on the attacker's own vision state — being Blinded or standing in Darkness no longer causes a target to be miscalculated as having Total Cover. The check is now purely physical (walls/obstacles), matching how Total Cover actually works.
+- Fixed the wall-based LoS check occasionally testing the wrong Level's walls when a sight ray only briefly crossed a narrow Level band (e.g. a balcony ledge) instead of the Level the target actually occupies.
+
 ## 2.2.0
 
 - **New Feature: Cover Obstacle Regions.** A new Region Behavior lets Regions block Cover Lines like a creature would (#40).

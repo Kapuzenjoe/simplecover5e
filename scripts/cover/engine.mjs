@@ -283,7 +283,6 @@ export function evaluateLOS(attackerDoc, targetDoc, ctx) {
 
   origin.elevation ??= attackerDoc?.elevation ?? 0;
   origin.level ??= attackerDoc?.level ?? ctx.level ?? null;
-  const losPolygon = attackerDoc?.object?.vision?.los ?? null;
 
   if ( isWallHeightModuleActive() ) origin.elevation = (attackerDoc?.elevation ?? 0) + getCreatureHeight(attackerDoc);
 
@@ -295,7 +294,7 @@ export function evaluateLOS(attackerDoc, targetDoc, ctx) {
   let hasLOS = false;
 
   for ( const p of targetTestPoints ) {
-    const wallResult = wallsBlock(origin, p, ctx, losPolygon);
+    const wallResult = wallsBlock(origin, p, ctx);
     targetLosPoints.push({ blocked: wallResult.blocked, x: p.x, y: p.y });
 
     if ( !wallResult.blocked ) {
@@ -420,21 +419,128 @@ function segIntersectsPolygonPrism(p, q, prism) {
 /* -------------------------------------------- */
 
 /**
+ * Compute the ray parameter at which sight testing switches from the source Level's walls to the target
+ * Level's walls, matching Foundry's own multi-Level sight-splitting behavior.
+ *
+ * @param {TestPoint} A The segment start point.
+ * @param {TestPoint} B The segment end point.
+ * @param {Level|null} fromLevel The Level containing A.
+ * @param {Level|null} toLevel The Level containing B.
+ * @returns {number} The t-value (0-1) at which the source segment ends and the target segment begins.
+ */
+// Mirrors Foundry's private DetectionMode#getIntermediateTValue — no public equivalent exists.
+function getLevelSplitT(A, B, fromLevel, toLevel) {
+  if ( !fromLevel || !toLevel || (fromLevel === toLevel) ) return 1;
+
+  const delta = (B.elevation ?? 0) - (A.elevation ?? 0);
+  let t00, t01, t10, t11;
+
+  if ( delta !== 0 ) {
+    t00 = (fromLevel.elevation.bottom - A.elevation) / delta;
+    t01 = (fromLevel.elevation.top - A.elevation) / delta;
+    if ( t00 > t01 ) [t00, t01] = [t01, t00];
+
+    t10 = (toLevel.elevation.bottom - A.elevation) / delta;
+    t11 = (toLevel.elevation.top - A.elevation) / delta;
+    if ( t10 > t11 ) [t10, t11] = [t11, t10];
+  } else {
+    t00 = fromLevel.elevation.bottom <= A.elevation ? -Infinity : Infinity;
+    t01 = fromLevel.elevation.top >= A.elevation ? Infinity : -Infinity;
+    t10 = toLevel.elevation.bottom <= A.elevation ? -Infinity : Infinity;
+    t11 = toLevel.elevation.top >= A.elevation ? Infinity : -Infinity;
+  }
+
+  // The ray never reaches the target Level: test the source Level only.
+  if ( (t10 > 1) || (t11 < 0) ) return 1;
+
+  // The ray is never within the source Level: test the target Level only.
+  if ( (t00 > 1) || (t01 < 0) ) return 0;
+
+  // The ray leaves the target Level before it leaves the source Level: test the source Level only.
+  t01 = Math.min(t01, 1);
+  t11 = Math.min(t11, 1);
+  if ( t01 > t11 ) return 1;
+
+  // The ray enters the target Level before it enters the source Level: test the target Level only.
+  t00 = Math.max(t00, 0);
+  t10 = Math.max(t10, 0);
+  if ( t00 > t10 ) return 0;
+
+  // Otherwise split where the ray leaves the source Level and enters the target Level.
+  return Math.max(t01, t10);
+}
+
+/* -------------------------------------------- */
+
+/**
+ * Test whether sight-blocking walls or surfaces obstruct one ray segment within a single Level.
+ * If the Wall Height module is active, wall collisions are additionally filtered by wall top/bottom values.
+ *
+ * @param {TestPoint} A The segment start point.
+ * @param {TestPoint} B The segment end point.
+ * @param {CoverContext} ctx The cover evaluation context.
+ * @param {Level|null} level The Level to test walls and surfaces against.
+ * @param {number} tMin The ray parameter marking the start of the segment.
+ * @param {number} tMax The ray parameter marking the end of the segment.
+ * @returns {{ blocked: boolean, surfaceBlocked: boolean, collisions: object[] }} The segment test result.
+ */
+function testSightSegment(A, B, ctx, level, tMin, tMax) {
+  const scene = ctx.scene ?? canvas?.scene;
+  const backend = CONFIG.Canvas.polygonBackends.sight;
+
+  const surfaceBlocked = scene?.testSurfaceCollision?.(A, B, {
+    tMax,
+    tMin,
+    level,
+    mode: "any",
+    type: "sight"
+  }) ?? false;
+
+  let wallBlocked = false;
+  let collisions = [];
+  if ( isWallHeightModuleActive() ) {
+    collisions = backend.testCollision(A, B, {
+      tMax,
+      tMin,
+      level,
+      mode: "all",
+      type: "sight",
+      edgeTypes: { source: false },
+      useThreshold: true
+    }) ?? [];
+    wallBlocked = collisions.length > 0;
+  }
+  else {
+    wallBlocked = backend.testCollision(A, B, {
+      tMax,
+      tMin,
+      level,
+      mode: "any",
+      type: "sight",
+      edgeTypes: { source: false },
+      useThreshold: true
+    }) ?? false;
+  }
+
+  return { blocked: surfaceBlocked || wallBlocked, surfaceBlocked, collisions };
+}
+
+/* -------------------------------------------- */
+
+/**
  * Test whether sight-blocking walls obstruct the segment between two positions.
  * If the Wall Height module is active, the intersection is additionally filtered by wall top and bottom values.
  *
  * @param {{ x: number, y: number, elevation: number, level?: string|null }} aCorner The attacker corner.
  * @param {{ x: number, y: number, elevation: number, level?: string|null }} bCorner The target corner.
  * @param {CoverContext} ctx The cover evaluation context.
- * @param {PIXI.Polygon|null} [losPolygon=null] A precomputed LOS polygon for the attacker, if available.
  * @returns {{ blocked: boolean, A: TestPoint, B: TestPoint, collisions?: object[] }} A result describing whether
  *   the tested segment is blocked.
  */
-function wallsBlock(aCorner, bCorner, ctx, losPolygon=null) {
+function wallsBlock(aCorner, bCorner, ctx) {
   const A = aCorner;
   const B = bCorner;
   const scene = ctx.scene ?? canvas?.scene;
-  const backend = CONFIG.Canvas.polygonBackends.sight;
 
   let fromLevel = A?.level ?? ctx.level ?? null;
   if ( typeof fromLevel === "string" ) fromLevel = scene?.levels?.get(fromLevel) ?? null;
@@ -444,24 +550,7 @@ function wallsBlock(aCorner, bCorner, ctx, losPolygon=null) {
 
   toLevel ??= fromLevel;
 
-  let tSplit = 1;
-
-  if ( fromLevel && toLevel && (fromLevel !== toLevel) ) {
-    const delta = (B.elevation ?? 0) - (A.elevation ?? 0);
-
-    if ( delta !== 0 ) {
-      let t00 = (fromLevel.elevation.bottom - A.elevation) / delta;
-      let t01 = (fromLevel.elevation.top - A.elevation) / delta;
-      if ( t00 > t01 ) [t00, t01] = [t01, t00];
-
-      let t10 = (toLevel.elevation.bottom - A.elevation) / delta;
-      let t11 = (toLevel.elevation.top - A.elevation) / delta;
-      if ( t10 > t11 ) [t10, t11] = [t11, t10];
-
-      tSplit = ((t11 > 0) && (t01 < t11)) ? Math.clamp(t01, t10, 1) : 1;
-      if ( tSplit < 0 ) tSplit = 0;
-    }
-  }
+  const tSplit = getLevelSplitT(A, B, fromLevel, toLevel);
 
   let blocked = false;
   let surfaceCollisionBlocked = false;
@@ -469,96 +558,21 @@ function wallsBlock(aCorner, bCorner, ctx, losPolygon=null) {
 
   // Segment 1: source level
   if ( fromLevel && (tSplit > 0) ) {
-    const tMin = 0;
-    const tMax = tSplit;
-
-    if ( losPolygon ) {
-      const splitX = A.x + ((B.x - A.x) * tSplit);
-      const splitY = A.y + ((B.y - A.y) * tSplit);
-
-      const losBlocked = !losPolygon.contains(splitX, splitY);
-      if ( losBlocked ) blocked = true;
-    } else {
-
-      const surfaceBlocked = scene?.testSurfaceCollision?.(A, B, {
-        tMax,
-        tMin,
-        level: fromLevel,
-        mode: "any",
-        type: "sight"
-      }) ?? false;
-      surfaceCollisionBlocked ||= surfaceBlocked;
-
-      let wallBlocked = false;
-      if ( isWallHeightModuleActive() ) {
-        const wallCollisions = backend.testCollision(A, B, {
-          tMax,
-          tMin,
-          level: fromLevel,
-          mode: "all",
-          type: "sight",
-          useThreshold: true
-        }) ?? [];
-        collisions.push(...wallCollisions);
-        wallBlocked = wallCollisions.length > 0;
-      }
-      else {
-        wallBlocked = backend.testCollision(A, B, {
-          tMax,
-          tMin,
-          level: fromLevel,
-          mode: "any",
-          type: "sight",
-          useThreshold: true
-        }) ?? false;
-      }
-
-      if ( surfaceBlocked || wallBlocked ) blocked = true;
-    }
+    const segment = testSightSegment(A, B, ctx, fromLevel, 0, tSplit);
+    surfaceCollisionBlocked ||= segment.surfaceBlocked;
+    collisions.push(...segment.collisions);
+    if ( segment.blocked ) blocked = true;
   }
 
   // Segment 2: target level
   if ( !blocked && toLevel && (tSplit < 1) ) {
-    const tMin = tSplit;
-    const tMax = 1;
-
-    const surfaceBlocked = scene?.testSurfaceCollision?.(A, B, {
-      tMax,
-      tMin,
-      level: toLevel,
-      mode: "any",
-      type: "sight"
-    }) ?? false;
-    surfaceCollisionBlocked ||= surfaceBlocked;
-
-    let wallBlocked = false;
-    if ( isWallHeightModuleActive() ) {
-      const wallCollisions = backend.testCollision(A, B, {
-        tMax,
-        tMin,
-        level: toLevel,
-        mode: "all",
-        type: "sight",
-        useThreshold: true
-      }) ?? [];
-      collisions.push(...wallCollisions);
-      wallBlocked = wallCollisions.length > 0;
-    }
-    else {
-      wallBlocked = backend.testCollision(A, B, {
-        tMax,
-        tMin,
-        level: toLevel,
-        mode: "any",
-        type: "sight",
-        useThreshold: true
-      }) ?? false;
-    }
-
-    if ( surfaceBlocked || wallBlocked ) blocked = true;
+    const segment = testSightSegment(A, B, ctx, toLevel, tSplit, 1);
+    surfaceCollisionBlocked ||= segment.surfaceBlocked;
+    collisions.push(...segment.collisions);
+    if ( segment.blocked ) blocked = true;
   }
 
-  if ( !isWallHeightModuleActive() || losPolygon || surfaceCollisionBlocked ) {
+  if ( !isWallHeightModuleActive() || surfaceCollisionBlocked ) {
     return { A, B, blocked };
   }
 
