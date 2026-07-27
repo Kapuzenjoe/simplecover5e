@@ -1,70 +1,85 @@
-import { MODULE_ID } from "../config/constants.config.mjs";
+import { MODULE_ID, COVER } from "../config/constants.config.mjs";
 
 /**
  * Register GM query handlers used by the module.
  *
  * @returns {void}
  */
-export function initQueries() {
+export function initCoverStatusQueries() {
     CONFIG.queries ??= {};
-    if (CONFIG.queries[`${MODULE_ID}.toggleCover`]) return;
+    if (CONFIG.queries[`${MODULE_ID}.setCoverStatus`]) return;
 
     /**
-     * Handle the GM-side query used to toggle a cover status effect.
-     * @param {{actorUuid?: string, effectId?: string, enable?: boolean}|null|undefined} data The query payload.
-     * @returns {Promise<{ok: boolean, changed?: boolean, reason?: string}>} The query result.
+     * Handle the GM-side query used to synchronize a dnd5e cover status.
+     * @param {{actorUuid?: string, cover?: "none"|"half"|"threeQuarters"|"total"}|null|undefined} data The query payload.
+     * @returns {Promise<{ok: boolean, reason?: string}>} The query result.
      */
-    CONFIG.queries[`${MODULE_ID}.toggleCover`] = async (data) => {
+    CONFIG.queries[`${MODULE_ID}.setCoverStatus`] = async (data) => {
         try {
             if (!game.user.isGM) return { ok: false, reason: "not-gm" };
-            const { actorUuid, effectId, enable } = data ?? {};
+            const { actorUuid, cover = "none" } = data ?? {};
+            if (!COVER.KEYS.includes(cover)) return { ok: false, reason: "invalid-cover" };
 
             const actor = await fromUuid(actorUuid);
             if (!actor) {
-                console.warn(`[${MODULE_ID}] toggleCover: actor not found for uuid`, actorUuid);
+                console.warn(`[${MODULE_ID}] setCoverStatus: actor not found for uuid`, actorUuid);
                 return { ok: false, reason: "no-actor" };
             }
-            const hasStatus = !!actor.statuses?.has?.(effectId);
 
-            if (enable && hasStatus) {
-                return { ok: true, changed: false };
-            }
-            if (!enable && !hasStatus) {
-                return { ok: true, changed: false };
-            }
-
-            if (typeof actor.toggleStatusEffect === "function") {
-                await actor.toggleStatusEffect(effectId, { overlay: false });
-            } else {
-                console.warn(`[${MODULE_ID}] toggleCover: actor has no toggleStatusEffect`, actor);
-                return { ok: false, reason: "no-toggle" };
-            }
-
-            return { ok: true, changed: true };
+            await applyCoverStatus(actor, cover);
+            return { ok: true };
         } catch (err) {
-            console.warn(`[${MODULE_ID}] query toggleCover failed:`, err, data);
+            console.warn(`[${MODULE_ID}] query setCoverStatus failed:`, err, data);
             return { ok: false, reason: "exception" };
         }
     };
 }
 
 /**
- * Request the active GM to toggle a cover status effect on an actor.
+ * Request the active GM to synchronize the visible dnd5e cover status on an actor.
  *
  * @param {string} actorUuid The UUID of the actor to update.
- * @param {string} effectId The status effect ID to toggle.
- * @param {boolean} enable Whether the effect should be enabled.
+ * @param {"none"|"half"|"threeQuarters"|"total"} cover The desired cover level.
  * @returns {Promise<boolean>} True if the GM handled the request successfully.
  */
-export async function toggleCoverEffectViaGM(actorUuid, effectId, enable) {
+export async function setCoverStatusViaGM(actorUuid, cover) {
+    if (game.user.isGM) {
+        if (!COVER.KEYS.includes(cover)) return false;
+        const actor = await fromUuid(actorUuid);
+        if (!actor) return false;
+        await applyCoverStatus(actor, cover);
+        return true;
+    }
+
     const gm = game.users.activeGM;
     if (!gm) { console.warn(`[${MODULE_ID}] no active GM`); return false; }
 
     try {
-        const res = await gm.query(`${MODULE_ID}.toggleCover`, { actorUuid, effectId, enable }, { timeout: 8000 });
+        const res = await gm.query(`${MODULE_ID}.setCoverStatus`, { actorUuid, cover }, { timeout: 8000 });
         return !!res?.ok;
     } catch (e) {
         console.warn(`[${MODULE_ID}] GM query failed:`, e);
         return false;
     }
+}
+
+/**
+ * Apply a cover status directly on the current client.
+ * Requires the caller to have write permission on the actor.
+ *
+ * @param {Actor5e} actor The actor to update.
+ * @param {"none"|"half"|"threeQuarters"|"total"} cover The desired cover level.
+ * @returns {Promise<void>}
+ */
+async function applyCoverStatus(actor, cover) {
+    const desiredStatusId = COVER.IDS[cover];
+
+    if (desiredStatusId) {
+        if (actor.statuses.has(desiredStatusId)) return;
+        await actor.toggleStatusEffect(desiredStatusId, { active: true, overlay: false });
+        return;
+    }
+
+    const activeStatusId = [COVER.IDS.total, COVER.IDS.threeQuarters, COVER.IDS.half].find(id => actor.statuses.has(id));
+    if (activeStatusId) await actor.toggleStatusEffect(activeStatusId, { active: false, overlay: false });
 }

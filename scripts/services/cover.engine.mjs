@@ -30,7 +30,6 @@ export function buildCoverContext(scene) {
         insetAttackerPx: Math.min(grid.size * 0.3, insetAttacker),
         insetTargetPx: Math.min(grid.size * 0.3, insetTarget),
         insetOccluderPx: Math.min(grid.size * 0.3, insetOccluder),
-        placeables: activeScene ? (canvas?.tokens?.placeables ?? []) : [],
         level: activeScene ? (canvas?.level ?? null) : null
     };
 }
@@ -137,14 +136,14 @@ export function buildCreaturePrism(td, ctx, debugTokenShapes) {
  * @param {{x:number,y:number,elevation:number,level?:string|null}} aCorner The attacker corner.
  * @param {{x:number,y:number,elevation:number,level?:string|null}} bCorner The target corner.
  * @param {CoverContext} ctx The cover evaluation context.
- * @param {PIXI.Polygon|null} [losPolygon=null] A precomputed LOS polygon for the attacker, if available.
  * @returns {{blocked: boolean, A: TestPoint, B: TestPoint, collisions?: object[]}} A result describing whether the tested segment is blocked.
  */
-function wallsBlock(aCorner, bCorner, ctx, losPolygon = null) {
+function wallsBlock(aCorner, bCorner, ctx) {
     const A = aCorner
     const B = bCorner
     const scene = ctx.scene ?? canvas?.scene;
     const backend = CONFIG.Canvas.polygonBackends.sight;
+    const edgeExclusion = isV14() ? { edgeTypes: { source: false } } : { edgeOptions: { darkness: false } };
 
     const debugOn = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.DEBUG);
     const activeGM = game.users?.activeGM;
@@ -182,7 +181,6 @@ function wallsBlock(aCorner, bCorner, ctx, losPolygon = null) {
     const debugData = {
         A,
         B,
-        losPolygon,
         fromLevel: fromLevel?.id ?? null,
         toLevel: toLevel?.id ?? null,
         tSplit,
@@ -195,42 +193,34 @@ function wallsBlock(aCorner, bCorner, ctx, losPolygon = null) {
         const tMin = 0;
         const tMax = tSplit;
 
-        if (losPolygon) {
-            const splitX = A.x + ((B.x - A.x) * tSplit);
-            const splitY = A.y + ((B.y - A.y) * tSplit);
+        const surfaceBlocked = scene?.testSurfaceCollision?.(A, B, {
+            type: "sight",
+            mode: "any",
+            level: fromLevel,
+            tMin,
+            tMax
+        }) ?? false;
 
-            const losBlocked = !losPolygon.contains(splitX, splitY);
-            if (losBlocked) blocked = true;
-        } else {
+        const wallBlocked = backend.testCollision(A, B, {
+            type: "sight",
+            mode: "all",
+            useThreshold: true,
+            level: fromLevel,
+            tMin,
+            tMax,
+            ...edgeExclusion
+        }) ?? false;
 
-            const surfaceBlocked = scene?.testSurfaceCollision?.(A, B, {
-                type: "sight",
-                mode: "any",
-                level: fromLevel,
-                tMin,
-                tMax
-            }) ?? false;
+        if (!isV14()) collisions = wallBlocked
 
-            const wallBlocked = backend.testCollision(A, B, {
-                type: "sight",
-                mode: "all",
-                useThreshold: true,
-                level: fromLevel,
-                tMin,
-                tMax
-            }) ?? false;
+        debugData.segment1 = {
+            tMin,
+            tMax,
+            surfaceBlocked,
+            wallBlocked
+        };
 
-            if (!isV14()) collisions = wallBlocked
-
-            debugData.segment1 = {
-                tMin,
-                tMax,
-                surfaceBlocked,
-                wallBlocked
-            };
-
-            if (surfaceBlocked || wallBlocked.length) blocked = true;
-        }
+        if (surfaceBlocked || wallBlocked.length) blocked = true;
     }
 
     // Segment 2: target level
@@ -252,7 +242,8 @@ function wallsBlock(aCorner, bCorner, ctx, losPolygon = null) {
             useThreshold: true,
             level: toLevel,
             tMin,
-            tMax
+            tMax,
+            ...edgeExclusion
         }) ?? false;
 
         debugData.segment2 = {
@@ -273,7 +264,7 @@ function wallsBlock(aCorner, bCorner, ctx, losPolygon = null) {
         );
     }
 
-    if (!isWallHeightModuleActive() || losPolygon) {
+    if (!isWallHeightModuleActive()) {
         return { blocked, A, B };
     }
 
@@ -610,15 +601,15 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options 
     const filteredTargetPoints = game.settings?.get?.(MODULE_ID, SETTING_KEYS.FILTERED_TARGET_POINTS) ?? "blocked";
     const ignoreFriendly = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.IGNORE_FRIENDLY);
 
-    const placeables = ctx.placeables ?? [];
-    const blockingTokens = placeables.filter(t =>
-        t.id !== attackerDoc?.id &&
-        t.id !== targetDoc?.id &&
-        (!ignoreFriendly || attackerDoc?.disposition !== t?.document?.disposition) &&
-        isBlockingCreatureToken(t)
+    const tokenDocs = ctx.scene?.tokens?.contents ?? [];
+    const blockingTokenDocs = tokenDocs.filter(td =>
+        td.id !== attackerDoc?.id &&
+        td.id !== targetDoc?.id &&
+        (!ignoreFriendly || attackerDoc?.disposition !== td?.disposition) &&
+        isBlockingCreatureToken(td)
     );
 
-    const boxes = new Map(blockingTokens.map(t => [t.id, buildCreaturePrism(t.document, ctx, debugTokenShapes)]));
+    const boxes = new Map(blockingTokenDocs.map(td => [td.id, buildCreaturePrism(td, ctx, debugTokenShapes)]));
 
     const attackerVisionSource = attackerDoc?.getVisionOrigin?.()?.elevation
         ?? (attackerDoc?.elevation ?? 0) + (getCreatureHeight(attackerDoc, ctx) * 0.5)
@@ -797,7 +788,6 @@ export function evaluateLOS(attackerDoc, targetDoc, ctx) {
 
     origin.elevation ??= attackerDoc?.elevation ?? 0;
     origin.level ??= attackerDoc?.level ?? ctx.level ?? null;
-    const losPolygon = attackerDoc?.object?.vision?.los ?? null;
 
     if (isWallHeightModuleActive()) origin.elevation = (attackerDoc?.elevation ?? 0) + getCreatureHeight(attackerDoc, ctx);
 
@@ -827,7 +817,7 @@ export function evaluateLOS(attackerDoc, targetDoc, ctx) {
     let hasLOS = false;
 
     for (const p of targetTestPoints) {
-        const wallResult = wallsBlock(origin, p, ctx, losPolygon);
+        const wallResult = wallsBlock(origin, p, ctx);
         targetLosPoints.push({ x: p.x, y: p.y, blocked: wallResult.blocked });
 
         if (!wallResult.blocked) {
@@ -843,15 +833,20 @@ export function evaluateLOS(attackerDoc, targetDoc, ctx) {
 }
 
 /**
- * Filter token test points against the token's constrained movement polygon.
+ * Constrain test points to the token's movement-accessible area.
  *
  * @param {TestPoint[]} points The points to constrain. Modified in place.
  * @param {TokenDocument} td The token document that defines the constrained area.
  * @returns {TestPoint[]} The constrained points array.
  */
+// Uses the native TokenDocument#_constrainTestPoints() where available (V14+); older cores (V13) fall back below.
 function getConstrainedTestPoints(points, td) {
-    const level = td.parent?.levels?.get(td?.level) ?? null;
-    const origin = isV14() ? td.getVisionOrigin() : td.getCenterPoint();
+    if (typeof td._constrainTestPoints === "function") {
+        td._constrainTestPoints(points, {});
+        return points;
+    }
+
+    const origin = td.getCenterPoint();
 
     if ((points.length === 1) && (points[0].x === origin.x) && (points[0].y === origin.y)) {
         return points;
@@ -859,7 +854,7 @@ function getConstrainedTestPoints(points, td) {
 
     const { width, height } = td.getSize();
     const boundingBox = new PIXI.Rectangle(td.x, td.y, width, height);
-    const polygon = foundry.canvas.geometry.ClockwiseSweepPolygon.create(origin, { type: "sight", level, boundingBox });
+    const polygon = foundry.canvas.geometry.ClockwiseSweepPolygon.create(origin, { type: "move", boundingBox });
     for (let i = points.length - 1; i >= 0; i--) {
         const { x, y } = points[i];
         if (polygon.contains(x, y)) continue;

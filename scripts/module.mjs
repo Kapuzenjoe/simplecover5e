@@ -2,7 +2,7 @@ import { FLAGS } from "./config/constants.config.mjs";
 import { registerSettings, getSceneControlButtons } from "./config/settings.config.mjs";
 import {
   ignoreCoverProperties,
-  clearCoverOnUpdateCombat,
+  clearCoverOnCombatTurnChange,
   clearCoverOnDeleteCombat,
   clearCoverOnMovement,
   onPreRollAttack,
@@ -10,7 +10,7 @@ import {
   onBuildAttackRollConfig,
   onBuildSavingThrowRollConfig
 } from "./handlers/cover.hooks.mjs";
-import { initQueries } from "./services/queries.service.mjs";
+import { initCoverStatusQueries } from "./services/queries.service.mjs";
 import { clearCoverDebug } from "./services/cover.debug.mjs";
 import { onHoverToken, onPreDeleteToken } from "./services/hover.service.mjs";
 import { initApi, readyApi } from "./utils/api.mjs";
@@ -20,7 +20,7 @@ import { onCreateToken } from "./services/cover.service.mjs";
 // === Init Phase ===
 Hooks.once("init", () => {
   registerSettings();
-  initQueries();
+  initCoverStatusQueries();
   ignoreCoverProperties();
   initApi();
 });
@@ -31,7 +31,7 @@ Hooks.on("getSceneControlButtons", getSceneControlButtons);
 
 // === Calc Cover Hooks ===
 for (const [hook, fn] of [
-  ["updateCombat", clearCoverOnUpdateCombat],
+  ["combatTurnChange", clearCoverOnCombatTurnChange],
   ["deleteCombat", clearCoverOnDeleteCombat],
   ["moveToken", clearCoverOnMovement],
   ["dnd5e.preRollAttack", onPreRollAttack],

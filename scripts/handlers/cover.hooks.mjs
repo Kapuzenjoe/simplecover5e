@@ -2,7 +2,7 @@ import { MODULE_ID, COVER, SETTING_KEYS } from "../config/constants.config.mjs";
 import { clearCoverStatusEffect, isMidiQol } from "../services/cover.service.mjs";
 import { getCover, getCoverForTargets, getIgnoreCover, setDialogNote } from "../utils/api.mjs";
 import { clearCoverDebug } from "../services/cover.debug.mjs";
-import { toggleCoverEffectViaGM } from "../services/queries.service.mjs";
+import { setCoverStatusViaGM } from "../services/queries.service.mjs";
 
 /**
  * Register the `ignoreCover` item property on DnD5e items.
@@ -17,6 +17,19 @@ export function ignoreCoverProperties() {
   CONFIG.DND5E.validProperties.weapon.add("ignoreCover");
   CONFIG.DND5E.validProperties.spell.add("ignoreCover");
   CONFIG.DND5E.validProperties.feat.add("ignoreCover");
+}
+
+/**
+ * Resolve a target's display name, respecting the Hide NPC Names module if active.
+ *
+ * @param {Actor5e} actor The target actor.
+ * @param {string} fallbackName The name to use when Hide NPC Names is inactive or has no replacement.
+ * @returns {string} The resolved display name.
+ */
+function getTargetDisplayName(actor, fallbackName) {
+  const isHideNPCNamesActive = game.modules?.get?.("hide-npc-names")?.active === true;
+  if (!isHideNPCNamesActive || !game?.hnn) return fallbackName;
+  return game.hnn.getReplacementInfo(actor)?.displayName ?? fallbackName;
 }
 
 /**
@@ -64,8 +77,7 @@ export function onPreRollAttack(config, dialog, message) {
 
     const coverHintsMode = game.settings?.get?.(MODULE_ID, SETTING_KEYS.COVER_HINTS) ?? "none";
 
-    const isHideNPCNamesActive = game.modules?.get?.("hide-npc-names")?.active === true;
-    const targetName = isHideNPCNamesActive && game?.hnn ? game.hnn.getReplacementInfo(targetActor).displayName : out.target?.name || "???"; 
+    const targetName = getTargetDisplayName(targetActor, out.target?.name || "???");
 
     if (coverHintsMode === "always" || (coverHintsMode === "conditional" && desiredCover !== "none")) {
       message.data.flags[MODULE_ID].push({
@@ -80,7 +92,7 @@ export function onPreRollAttack(config, dialog, message) {
       const coverPrefix = `${game.i18n.localize(COVER.I18N.LABEL_PREFIX_KEY)}`;
       const hint = game.i18n.format(
         COVER.I18N.HINT_KEYS.Attack[desiredCover],
-        { tokenName: out.target?.name || "???" }
+        { tokenName: targetName }
       );
 
       setDialogNote(dialog, {
@@ -147,13 +159,14 @@ export function onPreRollSavingThrow(config, dialog, message) {
   message.data.flags[MODULE_ID] = [];
 
   const coverHintsMode = game.settings?.get?.(MODULE_ID, SETTING_KEYS.COVER_HINTS) ?? "none";
+  const targetName = getTargetDisplayName(actor, targetToken.name);
 
   if (coverHintsMode === "always" || (coverHintsMode === "conditional" && desiredCover !== "none")) {
     message.data.flags[MODULE_ID].push({
       desiredCover,
       desiredBonus: desiredBonus === null ? "9999" : String(desiredBonus),
       targetId: targetToken.id,
-      targetName: targetToken.name,
+      targetName: targetName,
       targetActorUuid: actor.uuid,
       activityUuid: activity.uuid
     });
@@ -172,15 +185,16 @@ export function onPreRollSavingThrow(config, dialog, message) {
 }
 
 /**
- * Clear cover when combat turn or round data changes.
+ * Clear cover when the active combat turn changes.
  *
- * @function updateCombat
+ * @function combatTurnChange
  * @memberof hookEvents
- * @param {Combat} combat The combat encounter being updated.
- * @param {object} update The changed combat data.
+ * @param {Combat} combat The combat encounter whose turn changed.
+ * @param {Combatant|null} previous The previous combatant.
+ * @param {Combatant|null} current The current combatant.
  * @returns {Promise<void>} Resolves after any cover cleanup has finished.
  */
-export async function clearCoverOnUpdateCombat(combat, update) {
+export async function clearCoverOnCombatTurnChange(combat, previous, current) {
   try {
     if (game.settings.get(MODULE_ID, SETTING_KEYS.LIBRARY_MODE)) return;
     if (!game.users.activeGM?.isSelf) return;
@@ -192,7 +206,7 @@ export async function clearCoverOnUpdateCombat(combat, update) {
       clearCoverDebug();
     }
   } catch (err) {
-    console.warn(`[${MODULE_ID}] clear on update combat`, err);
+    console.warn(`[${MODULE_ID}] clear on combat turn change`, err);
   }
 }
 
@@ -332,14 +346,9 @@ function setCoverStatuses(actor, calcCover, calcBonus, activity) {
     ; ({ cover: desiredCover, bonus: desiredBonus } = getIgnoreCover(activity, customStatus));
   }
 
-  if (COVER.ORDER[calcCover] > COVER.ORDER[customStatus]) {
-    if (calcCover !== systemStatus) {
-      toggleCoverEffectViaGM(actor.uuid, COVER.IDS[calcCover], true);
-    }
-  } else {
-    if (systemStatus !== "none") {
-      toggleCoverEffectViaGM(actor.uuid, COVER.IDS[systemStatus], false);
-    }
+  const desiredSystemStatus = (COVER.ORDER[calcCover] > COVER.ORDER[customStatus]) ? calcCover : "none";
+  if (desiredSystemStatus !== systemStatus) {
+    setCoverStatusViaGM(actor.uuid, desiredSystemStatus);
   }
 
   return { desiredCover, desiredBonus }

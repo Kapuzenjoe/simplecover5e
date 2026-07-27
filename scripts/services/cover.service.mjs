@@ -63,16 +63,17 @@ export async function clearCoverStatusEffect(combat) {
   const scope = game.settings.get(MODULE_ID, SETTING_KEYS.COVER_SCOPE);
   const targets = resolveTokensForScope(combat, scope);
 
-  const ids = Object.values(COVER.IDS).filter(Boolean);
   const jobs = [];
 
   for (const { actor } of targets) {
     if (!actor) continue;
+    const effects = actor.appliedEffects ?? [];
 
-    for (const id of ids) {
+    for (const [level, effectId] of COVER.EFFECT_IDS) {
+      const statusId = COVER.IDS[level];
 
-      if (actor.statuses?.has?.(id)) {
-        jobs.push(actor.toggleStatusEffect(id));
+      if (actor.statuses?.has?.(statusId) && effects.some(e => e?.id === effectId)) {
+        jobs.push(actor.toggleStatusEffect(statusId));
       }
     }
   }
@@ -84,31 +85,46 @@ export async function clearCoverStatusEffect(combat) {
  * Determine whether a token should be treated as a blocking creature for cover and line-of-sight (LOS) occlusion.
  * Hidden, dead, ethereal, or non-visible creatures are ignored.
  *
- * @param {Token5e} token The token to evaluate.
+ * @param {TokenDocument|Token5e} token The token or token document to evaluate.
  * @returns {boolean} True if the token is considered blocking.
  */
 export function isBlockingCreatureToken(token) {
   if (!token) return false;
 
-  const doc = token.document;
+  const doc = token.document ?? token;
   if (!doc || doc.hidden) return false;
-  if (!token.visible) return false;
 
-  const actor = token.actor;
+  const actor = doc.actor ?? token.actor;
   if (!actor) return true;
 
   const statuses = actor?.statuses;
   if (!statuses) return true;
 
+  if (isDefeatedToken(token)) return false;
   if (statuses.has("ethereal")) return false;
-  if (statuses.has("dead")) return false;
   if (actor.system?.attributes?.hp?.max === 0) return false;
 
   if (game.modules?.get?.("Rideable")?.active) {
-    if (doc.flags?.Rideable?.RidersFlag?.length > 0) return false
+    if (doc.getFlag?.("Rideable", "RidersFlag")?.length > 0) return false;
   }
 
   return true;
+}
+
+/**
+ * Check whether a token document represents a defeated creature.
+ *
+ * @param {TokenDocument|Token5e} token The token or token document to evaluate.
+ * @returns {boolean} True if the token is marked as defeated.
+ */
+export function isDefeatedToken(token) {
+  if (!token) return false;
+
+  const doc = token.document ?? token;
+  if (!doc) return false;
+
+  return doc.hasStatusEffect(CONFIG.specialStatusEffects.DEFEATED)
+    || (doc.combatant?.isDefeated === true);
 }
 
 /**

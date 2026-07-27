@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.0.1
+
+This patch primarily addresses the Darkness cover bug for the V13 branch. While at it, a few smaller fixes from the V14-only builds were backported as well.
+
+- Fixed Darkness light sources incorrectly blocking cover and LoS checks (Darkness doesn't grant cover per the rules), including when the attacker itself was Blinded or standing in Darkness.
+- Fixed target test-point clipping checking sight-blocking walls instead of movement-blocking walls.
+- Improved 3D token distance calculation: elevation pairing now selects the closest vertical endpoints between the two token extents instead of testing all top/bottom combinations.
+- Fixed gridless edge-to-edge distance measurement so external token radius no longer reduce vertical distance when elevations differ.
+- Fixed cover status sometimes not being cleared when switching between cover levels manually in the roll dialog.
+- Fixed a timing issue when cover switched between cover effects that could cause console errors (#39).
+- Fixed the Ranged AoE cover suppression not applying to area spells with a range value of 1 (e.g. Meteor Swarm).
+- Fixed hidden NPC names not being respected consistently in attack cover hints.
+- Cover cleanup now targets the normal DnD5e cover effects more precisely, avoiding accidental cleanup of embedded/custom cover statuses from other Active Effects.
+- Blocking creature tokens are now resolved from the current scene document data instead of active canvas placeables. Hidden and defeated tokens are ignored using Foundry/DnD5e document state instead of hardcoded status assumptions.
+
 ## 2.0.0
 
 ### Breaking Changes

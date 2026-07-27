@@ -36,7 +36,6 @@
  * @property {number} insetAttackerPx The configured attacker inset in pixels.
  * @property {number} insetTargetPx The configured target inset in pixels.
  * @property {number} insetOccluderPx The configured occluder inset in pixels.
- * @property {Token[]} placeables Cached active-canvas placeables for this pass.
  * @property {object|string|null} level Cached active-canvas level for this pass.
  */
 

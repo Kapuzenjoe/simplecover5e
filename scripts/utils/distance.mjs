@@ -20,6 +20,23 @@ export function measureTokenDistance(sourceToken, targetToken) {
   const sourceHeight = getCreatureHeight(sourceDoc);
   const targetHeight = getCreatureHeight(targetDoc);
 
+  const sourceBottom = sourceDoc.elevation;
+  const sourceTop = sourceDoc.elevation + sourceHeight;
+  const targetBottom = targetDoc.elevation;
+  const targetTop = targetDoc.elevation + targetHeight;
+
+  let sourceElevation, targetElevation;
+  if ((sourceBottom <= targetTop) && (targetBottom <= sourceTop)) {
+    const shared = Math.max(sourceBottom, targetBottom);
+    sourceElevation = targetElevation = shared;
+  } else if (sourceBottom > targetTop) {
+    sourceElevation = sourceBottom;
+    targetElevation = targetTop;
+  } else {
+    sourceElevation = sourceTop;
+    targetElevation = targetBottom;
+  }
+
   let minDistance = Infinity;
 
   if (grid.isGridless && mode === "edgeEdge") {
@@ -30,38 +47,20 @@ export function measureTokenDistance(sourceToken, targetToken) {
     const sourceCenter = sourceDoc.getCenterPoint();
     const targetCenter = targetDoc.getCenterPoint();
 
-    const sourceCenters = [
-      { ...sourceCenter, elevation: sourceDoc.elevation + sourceHeight },
-      { ...sourceCenter }
-    ];
-
-    const targetCenters = [
-      { ...targetCenter, elevation: targetDoc.elevation + targetHeight },
-      { ...targetCenter }
-    ];
-
-    for (const s of sourceCenters) {
-      for (const t of targetCenters) {
-        const d = grid.measurePath([s, t]);
-        if (d.cost < minDistance) minDistance = d.cost;
-      }
-    }
-
     const externalAdjust = (sourceRadius + targetRadius) / distancePixels;
-    minDistance = minDistance - externalAdjust;
+    const horizontal = grid.measurePath([
+      { x: sourceCenter.x, y: sourceCenter.y },
+      { x: targetCenter.x, y: targetCenter.y }
+    ]).cost;
+    const horizontalEdge = Math.max(0, horizontal - externalAdjust);
+    const vertical = Math.abs(sourceElevation - targetElevation);
+    minDistance = Math.hypot(horizontalEdge, vertical);
   }
   else {
-    let sourceCenters = isV14() ? sourceDoc.getContainmentTestPoints() : getTokenSampleCenters(sourceDoc);
-    let targetCenters = isV14() ? targetDoc.getContainmentTestPoints() : getTokenSampleCenters(targetDoc);
-
-    sourceCenters = sourceCenters.flatMap(point => [
-      { ...point, elevation: sourceDoc.elevation + sourceHeight },
-      { ...point, elevation: sourceDoc.elevation}
-    ]);
-    targetCenters = targetCenters.flatMap(point => [
-      { ...point, elevation: targetDoc.elevation + targetHeight },
-      { ...point, elevation: targetDoc.elevation }
-    ]);
+    const sourceCenters = (isV14() ? sourceDoc.getContainmentTestPoints() : getTokenSampleCenters(sourceDoc))
+      .map(point => ({ ...point, elevation: sourceElevation }));
+    const targetCenters = (isV14() ? targetDoc.getContainmentTestPoints() : getTokenSampleCenters(targetDoc))
+      .map(point => ({ ...point, elevation: targetElevation }));
 
     for (const s of sourceCenters) {
       for (const t of targetCenters) {
@@ -71,6 +70,5 @@ export function measureTokenDistance(sourceToken, targetToken) {
     }
   }
 
-  minDistance = Math.round(minDistance * 100) / 100 || 0;
-  return minDistance < 0 ? 0 : minDistance;
+  return minDistance === Infinity ? 0 : Math.max(0, minDistance.toNearest(0.01));
 }

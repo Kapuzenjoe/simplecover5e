@@ -220,12 +220,10 @@ export function ignoresCover(activity, cover = "none", targetActor = null) {
       if (templateType !== "") effectiveCover = "none";
     }
     else if (ignoreDistanceAoe) {
-      const rangeValue = activity?.range?.value ?? 0;
       const rangeUnits = activity?.range?.units ?? "";
 
       if (
-        (rangeValue > 1)
-        && !EXCLUDED_UNITS.has(rangeUnits)
+        !EXCLUDED_UNITS.has(rangeUnits)
         && !EXCLUDED_TEMPLATE_TYPES.has(templateType)
       ) {
         effectiveCover = "none";
