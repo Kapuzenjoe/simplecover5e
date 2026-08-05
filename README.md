@@ -42,20 +42,9 @@ The functions and usage of Library Mode can be found in the Wiki: [API-(Library-
 
 - Official integration is available with **Midi-QOL v13.0.30+**.
 
-### Ready Set Roll 5e
+### RSReforged (the successor to Ready Set Roll)
 
-Simple Cover 5e is **partially compatible** with **Ready Set Roll 5e**:
-
-- When the **chat log is not open**, Ready Set Roll may internally trigger certain rolls twice or in an unexpected order. This can lead to:
-  - Cover status effects being toggled multiple times on temporary `ActorDelta` documents, e.g.  
-    `_id [dnd5ecoverHalf00] already exists within the parent collection: ActorDelta[…] effects`
-  - Harmless console errors from debug drawings (if enabled), e.g.  
-    `Drawing "<id>" does not exist!`
-- These messages only appear in the GM’s browser console and do **not** crash the game.
-- Cover calculation for saving throws (save DC adjustment) is correct.
-- Attack rolls:
-  - Mechanics (hit / miss) work for **single-target** attacks.
-  - The AC values shown under **Targets** on the Ready Set Roll card can sometimes be incorrect, because Simple Cover 5e mutates the dnd5e `messageFlags` during the attack roll, while Ready Set Roll appears to use its own data built earlier in the activity workflow.
+- Compatible with **RSReforged v4.13.4+**.
 
 ### Wall Height
 
