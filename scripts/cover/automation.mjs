@@ -1,6 +1,10 @@
+/**
+ * @import { CoverLevel } from "../_types.mjs";
+ */
+
 import { applyDialogCoverOverride } from "../applications/roll-configuration-dialog.mjs";
 import { onPreCreateToken } from "../canvas/token-shape.mjs";
-import { MODULE_ID, COVER, SETTING_KEYS } from "../config.mjs";
+import { COVER_TARGETS_PATH, MODULE_ID, COVER, SETTING_KEYS } from "../config.mjs";
 import { isMidiAutomation } from "../integrations/midi-qol.mjs";
 
 import { getCover, getCoverForTargets } from "./api.mjs";
@@ -9,7 +13,6 @@ import { clearSystemCoverEffects, setCoverStatusViaGM } from "./status.mjs";
 import { isDefeatedToken } from "./token.mjs";
 
 const EXCLUDED_UNITS = new Set(["self", "touch", "special"]);
-const COVER_TARGETS_PATH = `data.flags.${MODULE_ID}.targets`;
 
 /**
  * Register cover automation hooks for the native dnd5e workflow.
@@ -35,16 +38,16 @@ export function initCoverHooks() {
  * Adjust the displayed AC for a specific target in the pending dnd5e roll message.
  *
  * @param {BasicRollMessageConfiguration} message The pending roll message configuration.
- * @param {string} targetUuid The actor UUID to match against `flags.dnd5e.targets`.
+ * @param {string} targetUuid The actor UUID to match against the message's stored targets.
  * @param {number|null} newAC The new AC value.
  * @returns {void}
  */
 function adjustMessageTargetAC(message, targetUuid, newAC) {
-  const targets = message?.data?.flags?.dnd5e?.targets;
+  const targets = message?.data?.system?.targets ?? message?.data?.flags?.dnd5e?.targets;
   if ( !Array.isArray(targets) ) return;
 
   for ( const t of targets ) {
-    const uuid = t?.uuid ?? t?.tokenUuid ?? null;
+    const uuid = t?.actor ?? t?.uuid ?? t?.tokenUuid ?? null;
     if ( !uuid || (uuid !== targetUuid) ) continue;
     t.ac = newAC;
     break;
@@ -179,7 +182,7 @@ function onBuildAttackRollConfig(app, config, formData, index) {
   if ( !rollAutomationEnabled() ) return;
 
   const changes = applyDialogCoverOverride(app, formData);
-  const targets = app.message?.data?.flags?.dnd5e?.targets ?? [];
+  const targets = app.message?.data?.system?.targets ?? app.message?.data?.flags?.dnd5e?.targets ?? [];
 
   for ( const change of changes ) {
     setAttackCoverBonus({
@@ -315,7 +318,7 @@ function onPreRollSavingThrow(config, dialog, message) {
   const targetToken = getSpeakerToken(message?.data?.speaker ?? ChatMessage.getSpeaker({ actor }));
   if ( !targetToken ) return;
 
-  const srcMsg = resolveSourceMessage(config);
+  const srcMsg = resolveSourceMessage(config, message);
   const activity = srcMsg?.getAssociatedActivity?.() ?? null;
   const sourceActor = srcMsg?.getAssociatedActor?.() ?? null;
 
@@ -411,11 +414,12 @@ function resolveAoEOrigin(activity, targetToken) {
  * Resolve the source chat message for a saving throw workflow.
  *
  * @param {BasicRollProcessConfiguration} config The pending roll process configuration.
+ * @param {BasicRollMessageConfiguration} message The pending roll message configuration.
  * @returns {ChatMessage5e|null} The resolved source chat message, if any.
  */
-function resolveSourceMessage(config) {
+function resolveSourceMessage(config, message) {
   const messageId =
-    config?.sourceMessageId
+    message?.data?.system?.origin
     ?? config?.event?.target?.closest?.("[data-message-id]")?.dataset.messageId;
 
   const baseMessage = messageId ? game.messages.get(messageId) : null;
@@ -471,7 +475,7 @@ function setAttackCoverBonus({ desiredBonus, targetActor, singleTarget = true, c
  *
  * @param {BasicRollMessageConfiguration} message The pending roll message configuration.
  * @param {Actor5e} actor The target actor.
- * @param {("none"|"half"|"threeQuarters"|"total")} cover The resolved cover level.
+ * @param {CoverLevel} cover The resolved cover level.
  * @returns {void}
  */
 function setCoverTarget(message, actor, cover) {
@@ -499,7 +503,7 @@ function setCoverTarget(message, actor, cover) {
  *
  * @param {D20RollConfiguration} rollConfig The roll configuration to update.
  * @param {0|2|5|null} desiredBonus The resolved cover bonus.
- * @param {("none"|"half"|"threeQuarters"|"total")} desiredCover The resolved cover level.
+ * @param {CoverLevel} desiredCover The resolved cover level.
  * @returns {void}
  */
 function setSaveCoverBonus(rollConfig, desiredBonus, desiredCover) {

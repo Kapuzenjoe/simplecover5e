@@ -367,6 +367,60 @@ function buildTokenCornersForCenter(center, ctx, td, inset) {
 /* -------------------------------------------- */
 
 /**
+ * Compute the ray parameter at which sight testing switches from the source Level's walls to the target
+ * Level's walls, matching Foundry's own multi-Level sight-splitting behavior.
+ *
+ * @param {TestPoint} A The segment start point.
+ * @param {TestPoint} B The segment end point.
+ * @param {Level|null} fromLevel The Level containing A.
+ * @param {Level|null} toLevel The Level containing B.
+ * @returns {number} The t-value (0-1) at which the source segment ends and the target segment begins.
+ */
+// Mirrors Foundry's private DetectionMode#getIntermediateTValue — no public equivalent exists.
+function getLevelSplitT(A, B, fromLevel, toLevel) {
+  if ( !fromLevel || !toLevel || (fromLevel === toLevel) ) return 1;
+
+  const delta = (B.elevation ?? 0) - (A.elevation ?? 0);
+  let t00; let t01; let t10; let t11;
+
+  if ( delta !== 0 ) {
+    t00 = (fromLevel.elevation.bottom - A.elevation) / delta;
+    t01 = (fromLevel.elevation.top - A.elevation) / delta;
+    if ( t00 > t01 ) [t00, t01] = [t01, t00];
+
+    t10 = (toLevel.elevation.bottom - A.elevation) / delta;
+    t11 = (toLevel.elevation.top - A.elevation) / delta;
+    if ( t10 > t11 ) [t10, t11] = [t11, t10];
+  } else {
+    t00 = fromLevel.elevation.bottom <= A.elevation ? -Infinity : Infinity;
+    t01 = fromLevel.elevation.top >= A.elevation ? Infinity : -Infinity;
+    t10 = toLevel.elevation.bottom <= A.elevation ? -Infinity : Infinity;
+    t11 = toLevel.elevation.top >= A.elevation ? Infinity : -Infinity;
+  }
+
+  // The ray never reaches the target Level: test the source Level only.
+  if ( (t10 > 1) || (t11 < 0) ) return 1;
+
+  // The ray is never within the source Level: test the target Level only.
+  if ( (t00 > 1) || (t01 < 0) ) return 0;
+
+  // The ray leaves the target Level before it leaves the source Level: test the source Level only.
+  t01 = Math.min(t01, 1);
+  t11 = Math.min(t11, 1);
+  if ( t01 > t11 ) return 1;
+
+  // The ray enters the target Level before it enters the source Level: test the target Level only.
+  t00 = Math.max(t00, 0);
+  t10 = Math.max(t10, 0);
+  if ( t00 > t10 ) return 0;
+
+  // Otherwise split where the ray leaves the source Level and enters the target Level.
+  return Math.max(t01, t10);
+}
+
+/* -------------------------------------------- */
+
+/**
  * Convert a PIXI.Polygon's flat point list into an array of point objects.
  *
  * @param {PIXI.Polygon} polygon The polygon to read points from.
@@ -414,60 +468,6 @@ function segIntersectsPolygonPrism(p, q, prism) {
     if ( foundry.utils.lineSegmentIntersection(a, b, edgeA, edgeB) ) return true;
   }
   return false;
-}
-
-/* -------------------------------------------- */
-
-/**
- * Compute the ray parameter at which sight testing switches from the source Level's walls to the target
- * Level's walls, matching Foundry's own multi-Level sight-splitting behavior.
- *
- * @param {TestPoint} A The segment start point.
- * @param {TestPoint} B The segment end point.
- * @param {Level|null} fromLevel The Level containing A.
- * @param {Level|null} toLevel The Level containing B.
- * @returns {number} The t-value (0-1) at which the source segment ends and the target segment begins.
- */
-// Mirrors Foundry's private DetectionMode#getIntermediateTValue — no public equivalent exists.
-function getLevelSplitT(A, B, fromLevel, toLevel) {
-  if ( !fromLevel || !toLevel || (fromLevel === toLevel) ) return 1;
-
-  const delta = (B.elevation ?? 0) - (A.elevation ?? 0);
-  let t00, t01, t10, t11;
-
-  if ( delta !== 0 ) {
-    t00 = (fromLevel.elevation.bottom - A.elevation) / delta;
-    t01 = (fromLevel.elevation.top - A.elevation) / delta;
-    if ( t00 > t01 ) [t00, t01] = [t01, t00];
-
-    t10 = (toLevel.elevation.bottom - A.elevation) / delta;
-    t11 = (toLevel.elevation.top - A.elevation) / delta;
-    if ( t10 > t11 ) [t10, t11] = [t11, t10];
-  } else {
-    t00 = fromLevel.elevation.bottom <= A.elevation ? -Infinity : Infinity;
-    t01 = fromLevel.elevation.top >= A.elevation ? Infinity : -Infinity;
-    t10 = toLevel.elevation.bottom <= A.elevation ? -Infinity : Infinity;
-    t11 = toLevel.elevation.top >= A.elevation ? Infinity : -Infinity;
-  }
-
-  // The ray never reaches the target Level: test the source Level only.
-  if ( (t10 > 1) || (t11 < 0) ) return 1;
-
-  // The ray is never within the source Level: test the target Level only.
-  if ( (t00 > 1) || (t01 < 0) ) return 0;
-
-  // The ray leaves the target Level before it leaves the source Level: test the source Level only.
-  t01 = Math.min(t01, 1);
-  t11 = Math.min(t11, 1);
-  if ( t01 > t11 ) return 1;
-
-  // The ray enters the target Level before it enters the source Level: test the target Level only.
-  t00 = Math.max(t00, 0);
-  t10 = Math.max(t10, 0);
-  if ( t00 > t10 ) return 0;
-
-  // Otherwise split where the ray leaves the source Level and enters the target Level.
-  return Math.max(t01, t10);
 }
 
 /* -------------------------------------------- */

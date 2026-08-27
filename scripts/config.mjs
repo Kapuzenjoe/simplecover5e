@@ -9,6 +9,12 @@
 export const MODULE_ID = "simplecover5e";
 
 /**
+ * Message data path where per-target cover state is stored for the roll dialog and GM chat summary.
+ * @type {string}
+ */
+export const COVER_TARGETS_PATH = `data.flags.${MODULE_ID}.targets`;
+
+/**
  * Central cover constants.
  *
  * - IDS: maps cover levels to system effect ids (or null for none).
