@@ -4,10 +4,14 @@
     "lint:fix": "eslint . --fix"
   },
   "devDependencies": {
-    "@bytestruct/foundry-eslint": "^1.0.2",
-    "@foundryvtt/foundryvtt-cli": "3.0.3",
-    "eslint": "10.5.0",
+    "@stylistic/eslint-plugin": "5.10.0",
+    "@foundryvtt/foundryvtt-cli": "3.0.4",
+    "eslint": "10.9.1",
+    "eslint-plugin-jsdoc": "64.2.1",
     "fancy-log": "2.0.0",
-    "globals": "17.6.0"
+    "globals": "17.11.0"
+  },
+  "allowScripts": {
+    "classic-level@3.0.0": true
   }
 }

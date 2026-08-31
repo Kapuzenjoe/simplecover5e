@@ -49,7 +49,7 @@ const parseFlagValue = value => {
     return JSON.parse(
       trimmed.replace(/([{,]\s*)([A-Za-z_]\w*)(\s*:)/g, '$1"$2"$3')
     );
-  } catch {
+  } catch{
     return value;
   }
 };
