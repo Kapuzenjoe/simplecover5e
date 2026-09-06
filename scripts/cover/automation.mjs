@@ -3,12 +3,13 @@
  */
 
 import { applyDialogCoverOverride } from "../applications/roll-configuration-dialog.mjs";
+import { clearCoverDebug } from "../canvas/debug.mjs";
 import { onPreCreateToken } from "../canvas/token-shape.mjs";
 import { COVER_TARGETS_PATH, MODULE_ID, COVER, SETTING_KEYS } from "../config.mjs";
 import { isMidiAutomation } from "../integrations/midi-qol.mjs";
+import { log } from "../utils.mjs";
 
 import { getCover, getCoverForTargets } from "./api.mjs";
-import { clearCoverDebug } from "./debug.mjs";
 import { clearSystemCoverEffects, setCoverStatusViaGM } from "./status.mjs";
 import { isDefeatedToken } from "./token.mjs";
 
@@ -16,7 +17,6 @@ const EXCLUDED_UNITS = new Set(["self", "touch", "special"]);
 
 /**
  * Register cover automation hooks for the native dnd5e workflow.
- *
  * @returns {void}
  */
 export function initCoverHooks() {
@@ -36,7 +36,6 @@ export function initCoverHooks() {
 
 /**
  * Adjust the displayed AC for a specific target in the pending dnd5e roll message.
- *
  * @param {BasicRollMessageConfiguration} message The pending roll message configuration.
  * @param {string} targetUuid The actor UUID to match against the message's stored targets.
  * @param {number|null} newAC The new AC value.
@@ -58,9 +57,6 @@ function adjustMessageTargetAC(message, targetUuid, newAC) {
 
 /**
  * Clear cover when the active combat turn changes.
- *
- * @function combatTurnChange
- * @memberof hookEvents
  * @param {Combat} combat The combat encounter whose turn changed.
  * @param {Combatant|null} previous The previous combatant.
  * @param {Combatant|null} current The current combatant.
@@ -77,8 +73,8 @@ async function clearCoverOnCombatTurnChange(combat, previous, current) {
     if ( game.settings.get(MODULE_ID, SETTING_KEYS.DEBUG) ) {
       clearCoverDebug();
     }
-  } catch ( err ) {
-    console.warn(`[${MODULE_ID}] clear on combat turn change`, err);
+  } catch (err) {
+    log("clear on combat turn change", { extras: [err] });
   }
 }
 
@@ -86,9 +82,6 @@ async function clearCoverOnCombatTurnChange(combat, previous, current) {
 
 /**
  * Clear cover when a combat encounter is deleted.
- *
- * @function deleteCombat
- * @memberof hookEvents
  * @param {Combat} combat The combat encounter being deleted.
  * @returns {Promise<void>} Resolves after any cover cleanup has finished.
  */
@@ -103,8 +96,8 @@ async function clearCoverOnDeleteCombat(combat) {
     if ( game.settings.get(MODULE_ID, SETTING_KEYS.DEBUG) ) {
       clearCoverDebug();
     }
-  } catch ( err ) {
-    console.warn(`[${MODULE_ID}] clear on delete combat`, err);
+  } catch (err) {
+    log("clear on delete combat", { extras: [err] });
   }
 }
 
@@ -112,9 +105,6 @@ async function clearCoverOnDeleteCombat(combat) {
 
 /**
  * Clear cover after a token movement segment resolves during active combat.
- *
- * @function moveToken
- * @memberof hookEvents
  * @param {TokenDocument} token The token document that moved.
  * @returns {Promise<void>} Resolves after any cover cleanup has finished.
  */
@@ -130,8 +120,8 @@ async function clearCoverOnMovement(token) {
     if ( game.settings.get(MODULE_ID, SETTING_KEYS.DEBUG) ) {
       clearCoverDebug();
     }
-  } catch ( err ) {
-    console.warn(`[${MODULE_ID}] clear on token movement`, err);
+  } catch (err) {
+    log("clear on token movement", { extras: [err] });
   }
 }
 
@@ -139,21 +129,21 @@ async function clearCoverOnMovement(token) {
 
 /**
  * Resolve a token placeable from chat speaker data.
- *
+ * @see Foundry-Core — ChatMessage#getSpeakerActor()
  * @param {object} speaker The chat speaker data.
  * @returns {Token5e|null} The resolved token placeable, if available.
  */
 function getSpeakerToken(speaker) {
   if ( !speaker?.scene || !speaker?.token ) return null;
   const scene = game.scenes.get(speaker.scene);
-  return scene?.tokens.get(speaker.token)?.object ?? null;
+  const token = scene?.tokens.get(speaker.token);
+  return token?.object ?? null;
 }
 
 /* -------------------------------------------- */
 
 /**
  * Register the `ignoreCover` item property on DnD5e items.
- *
  * @returns {void}
  */
 function ignoreCoverProperties() {
@@ -169,9 +159,6 @@ function ignoreCoverProperties() {
 
 /**
  * Update attack roll configuration when the cover selection changes in the roll dialog.
- *
- * @function dnd5e.buildAttackRollConfig
- * @memberof hookEvents
  * @param {RollConfigurationDialog} app The roll configuration dialog.
  * @param {BasicRollConfiguration} config The roll configuration data being updated.
  * @param {FormDataExtended} [formData] Form data entered into the rolling prompt.
@@ -200,9 +187,6 @@ function onBuildAttackRollConfig(app, config, formData, index) {
 
 /**
  * Update saving throw roll configuration when the cover selection changes in the roll dialog.
- *
- * @function dnd5e.buildSavingThrowRollConfig
- * @memberof hookEvents
  * @param {RollConfigurationDialog} app The roll configuration dialog.
  * @param {BasicRollConfiguration} config The roll configuration data being updated.
  * @param {FormDataExtended} [formData] Form data entered into the rolling prompt.
@@ -221,9 +205,6 @@ function onBuildSavingThrowRollConfig(app, config, formData, index) {
 
 /**
  * Block Dexterity saving throws when Total Cover prevents the roll.
- *
- * @function dnd5e.postSavingThrowRollConfiguration
- * @memberof hookEvents
  * @param {BasicRoll[]} rolls Rolls that have been constructed but not evaluated.
  * @param {BasicRollProcessConfiguration} config The pending roll process configuration.
  * @param {BasicRollDialogConfiguration} dialog The pending roll dialog configuration.
@@ -237,7 +218,7 @@ function onPostSavingThrowRollConfiguration(rolls, config, dialog, message) {
 
   if ( !isTotalCoverSave || !rollAutomationEnabled() ) return;
 
-  ui.notifications.info(game.i18n.localize(COVER.I18N.HINT_KEYS.Save.total));
+  ui.notifications.info(game.i18n.localize(COVER.I18N.HINT_KEYS.save.total));
   return false;
 }
 
@@ -245,9 +226,6 @@ function onPostSavingThrowRollConfiguration(rolls, config, dialog, message) {
 
 /**
  * Apply cover adjustments before an attack roll is built.
- *
- * @function dnd5e.preRollAttack
- * @memberof hookEvents
  * @param {BasicRollProcessConfiguration} config The pending roll process configuration.
  * @param {BasicRollDialogConfiguration} dialog The pending roll dialog configuration.
  * @param {BasicRollMessageConfiguration} message The pending roll message configuration.
@@ -299,9 +277,6 @@ function onPreRollAttack(config, dialog, message) {
 
 /**
  * Apply cover adjustments before a dexterity saving throw roll is built.
- *
- * @function dnd5e.preRollSavingThrow
- * @memberof hookEvents
  * @param {BasicRollProcessConfiguration} config The pending roll process configuration.
  * @param {BasicRollDialogConfiguration} dialog The pending roll dialog configuration.
  * @param {BasicRollMessageConfiguration} message The pending roll message configuration.
@@ -380,7 +355,6 @@ function onPreRollSavingThrow(config, dialog, message) {
 
 /**
  * Resolve the AoE origin position from a placed template region for a saving throw.
- *
  * @param {Activity5e} activity The activity triggering the saving throw.
  * @param {Token5e} targetToken The token making the saving throw.
  * @returns {{ x: number, y: number, elevation: number, level: string|null }|null} The AoE origin
@@ -412,7 +386,6 @@ function resolveAoEOrigin(activity, targetToken) {
 
 /**
  * Resolve the source chat message for a saving throw workflow.
- *
  * @param {BasicRollProcessConfiguration} config The pending roll process configuration.
  * @param {BasicRollMessageConfiguration} message The pending roll message configuration.
  * @returns {ChatMessage5e|null} The resolved source chat message, if any.
@@ -430,7 +403,6 @@ function resolveSourceMessage(config, message) {
 
 /**
  * Test whether the native roll automation should run for the current workflow.
- *
  * @param {Combat|null} [combat=game.combats.active] The combat context for combat-only automation.
  * @returns {boolean} True when cover automation may mutate the roll workflow.
  */
@@ -444,7 +416,6 @@ function rollAutomationEnabled(combat=game.combats?.active) {
 
 /**
  * Apply the resolved cover bonus to the pending attack roll and message target data.
- *
  * @param {object} options The values used to update the pending roll.
  * @param {0|2|5|null} options.desiredBonus The resolved cover bonus.
  * @param {Actor5e} options.targetActor The targeted actor.
@@ -472,7 +443,6 @@ function setAttackCoverBonus({ desiredBonus, targetActor, singleTarget = true, c
 
 /**
  * Store cover state for the roll dialog and optional GM chat summary.
- *
  * @param {BasicRollMessageConfiguration} message The pending roll message configuration.
  * @param {Actor5e} actor The target actor.
  * @param {CoverLevel} cover The resolved cover level.
@@ -500,7 +470,6 @@ function setCoverTarget(message, actor, cover) {
 
 /**
  * Apply the resolved cover bonus to a dexterity saving throw roll configuration.
- *
  * @param {D20RollConfiguration} rollConfig The roll configuration to update.
  * @param {0|2|5|null} desiredBonus The resolved cover bonus.
  * @param {CoverLevel} desiredCover The resolved cover level.

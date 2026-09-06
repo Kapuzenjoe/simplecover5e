@@ -1,12 +1,11 @@
-import { SimpleCoverAutomationConfig } from "./applications/automation-settings.mjs";
-import { SimpleCoverVariantConfig } from "./applications/variant-rules-settings.mjs";
+import SimpleCoverAutomationSettingsConfig from "./applications/automation-settings.mjs";
+import SimpleCoverVariantRulesSettingsConfig from "./applications/variant-rules-settings.mjs";
+import { clearCoverDebug } from "./canvas/debug.mjs";
 import { MODULE_ID, SETTING_KEYS } from "./config.mjs";
-import { clearCoverDebug } from "./cover/debug.mjs";
 import { clearSystemCoverEffects } from "./cover/status.mjs";
 
 /**
  * Clear cover debug graphics when debug rendering is disabled.
- *
  * @param {boolean} value The new debug setting value.
  * @returns {void}
  */
@@ -367,25 +366,21 @@ const SETTINGS = [
 
 /**
  * Initialize module settings and setting-related hooks.
- *
  * @returns {void}
  */
 export function initSettings() {
   registerSettings();
-  Hooks.on("getSceneControlButtons", getSceneControlButtons);
+  Hooks.on("getSceneControlButtons", onGetSceneControlButtons);
 }
 
 /* -------------------------------------------- */
 
 /**
  * Add the module tool to the Token controls for GMs.
- *
- * @function getSceneControlButtons
- * @memberof hookEvents
  * @param {Record<string, SceneControl>} controls The current scene control configuration.
  * @returns {void}
  */
-function getSceneControlButtons(controls) {
+function onGetSceneControlButtons(controls) {
   if ( !game.user.isGM ) return;
   controls.tokens.tools[MODULE_ID] = {
     button: true,
@@ -400,7 +395,6 @@ function getSceneControlButtons(controls) {
 
 /**
  * Register all module settings and configuration menus.
- *
  * @returns {void}
  */
 function registerSettings() {
@@ -414,15 +408,15 @@ function registerSettings() {
     label: "SIMPLE_COVER_5E.Settings.VariantMenu.Label",
     name: "SIMPLE_COVER_5E.Settings.VariantMenu.Name",
     restricted: true,
-    type: SimpleCoverVariantConfig
+    type: SimpleCoverVariantRulesSettingsConfig
   });
 
-  game.settings.registerMenu(MODULE_ID, "AutomationMenu", {
+  game.settings.registerMenu(MODULE_ID, "automationMenu", {
     hint: "SIMPLE_COVER_5E.Settings.AutomationMenu.Hint",
     icon: "fa-solid fa-cogs",
     label: "SIMPLE_COVER_5E.Settings.AutomationMenu.Label",
     name: "SIMPLE_COVER_5E.Settings.AutomationMenu.Name",
     restricted: true,
-    type: SimpleCoverAutomationConfig
+    type: SimpleCoverAutomationSettingsConfig
   });
 }

@@ -2,7 +2,6 @@ import { MODULE_ID, SETTING_KEYS } from "../config.mjs";
 
 /**
  * Update existing token shapes on gridless scenes to match the configured setting.
- *
  * @param {object} [options] Additional update options.
  * @param {Scene|null} [options.scene=null] A specific scene to update, or null for all scenes.
  * @returns {Promise<number>} The number of updated tokens.
@@ -36,9 +35,6 @@ export async function changeTokenShapes({ scene = null }={}) {
 
 /**
  * Set a newly created token with the desired shape on a gridless scene.
- *
- * @function preCreateToken
- * @memberof hookEvents
  * @param {TokenDocument5e} td The token document being created.
  * @param {object} data The source data used to create the token.
  * @param {object} options Additional workflow options.

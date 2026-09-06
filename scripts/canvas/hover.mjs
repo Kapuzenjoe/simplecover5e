@@ -5,7 +5,6 @@ import { getTokenTokenDistance } from "./distance.mjs";
 
 /**
  * Register hooks used by the token hover cover display.
- *
  * @returns {void}
  */
 export function initHoverHooks() {
@@ -18,12 +17,10 @@ export function initHoverHooks() {
 /**
  * Update the hover UI for a token based on the single controlled token.
  * The output is client-side only and controlled by the hover setting.
- *
- * @function hoverToken
- * @memberof hookEvents
+ * @see Foundry-Core — TokenRuler#_getWaypointLabelContext()
  * @param {Token5e} token The hovered token.
  * @param {boolean} hoverState True when hover starts, or false when hover ends.
- * @returns {void}
+ * @returns {Promise<void>} Resolves after the hover decorations have been updated.
  */
 async function onHoverToken(token, hoverState) {
   if ( !token ) return;
@@ -180,9 +177,6 @@ async function onHoverToken(token, hoverState) {
 
 /**
  * Remove hover decorations before a token is deleted.
- *
- * @function preDeleteToken
- * @memberof hookEvents
  * @param {TokenDocument5e} td The token document being deleted.
  * @param {object} options Additional hook options.
  * @param {string} userId The ID of the user who initiated the deletion.
@@ -196,7 +190,6 @@ function onPreDeleteToken(td, options, userId) {
 
 /**
  * Remove any hover label elements previously attached to a token.
- *
  * @param {Token5e} token The token to clean up.
  * @returns {void}
  */

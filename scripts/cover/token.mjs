@@ -8,7 +8,6 @@ import { hasRideableRiders } from "../integrations/rideable.mjs";
 /**
  * Scale an elevation value by the module's prone mode for a token.
  * Returns the elevation unchanged when the token is not prone or prone mode is "none".
- *
  * @param {TokenDocument} tokenDoc The token document to check.
  * @param {number} elevation The elevation (or height) value to scale.
  * @returns {number} The scaled elevation.
@@ -31,8 +30,7 @@ export function applyProneMode(tokenDoc, elevation) {
 
 /**
  * Get the creature height in grid distance units for a token document.
- *
- * @param {TokenDocument|Position} td The token document or a generic position.
+ * @param {TokenDocument5e|Position} td The token document or a generic position.
  * @returns {number} The creature height in grid distance units, or 0.
  */
 export function getCreatureHeight(td) {
@@ -47,8 +45,7 @@ export function getCreatureHeight(td) {
 
 /**
  * Resolve the external token radius in pixels from document data.
- *
- * @param {Token|TokenDocument|Position} token The token, token document, or generic position.
+ * @param {Token5e|TokenDocument5e|Position} token The token, token document, or generic position.
  * @returns {number|null} The external radius in pixels, or null if it cannot be determined.
  */
 export function getTokenExternalRadius(token) {
@@ -67,7 +64,6 @@ export function getTokenExternalRadius(token) {
 /**
  * Determine whether a token should be treated as a blocking creature for cover and line-of-sight (LOS) occlusion.
  * Hidden, dead, or ethereal creatures are ignored.
- *
  * @param {Token5e|TokenDocument5e} token The token or token document to evaluate.
  * @returns {boolean} True if the token is considered blocking.
  */
@@ -94,8 +90,7 @@ export function isBlockingCreatureToken(token) {
 
 /**
  * Check whether a token document represents a defeated creature.
- *
- * @param {TokenDocument|Token} token The token or token document to evaluate.
+ * @param {TokenDocument5e|Token5e} token The token or token document to evaluate.
  * @returns {boolean} True if the token is marked as defeated.
  */
 export function isDefeatedToken(token) {
@@ -112,8 +107,7 @@ export function isDefeatedToken(token) {
 
 /**
  * Check whether a token uses an ellipse shape.
- *
- * @param {TokenDocument|Position} tokenDoc The token document or generic position to evaluate.
+ * @param {TokenDocument5e|Position} tokenDoc The token document or generic position to evaluate.
  * @returns {boolean} True if the token uses an ellipse shape.
  */
 export function isEllipse(tokenDoc) {

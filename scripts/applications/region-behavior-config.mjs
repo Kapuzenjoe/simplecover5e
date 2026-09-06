@@ -1,8 +1,8 @@
-import CoverObstacleRegionBehaviorType from "../cover/region-behavior.mjs";
+import CoverObstacleRegionBehaviorType from "../data/cover-obstacle.mjs";
+import { COVER_OBSTACLE_TYPE } from "../config.mjs";
 
 /**
  * Config sheet for the Cover Obstacle region behavior.
- *
  * @extends {foundry.applications.sheets.RegionBehaviorConfig}
  */
 export default class CoverObstacleRegionBehaviorConfig extends foundry.applications.sheets.RegionBehaviorConfig {
@@ -49,14 +49,19 @@ export default class CoverObstacleRegionBehaviorConfig extends foundry.applicati
  * @returns {void}
  */
 export function initCoverObstacleRegionBehaviorSheet() {
-  CONFIG.RegionBehavior.typeIcons["simplecover5e.coverObstacle"] = "fa-solid fa-shield-halved";
+  CONFIG.RegionBehavior.typeIcons[COVER_OBSTACLE_TYPE] = "fa-solid fa-shield-halved";
 
   const DocumentSheetConfig = foundry.applications.apps.DocumentSheetConfig;
-  DocumentSheetConfig.unregisterSheet(CONFIG.RegionBehavior.documentClass, "core", foundry.applications.sheets.RegionBehaviorConfig, {
-    types: ["simplecover5e.coverObstacle"]
-  });
-  DocumentSheetConfig.registerSheet(CONFIG.RegionBehavior.documentClass, "simplecover5e", CoverObstacleRegionBehaviorConfig, {
-    types: ["simplecover5e.coverObstacle"],
-    makeDefault: true
-  });
+  DocumentSheetConfig.unregisterSheet(
+    CONFIG.RegionBehavior.documentClass, "core", foundry.applications.sheets.RegionBehaviorConfig, {
+      types: [COVER_OBSTACLE_TYPE]
+    }
+  );
+  DocumentSheetConfig.registerSheet(
+    CONFIG.RegionBehavior.documentClass, "simplecover5e", CoverObstacleRegionBehaviorConfig, {
+      label: "SIMPLE_COVER_5E.SheetClass.CoverObstacle",
+      makeDefault: true,
+      types: [COVER_OBSTACLE_TYPE]
+    }
+  );
 }

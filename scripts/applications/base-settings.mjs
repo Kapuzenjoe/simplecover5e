@@ -7,14 +7,12 @@ const { HandlebarsApplicationMixin, ApplicationV2 } = foundry.applications.api;
  * @extends {ApplicationV2}
  * @mixes HandlebarsApplicationMixin
  */
-export class SimpleCoverBaseConfigApp extends HandlebarsApplicationMixin(ApplicationV2) {
-  /**
-   * @override
-   */
+export default class SimpleCoverBaseSettingsConfig extends HandlebarsApplicationMixin(ApplicationV2) {
+  /** @override */
   static DEFAULT_OPTIONS = {
     form: {
       closeOnSubmit: true,
-      handler: SimpleCoverBaseConfigApp._onSubmit
+      handler: SimpleCoverBaseSettingsConfig._onSubmit
     },
     position: { width: 600 },
     tag: "form",
@@ -25,9 +23,7 @@ export class SimpleCoverBaseConfigApp extends HandlebarsApplicationMixin(Applica
 
   static FIELDSETS = [];
 
-  /**
-   * @override
-   */
+  /** @override */
   static PARTS = {
     form: {
       scrollable: [""],
@@ -38,39 +34,8 @@ export class SimpleCoverBaseConfigApp extends HandlebarsApplicationMixin(Applica
     }
   };
 
-  /**
-   * Persist submitted form values to the corresponding settings.
-   * @param {SubmitEvent} _event The triggering submit event.
-   * @param {HTMLFormElement} form The submitted form element.
-   * @param {FormDataExtended} formData The expanded form data.
-   * @returns {Promise<void>} Resolves after settings have been updated.
-   */
-  static async _onSubmit(_event, form, formData) {
-    let requiresClientReload = false;
-    let requiresWorldReload = false;
-
-    for ( const [id, value] of Object.entries(formData.object ?? {}) ) {
-      const setting = game.settings.settings.get(id);
-      if ( !setting ) continue;
-
-      const prior = game.settings.get(setting.namespace, setting.key);
-      let updated;
-      try {
-        updated = await game.settings.set(setting.namespace, setting.key, value);
-      } catch ( error ) {
-        ui.notifications.error(error);
-      }
-
-      if ( prior === updated ) continue;
-      requiresClientReload ||= (setting.scope !== CONST.SETTING_SCOPES.WORLD) && setting.requiresReload;
-      requiresWorldReload ||= (setting.scope === CONST.SETTING_SCOPES.WORLD) && setting.requiresReload;
-    }
-
-    if ( requiresClientReload || requiresWorldReload ) {
-      return foundry.applications.settings.SettingsConfig.reloadConfirm({ world: requiresWorldReload });
-    }
-  }
-
+  /* -------------------------------------------- */
+  /*  Rendering                                   */
   /* -------------------------------------------- */
 
   /**
@@ -141,5 +106,42 @@ export class SimpleCoverBaseConfigApp extends HandlebarsApplicationMixin(Applica
       buttons: this._getButtons(),
       fields: this._getFields()
     });
+  }
+
+  /* -------------------------------------------- */
+  /*  Event Listeners and Handlers                */
+  /* -------------------------------------------- */
+
+  /**
+   * Persist submitted form values to the corresponding settings.
+   * @param {SubmitEvent} _event The triggering submit event.
+   * @param {HTMLFormElement} form The submitted form element.
+   * @param {FormDataExtended} formData The expanded form data.
+   * @returns {Promise<void>} Resolves after settings have been updated.
+   */
+  static async _onSubmit(_event, form, formData) {
+    let requiresClientReload = false;
+    let requiresWorldReload = false;
+
+    for ( const [id, value] of Object.entries(formData.object ?? {}) ) {
+      const setting = game.settings.settings.get(id);
+      if ( !setting ) continue;
+
+      const prior = game.settings.get(setting.namespace, setting.key);
+      let updated;
+      try {
+        updated = await game.settings.set(setting.namespace, setting.key, value);
+      } catch (error) {
+        ui.notifications.error(error);
+      }
+
+      if ( prior === updated ) continue;
+      requiresClientReload ||= (setting.scope !== CONST.SETTING_SCOPES.WORLD) && setting.requiresReload;
+      requiresWorldReload ||= (setting.scope === CONST.SETTING_SCOPES.WORLD) && setting.requiresReload;
+    }
+
+    if ( requiresClientReload || requiresWorldReload ) {
+      return foundry.applications.settings.SettingsConfig.reloadConfirm({ world: requiresWorldReload });
+    }
   }
 }

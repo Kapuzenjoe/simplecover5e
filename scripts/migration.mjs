@@ -1,4 +1,5 @@
 import { MODULE_ID, SETTING_KEYS } from "./config.mjs";
+import { log } from "./utils.mjs";
 
 /**
  * Run pending data migrations for the module when the active user is a GM.
@@ -25,7 +26,7 @@ async function migrateSettings() {
       await game.settings.set(MODULE_ID, SETTING_KEYS.IGNORE_ALL_AOE, false);
       await game.settings.set(MODULE_ID, SETTING_KEYS.IGNORE_DISTANCE_AOE, false);
     }
-  } catch ( err ) {
-    console.warn(`[${MODULE_ID}] settings migration failed:`, err);
+  } catch (err) {
+    log("settings migration failed:", { extras: [err] });
   }
 }

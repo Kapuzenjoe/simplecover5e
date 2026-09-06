@@ -8,9 +8,8 @@ import { getTokenExternalRadius } from "../cover/token.mjs";
 /**
  * Measure the minimal 3D distance between two tokens in scene grid units.
  * Uses Foundry's grid measurement (including diagonal rules) and optionally adjusts distances in gridless modes.
- *
- * @param {Token|TokenDocument|Position} sourceToken The source token, document, or a plain position (AoE origins).
- * @param {Token|TokenDocument|Position} targetToken The target token, document, or a plain position.
+ * @param {Token5e|TokenDocument5e|Position} sourceToken The source token, document, or a plain position (AoE origins).
+ * @param {Token5e|TokenDocument5e|Position} targetToken The target token, document, or a plain position.
  * @returns {number} The minimal distance in grid units, clamped to 0 or greater.
  */
 export function getTokenTokenDistance(sourceToken, targetToken) {

@@ -1,6 +1,5 @@
 /**
  * Check whether Rideable marks a token as currently carrying riders.
- *
  * @param {TokenDocument} tokenDoc The token document to inspect.
  * @returns {boolean} True if the token has Rideable riders.
  */

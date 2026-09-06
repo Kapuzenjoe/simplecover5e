@@ -14,7 +14,6 @@ const WAND_OF_THE_WAR_MAGE_IDENTIFIERS = new Set([
 
 /**
  * Test actor items by system identifier first, with a name fallback for legacy/custom data.
- *
  * @param {Collection<Item5e>|null} items The actor item collection.
  * @param {string} identifier The preferred system identifier.
  * @param {string} name The fallback item name.
@@ -30,7 +29,6 @@ function hasActorItem(items, identifier, name) {
 /**
  * Parse a cover-rule flag value from actor data.
  * Supports booleans, numbers, plain objects, and JSON-like object strings.
- *
  * @param {string|number|boolean|CoverRuleFlagObject|null|undefined} value The raw flag value.
  * @returns {string|number|boolean|CoverRuleFlagObject|null} The parsed flag value.
  */
@@ -49,7 +47,7 @@ const parseFlagValue = value => {
     return JSON.parse(
       trimmed.replace(/([{,]\s*)([A-Za-z_]\w*)(\s*:)/g, '$1"$2"$3')
     );
-  } catch{
+  } catch {
     return value;
   }
 };
@@ -58,7 +56,6 @@ const parseFlagValue = value => {
 
 /**
  * Resolve the effective cover level for an activity, including ignore-cover rules.
- *
  * @param {Activity5e} activity The activity being evaluated.
  * @param {CoverLevel} [cover="none"] The computed or requested cover level.
  * @param {Actor5e|null} [targetActor=null] The targeted actor, if any.

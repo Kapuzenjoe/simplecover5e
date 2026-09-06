@@ -9,10 +9,10 @@
  * } from "../_types.mjs";
  */
 
+import { drawCoverDebug, clearCoverDebug } from "../canvas/debug.mjs";
 import { getTokenTokenDistance } from "../canvas/distance.mjs";
 import { MODULE_ID, COVER, SETTING_KEYS } from "../config.mjs";
 
-import { drawCoverDebug, clearCoverDebug } from "./debug.mjs";
 import {
   buildCoverContext,
   evaluateCoverFromOccluders,
@@ -22,10 +22,26 @@ import { ignoresCover } from "./rules.mjs";
 import { getActorCoverStates } from "./status.mjs";
 
 /**
+ * Resolve the debug flag and cover context for a cover evaluation, clearing any prior debug drawing first.
+ * @param {Scene} scene The scene on which to evaluate cover.
+ * @param {boolean|null} debug Whether to force debug output. Null uses the module debug setting.
+ * @returns {{ debugOn: boolean, ctx: CoverContext|null }} The resolved debug flag and cover context.
+ */
+function resolveDebugContext(scene, debug) {
+  const settingDebug = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.DEBUG);
+  const debugOn = (debug === null) ? settingDebug : !!debug;
+
+  if ( debugOn && game.users.activeGM ) clearCoverDebug();
+
+  return { debugOn, ctx: buildCoverContext(scene) };
+}
+
+/* -------------------------------------------- */
+
+/**
  * Compute cover between a single attacker and a single target, optionally including a line-of-sight check.
- *
  * @param {object} [options={}] Options controlling the cover evaluation.
- * @param {Token|TokenDocument|Position} options.attacker The attacking token, token document, or generic position.
+ * @param {Token5e|TokenDocument5e|Position} options.attacker The attacking token, token document, or generic position.
  * @param {Token|TokenDocument} options.target The target token or token document.
  * @param {Scene} [options.scene] The scene on which to evaluate cover.
  * @param {boolean|null} [options.debug=null] Whether to force debug output. Null uses the module debug setting.
@@ -54,12 +70,7 @@ export function getCover({
   if ( !scene ) return null;
   if ( targetDoc.parent !== scene ) return null;
 
-  const settingDebug = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.DEBUG);
-  const debugOn = (debug === null) ? settingDebug : !!debug;
-
-  if ( debugOn && game.users.activeGM ) clearCoverDebug();
-
-  const ctx = buildCoverContext(scene);
+  const { debugOn, ctx } = resolveDebugContext(scene, debug);
   if ( !ctx ) return null;
 
   const { result, los } = evaluateTargetCover(attackerDoc, targetDoc, ctx, {
@@ -84,10 +95,9 @@ export function getCover({
 
 /**
  * Compute cover between a single attacker and multiple targets, optionally including a line-of-sight check.
- *
  * @param {object} [options={}] Options controlling the cover evaluation.
- * @param {Token|TokenDocument|Position} options.attacker The attacking token, token document, or generic position.
- * @param {Token[]|TokenDocument[]|null} [options.targets] Explicit targets, or the user's current targets.
+ * @param {Token5e|TokenDocument5e|Position} options.attacker The attacking token, token document, or generic position.
+ * @param {Token5e[]|TokenDocument5e[]|null} [options.targets] Explicit targets, or the user's current targets.
  * @param {Scene} [options.scene] The scene on which to evaluate cover.
  * @param {boolean|null} [options.debug=null] Whether to force debug output. Null uses the module debug setting.
  * @param {boolean} [options.losCheck=false] Whether to perform a wall line-of-sight check.
@@ -112,12 +122,7 @@ export function getCoverForTargets({
   scene ??= attackerDoc.parent ?? canvas?.scene;
   if ( !scene ) return [];
 
-  const settingDebug = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.DEBUG);
-  const debugOn = (debug === null) ? settingDebug : !!debug;
-
-  if ( debugOn && game.users.activeGM ) clearCoverDebug();
-
-  const ctx = buildCoverContext(scene);
+  const { debugOn, ctx } = resolveDebugContext(scene, debug);
   if ( !ctx ) return [];
 
   const list = targets
@@ -157,7 +162,6 @@ export function getCoverForTargets({
 
 /**
  * Initialize and expose the module API on the module instance.
- *
  * @returns {void}
  */
 export function initApi() {
@@ -182,12 +186,18 @@ export function initApi() {
 
 /**
  * Fire the module-ready API hook.
- *
  * @returns {void}
  */
 export function readyApi() {
   const api = game.modules.get(MODULE_ID)?.api;
   if ( !api ) return;
+
+  /**
+   * A hook event that fires once the Simple Cover 5e API has been attached to the module.
+   * @function simplecover5eReady
+   * @memberof hookEvents
+   * @param {object} api The module's public API.
+   */
   Hooks.callAll("simplecover5eReady", api);
 }
 
@@ -195,7 +205,6 @@ export function readyApi() {
 
 /**
  * Add a note (icon + label + hint) to the next Roll Configuration Dialog for this roll workflow.
- *
  * @param {BasicRollDialogConfiguration|RollConfigurationDialog} dialogConfig The dialog configuration object.
  * @param {DialogNoteData} [note={}] The note definition.
  * @returns {void}
@@ -227,8 +236,7 @@ export function setDialogNote(dialogConfig, note={}) {
 
 /**
  * Evaluate the cover workflow for a prepared attacker/target pair.
- *
- * @param {TokenDocument|Position} attackerDoc The attacking token document or a generic position.
+ * @param {TokenDocument5e|Position} attackerDoc The attacking token document or a generic position.
  * @param {TokenDocument} targetDoc The target token document.
  * @param {CoverContext} ctx The cover evaluation context.
  * @param {object} [options={}] Cover workflow options.
@@ -276,7 +284,6 @@ function evaluateTargetCover(attackerDoc, targetDoc, ctx, {
 
 /**
  * Get whether the configured Library Mode setting is enabled.
- *
  * @returns {boolean} True if the Library Mode setting is enabled.
  */
 function getLibraryMode() {
@@ -287,8 +294,7 @@ function getLibraryMode() {
 
 /**
  * Evaluate line of sight (LOS) from an attacker to a target.
- *
- * @param {TokenDocument|Position} attackerDoc The attacking token document or a generic position.
+ * @param {TokenDocument5e|Position} attackerDoc The attacking token document or a generic position.
  * @param {TokenDocument} targetDoc The target token document.
  * @param {CoverContext|null} [ctx=null] The cover evaluation context.
  * @returns {LosResult|null} The LOS result and sampled target points.
@@ -306,7 +312,6 @@ function getLOS(attackerDoc, targetDoc, ctx=null) {
 
 /**
  * Enable or disable library mode for this module.
- *
  * @param {boolean} enabled The desired library mode state.
  * @returns {Promise<boolean>} True if the setting was updated; otherwise false.
  */

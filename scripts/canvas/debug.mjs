@@ -27,7 +27,6 @@ let debugGraphics = null;
 
 /**
  * Clear the current cover debug graphics without destroying the shared graphics object.
- *
  * @returns {void}
  */
 export function clearCoverDebug() {
@@ -39,7 +38,6 @@ export function clearCoverDebug() {
 
 /**
  * Draw cover debug information onto the canvas.
- *
  * @param {CoverDebugOptions} [options={}] Debug rendering options.
  * @returns {void}
  */
@@ -108,7 +106,6 @@ export function drawCoverDebug({ segments = [], tokenShapes, targetLosPoints = [
 
 /**
  * Register hooks used by the cover debug overlay.
- *
  * @returns {void}
  */
 export function initCoverDebugHooks() {
@@ -119,7 +116,6 @@ export function initCoverDebugHooks() {
 
 /**
  * Draw a single debug segment onto the graphics context.
- *
  * @param {PIXI.Graphics} g The graphics object to draw on.
  * @param {DebugSegment} segment The segment configuration to render.
  * @returns {void}
@@ -145,7 +141,6 @@ function drawDebugSegment(g, segment) {
 
 /**
  * Draw a set of debug points as circles.
- *
  * @param {PIXI.Graphics} g The graphics object to draw on.
  * @param {DebugPoint[]} points The points to draw.
  * @param {number} color The circle color.
@@ -172,7 +167,6 @@ function drawPointSet(g, points, color, alpha, radius, lineWidth) {
 
 /**
  * Draw a collection of polygons with a shared style.
- *
  * @param {PIXI.Graphics} g The graphics object to draw on.
  * @param {DebugPolygon[]} polygons The polygons to render.
  * @param {number} color The line color.
@@ -201,7 +195,6 @@ function drawPolygonSet(g, polygons, color, alpha, width) {
 /**
  * Lazily create or return the shared debug PIXI.Graphics instance.
  * The graphics object is attached to the canvas interface and reused between debug draws for performance.
- *
  * @returns {PIXI.Graphics|null} A reusable graphics instance, or null if the canvas is not ready.
  */
 function getDebugGraphics() {

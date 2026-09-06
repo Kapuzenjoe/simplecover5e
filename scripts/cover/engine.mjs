@@ -10,15 +10,16 @@
  * } from "../_types.mjs";
  */
 
-import { MODULE_ID, COVER, SETTING_KEYS } from "../config.mjs";
+import { MODULE_ID, COVER, COVER_OBSTACLE_TYPE, SETTING_KEYS } from "../config.mjs";
 import { isWallHeightModuleActive, wallHeightBlocks } from "../integrations/wall-height.mjs";
 
-import { getTokenExternalRadius, isBlockingCreatureToken, getCreatureHeight, isEllipse, applyProneMode } from "./token.mjs";
+import {
+  applyProneMode, getCreatureHeight, getTokenExternalRadius, isBlockingCreatureToken, isEllipse
+} from "./token.mjs";
 
 /**
  * Build a cover evaluation context for a single pass.
  * The context caches grid measurements and module settings used by the cover and LOS evaluators.
- *
  * @param {Scene} scene The scene to evaluate.
  * @returns {CoverContext} The cover evaluation context.
  */
@@ -49,7 +50,6 @@ export function buildCoverContext(scene) {
 /**
  * Build the 3D occluder prism for a creature token.
  * The prism shape depends on grid mode and token-shape settings.
- *
  * @param {TokenDocument} td The token document to build prisms for.
  * @param {CoverContext} ctx The cover evaluation context.
  * @param {DebugTokenShapes|null} [debugTokenShapes=null] Optional debug shape collector.
@@ -103,8 +103,7 @@ export function buildCreaturePrism(td, ctx, debugTokenShapes) {
  * Evaluate DMG-style cover for an attacker against a target.
  * The evaluator tests Cover Lines against sight-blocking walls, creature occluder prisms, and Region
  * Obstacle behaviors, and returns the best (least blocked) sampling outcome.
- *
- * @param {TokenDocument|Position} attackerDoc The attacking token document or a generic position.
+ * @param {TokenDocument5e|Position} attackerDoc The attacking token document or a generic position.
  * @param {TokenDocument} targetDoc The target token document.
  * @param {CoverContext} ctx The cover evaluation context.
  * @param {{ debug?: boolean }} [options] Optional flags, such as debug output.
@@ -131,7 +130,7 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options=
 
   const obstacleBehaviors = (ctx.scene?.regions?.contents ?? [])
     .flatMap(region => region.behaviors.contents)
-    .filter(b => !b.disabled && (b.type === "simplecover5e.coverObstacle"))
+    .filter(b => !b.disabled && (b.type === COVER_OBSTACLE_TYPE))
     .map(b => b.system);
   const obstacleResults = obstacleBehaviors.map(obstacle => ({
     obstacle,
@@ -264,8 +263,7 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options=
 /**
  * Evaluate whether an attacker has line of sight (LOS) to a target, considering walls only.
  * The test samples target visibility points and reports which points are blocked.
- *
- * @param {TokenDocument|Position} attackerDoc The attacking token document or a generic position.
+ * @param {TokenDocument5e|Position} attackerDoc The attacking token document or a generic position.
  * @param {TokenDocument} targetDoc The target token document.
  * @param {CoverContext} ctx The cover evaluation context.
  * @returns {LosResult} The LOS result and sampled target points.
@@ -313,10 +311,9 @@ export function evaluateLOS(attackerDoc, targetDoc, ctx) {
 
 /**
  * Build token test points for a sample center based on grid mode and token shape.
- *
  * @param {TestPoint} center The sample center in canvas pixels.
  * @param {CoverContext} ctx The cover evaluation context.
- * @param {TokenDocument|Position} td The token document or position being sampled.
+ * @param {TokenDocument5e|Position} td The token document or position being sampled.
  * @param {number} inset The inset distance in pixels.
  * @returns {TestPoint[]} The test points for this center.
  */
@@ -360,6 +357,7 @@ function buildTokenCornersForCenter(center, ctx, td, inset) {
   corners.forEach(c => c.elevation = center?.elevation ?? 0);
   corners.forEach(c => c.level = center?.level ?? null);
 
+  // @see Foundry-Core — TokenDocument#_constrainTestPoints()
   td._constrainTestPoints(corners, {});
   return corners;
 }
@@ -369,14 +367,13 @@ function buildTokenCornersForCenter(center, ctx, td, inset) {
 /**
  * Compute the ray parameter at which sight testing switches from the source Level's walls to the target
  * Level's walls, matching Foundry's own multi-Level sight-splitting behavior.
- *
+ * @see Foundry-Core — DetectionMode.#getIntermediateTValue()
  * @param {TestPoint} A The segment start point.
  * @param {TestPoint} B The segment end point.
  * @param {Level|null} fromLevel The Level containing A.
  * @param {Level|null} toLevel The Level containing B.
  * @returns {number} The t-value (0-1) at which the source segment ends and the target segment begins.
  */
-// Mirrors Foundry's private DetectionMode#getIntermediateTValue — no public equivalent exists.
 function getLevelSplitT(A, B, fromLevel, toLevel) {
   if ( !fromLevel || !toLevel || (fromLevel === toLevel) ) return 1;
 
@@ -422,7 +419,6 @@ function getLevelSplitT(A, B, fromLevel, toLevel) {
 
 /**
  * Convert a PIXI.Polygon's flat point list into an array of point objects.
- *
  * @param {PIXI.Polygon} polygon The polygon to read points from.
  * @returns {{ x: number, y: number }[]} The polygon's corner points.
  */
@@ -437,7 +433,6 @@ function polygonToPoints(polygon) {
 /**
  * Test whether a 3D segment intersects a vertically extruded polygon prism.
  * Clips the segment to the prism's elevation band, then tests the reduced 2D segment against the polygon.
- *
  * @param {{ x: number, y: number, z: number }} p The segment start point.
  * @param {{ x: number, y: number, z: number }} q The segment end point.
  * @param {{ polygon: PIXI.Polygon, minZ: number, maxZ: number }} prism The polygon prism.
@@ -475,7 +470,7 @@ function segIntersectsPolygonPrism(p, q, prism) {
 /**
  * Test whether sight-blocking walls or surfaces obstruct one ray segment within a single Level.
  * If the Wall Height module is active, wall collisions are additionally filtered by wall top/bottom values.
- *
+ * @see Foundry-Core — DetectionMode.#testCollision()
  * @param {TestPoint} A The segment start point.
  * @param {TestPoint} B The segment end point.
  * @param {CoverContext} ctx The cover evaluation context.
@@ -530,7 +525,7 @@ function testSightSegment(A, B, ctx, level, tMin, tMax) {
 /**
  * Test whether sight-blocking walls obstruct the segment between two positions.
  * If the Wall Height module is active, the intersection is additionally filtered by wall top and bottom values.
- *
+ * @see Foundry-Core — DetectionMode._testCollision()
  * @param {{ x: number, y: number, elevation: number, level?: string|null }} aCorner The attacker corner.
  * @param {{ x: number, y: number, elevation: number, level?: string|null }} bCorner The target corner.
  * @param {CoverContext} ctx The cover evaluation context.

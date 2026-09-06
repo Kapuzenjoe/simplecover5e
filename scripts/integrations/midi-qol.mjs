@@ -1,6 +1,5 @@
 /**
  * Test whether Midi-QOL is configured to use Simple Cover 5e as its cover provider.
- *
  * @returns {boolean} True if Midi-QOL owns cover automation for the current workflow.
  */
 export function isMidiAutomation() {

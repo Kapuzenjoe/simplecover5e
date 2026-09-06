@@ -1,15 +1,16 @@
 /**
- * @import { Position, TestPoint } from "../_types.mjs";
+ * @import { CoverLevel, CoverObstacleRegionBehaviorSystemData, Position, TestPoint } from "../_types.mjs";
  */
 
+import { COVER_OBSTACLE_TYPE } from "../config.mjs";
 import { getTokenTokenDistance } from "../canvas/distance.mjs";
 
 const { BooleanField, NumberField, SetField, StringField } = foundry.data.fields;
 
 /**
  * A Region Behavior that blocks Cover Lines through a Region, like a creature would.
- *
- * @extends {foundry.data.regionBehaviors.RegionBehaviorType}
+ * @extends {foundry.data.regionBehaviors.RegionBehaviorType<CoverObstacleRegionBehaviorSystemData>}
+ * @mixes CoverObstacleRegionBehaviorSystemData
  */
 export default class CoverObstacleRegionBehaviorType extends foundry.data.regionBehaviors.RegionBehaviorType {
 
@@ -42,7 +43,6 @@ export default class CoverObstacleRegionBehaviorType extends foundry.data.region
   /**
    * Determine whether this obstacle blocks the Cover Line between two points, for a pair not already
    * resolved by {@link evaluateTokens}.
-   *
    * @param {TestPoint} a The attacker corner.
    * @param {TestPoint} b The target corner.
    * @returns {{ blocked: boolean, cover: CoverLevel }} Whether this obstacle blocks the Cover Line, and the
@@ -63,8 +63,7 @@ export default class CoverObstacleRegionBehaviorType extends foundry.data.region
    * Resolve everything about this obstacle for an attacker/target pair that does not depend on which
    * specific Cover Line is being tested: the size/type filters, whether both tokens are inside the Region,
    * and (when so) the interior distance check.
-   *
-   * @param {TokenDocument|Position} attackerToken The attacker token document, or a plain position (AoE origins).
+   * @param {TokenDocument5e|Position} attackerToken The attacker token document, or a plain position (AoE origins).
    * @param {TokenDocument} targetToken The target token document.
    * @returns {{ blocked: boolean, cover: CoverLevel }|null} The final result if already resolved for every
    *   Cover Line between this pair, or `null` if `blocksLine` must still be called per Cover Line.
@@ -88,7 +87,6 @@ export default class CoverObstacleRegionBehaviorType extends foundry.data.region
 
   /**
    * Check whether a token is exempt from this obstacle via the size/type filters.
-   *
    * @param {TokenDocument} token The attacker or target token document.
    * @returns {boolean} True if the token's size or type is ignored.
    */
@@ -108,7 +106,7 @@ export default class CoverObstacleRegionBehaviorType extends foundry.data.region
  * @returns {void}
  */
 export function initCoverObstacleRegionBehavior() {
-  CONFIG.RegionBehavior.dataModels["simplecover5e.coverObstacle"] = CoverObstacleRegionBehaviorType;
-  CONFIG.RegionBehavior.typeLabels["simplecover5e.coverObstacle"] = "SIMPLE_COVER_5E.RegionBehavior.CoverObstacle.label";
-  CONFIG.RegionBehavior.typeHints["simplecover5e.coverObstacle"] = "SIMPLE_COVER_5E.RegionBehavior.CoverObstacle.hint";
+  CONFIG.RegionBehavior.dataModels[COVER_OBSTACLE_TYPE] = CoverObstacleRegionBehaviorType;
+  CONFIG.RegionBehavior.typeLabels[COVER_OBSTACLE_TYPE] = "SIMPLE_COVER_5E.RegionBehavior.CoverObstacle.label";
+  CONFIG.RegionBehavior.typeHints[COVER_OBSTACLE_TYPE] = "SIMPLE_COVER_5E.RegionBehavior.CoverObstacle.hint";
 }

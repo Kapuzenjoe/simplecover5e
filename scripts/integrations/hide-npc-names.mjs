@@ -1,7 +1,6 @@
 /**
  * Resolve the replacement display name provided by Hide NPC Names.
- *
- * @param {Actor} actor The actor whose display name may be replaced.
+ * @param {Actor5e} actor The actor whose display name may be replaced.
  * @returns {string|null} The replacement name, or null when unavailable.
  */
 export function getHiddenNpcName(actor) {

@@ -1,5 +1,7 @@
 {
   "scripts": {
+    "createSymlinks": "node ./tools/create-symlink.mjs",
+    "postinstall": "npm run createSymlinks",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
@@ -9,7 +11,8 @@
     "eslint": "10.9.1",
     "eslint-plugin-jsdoc": "64.2.1",
     "fancy-log": "2.0.0",
-    "globals": "17.11.0"
+    "globals": "17.11.0",
+    "js-yaml": "5.4.1"
   },
   "allowScripts": {
     "classic-level@3.0.0": true

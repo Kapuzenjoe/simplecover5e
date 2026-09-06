@@ -1,14 +1,14 @@
 import { MODULE_ID, SETTING_KEYS } from "../config.mjs";
 import { isMidiAutomation } from "../integrations/midi-qol.mjs";
 
-import { SimpleCoverBaseConfigApp } from "./base-settings.mjs";
+import SimpleCoverBaseSettingsConfig from "./base-settings.mjs";
 
 /**
  * A configuration form for cover automation.
- *
- * @extends {SimpleCoverBaseConfigApp}
+ * @extends {SimpleCoverBaseSettingsConfig}
  */
-export class SimpleCoverAutomationConfig extends SimpleCoverBaseConfigApp {
+export default class SimpleCoverAutomationSettingsConfig extends SimpleCoverBaseSettingsConfig {
+  /** @override */
   static DEFAULT_OPTIONS = {
     window: {
       icon: "fa-solid fa-cogs",
@@ -16,6 +16,7 @@ export class SimpleCoverAutomationConfig extends SimpleCoverBaseConfigApp {
     }
   };
 
+  /** @override */
   static FIELDSETS = [
     {
       keys: [

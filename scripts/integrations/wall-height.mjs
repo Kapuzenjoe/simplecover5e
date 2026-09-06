@@ -1,6 +1,5 @@
 /**
  * Check whether the Wall Height module is active.
- *
  * @returns {boolean} True if the Wall Height module is currently active.
  */
 export function isWallHeightModuleActive() {
@@ -11,7 +10,6 @@ export function isWallHeightModuleActive() {
 
 /**
  * Check whether Wall Height wall flags block the cover line at the collision points found by Core.
- *
  * @param {{ x: number, y: number, elevation: number }} A The segment start point.
  * @param {{ x: number, y: number, elevation: number }} B The segment end point.
  * @param {object[]} collisions The wall collision vertices returned by the sight polygon backend.
@@ -47,7 +45,6 @@ export function wallHeightBlocks(A, B, collisions) {
 
 /**
  * Compute the ray height at a wall-intersection vertex along segment A-B.
- *
  * @param {{ x: number, y: number, elevation: number }} A The segment start point.
  * @param {{ x: number, y: number, elevation: number }} B The segment end point.
  * @param {{ x: number, y: number }} vertex The intersection vertex on the wall.

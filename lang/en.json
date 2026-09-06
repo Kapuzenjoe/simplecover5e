@@ -296,6 +296,9 @@
           }
         }
       }
+    },
+    "SheetClass": {
+      "CoverObstacle": "Cover Obstacle"
     }
   }
 }

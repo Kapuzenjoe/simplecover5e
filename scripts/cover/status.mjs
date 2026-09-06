@@ -1,13 +1,13 @@
 import { MODULE_ID, SETTING_KEYS, COVER } from "../config.mjs";
+import { log } from "../utils.mjs";
 
 /**
- * @import { ActorCoverStates } from "../_types.mjs";
+ * @import { ActorCoverStates, CoverLevel, CoverRemovalScope } from "../_types.mjs";
  */
 
 /**
  * Clear module-managed system cover effects for the configured scope.
  * This is typically called when combat state changes or at end-of-turn boundaries.
- *
  * @param {Combat|null} combat The active combat, if any.
  * @returns {Promise<void>} Resolves when the batch delete operation has settled.
  */
@@ -38,7 +38,6 @@ export async function clearSystemCoverEffects(combat) {
 
 /**
  * Determine the highest active status and embedded cover states on an actor.
- *
  * @param {Actor5e} actor The actor to evaluate.
  * @returns {ActorCoverStates} The resolved cover states.
  */
@@ -82,7 +81,6 @@ export function getActorCoverStates(actor) {
 
 /**
  * Resolve the system cover status effects provided by dnd5e.
- *
  * @returns {{ cover: ("half"|"threeQuarters"|"total"), statusId: string, effectId: string|null }[]} The available
  *   system cover effects.
  */
@@ -102,7 +100,6 @@ export function getSystemCoverEffects() {
 
 /**
  * Register GM query handlers used to synchronize dnd5e cover statuses.
- *
  * @returns {void}
  */
 export function initCoverStatusQueries() {
@@ -111,7 +108,7 @@ export function initCoverStatusQueries() {
 
   /**
    * Handle the GM-side query used to synchronize a dnd5e cover status.
-   * @param {{ actorUuid?: string, cover?: "none"|"half"|"threeQuarters"|"total" }|null|undefined} data The
+   * @param {{ actorUuid?: string, cover?: CoverLevel }|null|undefined} data The
    *   query payload.
    * @returns {Promise<{ ok: boolean, reason?: string }>} The query result.
    */
@@ -123,14 +120,14 @@ export function initCoverStatusQueries() {
 
       const actor = await fromUuid(actorUuid);
       if ( !actor ) {
-        console.warn(`[${MODULE_ID}] setCoverStatus: actor not found for uuid`, actorUuid);
+        log("setCoverStatus: actor not found for uuid", { extras: [actorUuid] });
         return { ok: false, reason: "no-actor" };
       }
 
       await _applyCoverStatus(actor, cover);
       return { ok: true };
-    } catch ( err ) {
-      console.warn(`[${MODULE_ID}] query setCoverStatus failed:`, err, data);
+    } catch (err) {
+      log("query setCoverStatus failed:", { extras: [err, data] });
       return { ok: false, reason: "exception" };
     }
   };
@@ -140,9 +137,8 @@ export function initCoverStatusQueries() {
 
 /**
  * Request the active GM to synchronize the visible dnd5e cover status on an actor.
- *
  * @param {string} actorUuid The UUID of the actor to update.
- * @param {"none"|"half"|"threeQuarters"|"total"} cover The desired cover level.
+ * @param {CoverLevel} cover The desired cover level.
  * @returns {Promise<boolean>} True if the GM handled the request successfully.
  */
 export async function setCoverStatusViaGM(actorUuid, cover) {
@@ -155,13 +151,13 @@ export async function setCoverStatusViaGM(actorUuid, cover) {
   }
 
   const gm = game.users.activeGM;
-  if ( !gm ) { console.warn(`[${MODULE_ID}] no active GM`); return false; }
+  if ( !gm ) { log("no active GM"); return false; }
 
   try {
     const res = await gm.query(`${MODULE_ID}.setCoverStatus`, { actorUuid, cover }, { timeout: 8000 });
     return !!res?.ok;
-  } catch ( e ) {
-    console.warn(`[${MODULE_ID}] GM query failed:`, e);
+  } catch (e) {
+    log("GM query failed:", { extras: [e] });
     return false;
   }
 }
@@ -171,9 +167,8 @@ export async function setCoverStatusViaGM(actorUuid, cover) {
 /**
  * Apply a cover status directly on the current client.
  * Requires the caller to have write permission on the actor.
- *
  * @param {Actor5e} actor The actor to update.
- * @param {"none"|"half"|"threeQuarters"|"total"} cover The desired cover level.
+ * @param {CoverLevel} cover The desired cover level.
  * @returns {Promise<void>}
  */
 async function _applyCoverStatus(actor, cover) {
@@ -193,7 +188,6 @@ async function _applyCoverStatus(actor, cover) {
 
 /**
  * Check whether a token or actor has a player owner.
- *
  * @param {{ token?: Token5e, actor?: Actor5e }} data The token and actor pair to evaluate.
  * @returns {boolean} True if the token or actor has a player owner.
  */
@@ -207,10 +201,9 @@ function isPlayerOwned({ token, actor }) {
 /**
  * Resolve token/actor pairs for a cover update scope.
  * Supported scopes: "all", "combatants", and "players" (player-owned combatants).
- *
  * @param {Combat|null} combat The active combat, if any.
- * @param {"all"|"combatants"|"players"} scope The selection scope.
- * @returns {{ token: TokenDocument|null, actor: Actor|null }[]} The resolved token and actor pairs.
+ * @param {CoverRemovalScope} scope The selection scope.
+ * @returns {{ token: TokenDocument5e|null, actor: Actor5e|null }[]} The resolved token and actor pairs.
  */
 function resolveTokensForScope(combat, scope) {
   const combatScene =

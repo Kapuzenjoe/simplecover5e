@@ -2,7 +2,6 @@ import { FLAGS } from "../config.mjs";
 
 /**
  * Register DAE auto-fields once DAE has finished its setup.
- *
  * @returns {void}
  */
 export function initDaeIntegration() {

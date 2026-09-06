@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2025 Peterlankton
+Copyright (c) 2026 Peterlankton
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,11 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-Third-Party Notices
-
-This project includes code inspired by or adapted from "Aura-Effects"
-by Michael Roth (https://github.com/roth-michael/Aura-Effects),
-licensed under the MIT License.

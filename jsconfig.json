@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "module": "esnext",
+    "target": "esnext",
+    "paths": {
+      "@client/*": ["./foundry/client/*"],
+      "@common/*": ["./foundry/common/*"]
+    }
+  },
+  "exclude": ["node_modules", "**/node_modules/*"],
+  "include": ["scripts/module.mjs", "foundry/client/client.mjs", "global.d.ts"],
+  "typeAcquisition": {
+    "include": ["jquery"]
+  }
+}

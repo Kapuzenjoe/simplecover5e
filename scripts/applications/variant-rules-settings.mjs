@@ -1,17 +1,17 @@
 import { changeTokenShapes } from "../canvas/token-shape.mjs";
 import { MODULE_ID, SETTING_KEYS } from "../config.mjs";
 
-import { SimpleCoverBaseConfigApp } from "./base-settings.mjs";
+import SimpleCoverBaseSettingsConfig from "./base-settings.mjs";
 
 /**
  * A configuration form for cover and measurement rule variants.
- *
- * @extends {SimpleCoverBaseConfigApp}
+ * @extends {SimpleCoverBaseSettingsConfig}
  */
-export class SimpleCoverVariantConfig extends SimpleCoverBaseConfigApp {
+export default class SimpleCoverVariantRulesSettingsConfig extends SimpleCoverBaseSettingsConfig {
+  /** @override */
   static DEFAULT_OPTIONS = {
     actions: {
-      applyGridlessTokenShape: SimpleCoverVariantConfig.#onApplyGridlessTokenShape
+      applyGridlessTokenShape: SimpleCoverVariantRulesSettingsConfig.#onApplyGridlessTokenShape
     },
     window: {
       icon: "fas fa-list-check",
@@ -19,6 +19,7 @@ export class SimpleCoverVariantConfig extends SimpleCoverBaseConfigApp {
     }
   };
 
+  /** @override */
   static FIELDSETS = [
     {
       keys: [
@@ -47,10 +48,43 @@ export class SimpleCoverVariantConfig extends SimpleCoverBaseConfigApp {
     }
   ];
 
+  /* -------------------------------------------- */
+  /*  Rendering                                   */
+  /* -------------------------------------------- */
+
+  /** @inheritDoc */
+  async _onRender(context, options) {
+    await super._onRender(context, options);
+    this.#insertGridlessTokenShapeButton();
+  }
+
+  /* -------------------------------------------- */
+
+  /**
+   * Insert the gridless token shape bulk-action button into the related form field.
+   * @returns {void}
+   */
+  #insertGridlessTokenShapeButton() {
+    const input = this.element.querySelector(`[name="${MODULE_ID}.${SETTING_KEYS.GRIDLESS_TOKEN_SHAPE}"]`);
+    const formFields = input?.closest(".form-fields");
+    if ( !formFields || formFields.querySelector("[data-action='applyGridlessTokenShape']") ) return;
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.dataset.action = "applyGridlessTokenShape";
+    button.dataset.tooltip = "SIMPLE_COVER_5E.Settings.GridlessTokenShape.ApplyExisting";
+    button.setAttribute("aria-label", "SIMPLE_COVER_5E.Settings.GridlessTokenShape.ApplyExisting");
+    button.innerHTML = '<i class="fa-solid fa-rotate" inert></i>';
+    formFields.append(button);
+  }
+
+  /* -------------------------------------------- */
+  /*  Event Listeners and Handlers                */
+  /* -------------------------------------------- */
+
   /**
    * Apply the selected gridless token shape to existing tokens after explicit confirmation.
-   * @this {SimpleCoverVariantConfig}
-   *
+   * @this {SimpleCoverVariantRulesSettingsConfig}
    * @returns {Promise<void>} Resolves after matching tokens have been updated.
    */
   static async #onApplyGridlessTokenShape() {
@@ -84,36 +118,5 @@ export class SimpleCoverVariantConfig extends SimpleCoverBaseConfigApp {
 
     const count = await changeTokenShapes({ scene: scope === "scene" ? currentScene : null });
     ui.notifications.info(_loc("SIMPLE_COVER_5E.Settings.GridlessTokenShape.ApplyUpdated", { count }));
-  }
-
-  /* -------------------------------------------- */
-
-  /**
-   * @inheritdoc
-   */
-  async _onRender(context, options) {
-    await super._onRender(context, options);
-    this.#insertGridlessTokenShapeButton();
-  }
-
-  /* -------------------------------------------- */
-
-  /**
-   * Insert the gridless token shape bulk-action button into the related form field.
-   *
-   * @returns {void}
-   */
-  #insertGridlessTokenShapeButton() {
-    const input = this.element.querySelector(`[name="${MODULE_ID}.${SETTING_KEYS.GRIDLESS_TOKEN_SHAPE}"]`);
-    const formFields = input?.closest(".form-fields");
-    if ( !formFields || formFields.querySelector("[data-action='applyGridlessTokenShape']") ) return;
-
-    const button = document.createElement("button");
-    button.type = "button";
-    button.dataset.action = "applyGridlessTokenShape";
-    button.dataset.tooltip = "SIMPLE_COVER_5E.Settings.GridlessTokenShape.ApplyExisting";
-    button.setAttribute("aria-label", "SIMPLE_COVER_5E.Settings.GridlessTokenShape.ApplyExisting");
-    button.innerHTML = '<i class="fa-solid fa-rotate" inert></i>';
-    formFields.append(button);
   }
 }
