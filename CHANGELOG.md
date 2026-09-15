@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.2.3
+
+- Fixed Spell Sniper not bypassing cover for melee spell attacks.
+- Fixed getTokenTokenDistance() (hover label, Cover Obstacle interior distance) ignoring Prone when computing a creature's height, unlike the cover engine itself.
+- Fixed an occasional "effect not found" error when two near-simultaneous cover removals raced for the same actor (#39).
+- Fixed downgradeCover combined with ignoreThreeQuartersCover/ignoreHalfCover on the same actor fully negating Total Cover, when downgradeCover alone should only ever reduce it.
+- Fixed very small gridless creature tokens (or a high Occluder Inset setting) sometimes stopping to block cover entirely.
+- Fixed very small tokens (or a high Inset setting) sometimes making Half Cover unreachable for gridless circle/square-shaped targets.
+- Fixed cover sometimes being understated when Half and Three-Quarters blockers were mixed in the same evaluation.
+- Fixed the GM-only cover-change indicator not appearing on a target pill representing multiple grouped (unlinked, identical) tokens.
+- Fixed prone attackers/targets at a non-zero elevation computing cover from the wrong height instead of their actual position.
+
 ## 2.2.2
 
 - Initial support for D&D System Version 6.0.0, adapting to the system's reworked chat message workflow.

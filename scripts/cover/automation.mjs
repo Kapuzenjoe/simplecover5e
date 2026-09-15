@@ -1,7 +1,3 @@
-/**
- * @import { CoverLevel } from "../_types.mjs";
- */
-
 import { applyDialogCoverOverride } from "../applications/roll-configuration-dialog.mjs";
 import { clearCoverDebug } from "../canvas/debug.mjs";
 import { onPreCreateToken } from "../canvas/token-shape.mjs";
@@ -10,6 +6,10 @@ import { isMidiAutomation } from "../integrations/midi-qol.mjs";
 import { log } from "../utils.mjs";
 
 import { getCover, getCoverForTargets } from "./api.mjs";
+
+/**
+ * @import { CoverLevel } from "../_types.mjs";
+ */
 import { clearSystemCoverEffects, setCoverStatusViaGM } from "./status.mjs";
 import { isDefeatedToken } from "./token.mjs";
 
@@ -148,7 +148,7 @@ function getSpeakerToken(speaker) {
  */
 function ignoreCoverProperties() {
   CONFIG.DND5E.itemProperties.ignoreCover = {
-    label: game.i18n.localize("SIMPLE_COVER_5E.ItemProperties.IgnoreCover.Label")
+    label: _loc("SIMPLE_COVER_5E.ItemProperties.IgnoreCover.Label")
   };
   CONFIG.DND5E.validProperties.weapon.add("ignoreCover");
   CONFIG.DND5E.validProperties.spell.add("ignoreCover");
@@ -218,7 +218,7 @@ function onPostSavingThrowRollConfiguration(rolls, config, dialog, message) {
 
   if ( !isTotalCoverSave || !rollAutomationEnabled() ) return;
 
-  ui.notifications.info(game.i18n.localize(COVER.I18N.HINT_KEYS.save.total));
+  ui.notifications.info(_loc(COVER.I18N.HINT_KEYS.save.total));
   return false;
 }
 

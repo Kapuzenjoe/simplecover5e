@@ -1,29 +1,29 @@
-/**
- * @import { Position } from "../_types.mjs";
- */
-
 import { MODULE_ID, SETTING_KEYS } from "../config.mjs";
 import { hasRideableRiders } from "../integrations/rideable.mjs";
 
 /**
- * Scale an elevation value by the module's prone mode for a token.
- * Returns the elevation unchanged when the token is not prone or prone mode is "none".
- * @param {TokenDocument} tokenDoc The token document to check.
- * @param {number} elevation The elevation (or height) value to scale.
- * @returns {number} The scaled elevation.
+ * @import { Position } from "../_types.mjs";
  */
-export function applyProneMode(tokenDoc, elevation) {
-  if ( !tokenDoc?.actor?.statuses?.has?.("prone") ) return elevation;
+
+/**
+ * Scale a height value by the module's prone mode for a token.
+ * Returns the height unchanged when the token is not prone or prone mode is "none".
+ * @param {TokenDocument} tokenDoc The token document to check.
+ * @param {number} height The height above the token's base elevation to scale.
+ * @returns {number} The scaled height.
+ */
+export function applyProneMode(tokenDoc, height) {
+  if ( !tokenDoc?.actor?.statuses?.has?.("prone") ) return height;
   const proneMode = game.settings.get(MODULE_ID, SETTING_KEYS.CREATURES_PRONE);
-  if ( proneMode === "none" ) return elevation;
-  if ( proneMode === "half" ) return elevation * 0.5;
+  if ( proneMode === "none" ) return height;
+  if ( proneMode === "half" ) return height * 0.5;
   if ( proneMode === "lowerSize" ) {
     const depth = Number(tokenDoc?.depth) || 0;
-    if ( !depth ) return elevation;
+    if ( !depth ) return height;
     const depthLower = (depth > 1) ? Math.max(depth - 1, 0.5) : (depth * 0.5);
-    return elevation * (depthLower / depth);
+    return height * (depthLower / depth);
   }
-  return elevation;
+  return height;
 }
 
 /* -------------------------------------------- */

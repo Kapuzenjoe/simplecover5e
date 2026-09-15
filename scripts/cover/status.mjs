@@ -164,14 +164,33 @@ export async function setCoverStatusViaGM(actorUuid, cover) {
 
 /* -------------------------------------------- */
 
+const coverStatusSemaphores = new Map();
+
 /**
- * Apply a cover status directly on the current client.
+ * Apply a cover status directly on the current client, serialized per actor to avoid concurrent writes.
  * Requires the caller to have write permission on the actor.
  * @param {Actor5e} actor The actor to update.
  * @param {CoverLevel} cover The desired cover level.
  * @returns {Promise<void>}
  */
 async function _applyCoverStatus(actor, cover) {
+  let semaphore = coverStatusSemaphores.get(actor.uuid);
+  if ( !semaphore ) {
+    semaphore = new foundry.utils.Semaphore(1);
+    coverStatusSemaphores.set(actor.uuid, semaphore);
+  }
+  return semaphore.add(_toggleCoverStatus, actor, cover);
+}
+
+/* -------------------------------------------- */
+
+/**
+ * Toggle an actor's cover status effect to the desired cover level.
+ * @param {Actor5e} actor The actor to update.
+ * @param {CoverLevel} cover The desired cover level.
+ * @returns {Promise<void>}
+ */
+async function _toggleCoverStatus(actor, cover) {
   const desiredStatusId = COVER.IDS[cover];
 
   if ( desiredStatusId ) {

@@ -1,31 +1,31 @@
 <fieldset class="simplecover5e-dialog-notes" data-simplecover5e="dialog-notes">
-  <legend>{{localize "SIMPLE_COVER_5E.Dialog.Legend"}}</legend>
+  <legend>{{ localize "SIMPLE_COVER_5E.Dialog.Legend" }}</legend>
 
   {{#each notes}}
   <div class="simplecover5e-dialog-note">
-  <div class="form-group">
-    <label>
-      {{this.label}}
-    </label>
+    <div class="form-group">
+      <label>
+        {{ label }}
+      </label>
 
-    {{#if this.cover}}
-    <div class="form-fields">
-      <select name="{{this.name}}">
-        {{selectOptions ../coverModes selected=this.cover localize=true}}
-      </select>
-    </div>
-    {{/if}}
-  </div>
-  <div class="hint">
-    {{#if this.iconPath}}
-    <img class="icon" src="{{this.iconPath}}" alt="" loading="lazy" width="16" height="16">
-    {{else}}
-      {{#if this.iconClass}}
-      <i class="{{this.iconClass}}" title="{{this.label}}"></i>
+      {{#if cover}}
+      <div class="form-fields">
+        <select name="{{ name }}">
+          {{selectOptions ../coverModes selected=cover localize=true}}
+        </select>
+      </div>
       {{/if}}
-    {{/if}}
-    {{{this.hint}}}
-  </div>
+    </div>
+    <div class="hint">
+      {{#if iconPath}}
+      <img class="icon" src="{{ iconPath }}" alt="" loading="lazy" width="16" height="16">
+      {{else}}
+        {{#if iconClass}}
+        <i class="{{ iconClass }}" title="{{ label }}"></i>
+        {{/if}}
+      {{/if}}
+      {{{ hint }}}
+    </div>
   </div>
   {{/each}}
 </fieldset>

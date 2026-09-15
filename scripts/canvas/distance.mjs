@@ -1,5 +1,5 @@
 import { MODULE_ID, SETTING_KEYS } from "../config.mjs";
-import { getTokenExternalRadius } from "../cover/token.mjs";
+import { getCreatureHeight, getTokenExternalRadius } from "../cover/token.mjs";
 
 /**
  * @import { Position } from "../_types.mjs";
@@ -10,20 +10,25 @@ import { getTokenExternalRadius } from "../cover/token.mjs";
  * Uses Foundry's grid measurement (including diagonal rules) and optionally adjusts distances in gridless modes.
  * @param {Token5e|TokenDocument5e|Position} sourceToken The source token, document, or a plain position (AoE origins).
  * @param {Token5e|TokenDocument5e|Position} targetToken The target token, document, or a plain position.
- * @returns {number} The minimal distance in grid units, clamped to 0 or greater.
+ * @returns {number|null} The minimal distance in grid units, clamped to 0 or greater, or null if inputs are invalid.
  */
 export function getTokenTokenDistance(sourceToken, targetToken) {
+  if ( !sourceToken || !targetToken ) return null;
+
   const sourceDoc = sourceToken.document ?? sourceToken;
   const targetDoc = targetToken.document ?? targetToken;
+  if ( !sourceDoc || !targetDoc ) return null;
 
   const scene = sourceDoc.parent ?? targetDoc.parent;
+  if ( !scene ) return null;
+
   const grid = scene.grid;
   const mode = game.settings.get(MODULE_ID, SETTING_KEYS.GRIDLESS_DISTANCE_MODE) ?? "edgeToCenter";
 
   const sourceBottom = sourceDoc.elevation;
-  const sourceTop = sourceDoc.elevation + ((sourceDoc.depth ?? 0) * grid.distance);
+  const sourceTop = sourceDoc.elevation + getCreatureHeight(sourceDoc);
   const targetBottom = targetDoc.elevation;
-  const targetTop = targetDoc.elevation + ((targetDoc.depth ?? 0) * grid.distance);
+  const targetTop = targetDoc.elevation + getCreatureHeight(targetDoc);
 
   let sourceElevation; let targetElevation;
   if ( (sourceBottom <= targetTop) && (targetBottom <= sourceTop) ) {

@@ -110,15 +110,6 @@ export const SETTING_KEYS = {
 };
 
 /**
- * Constants related to hover labels and icons used by this module.
- * @readonly
- * @type {{ DISTANCE_LABEL_PROP: string }}
- */
-export const HOVER = {
-  DISTANCE_LABEL_PROP: `_${MODULE_ID}HoverDistanceLabel`
-};
-
-/**
  * DAE auto-field scopes each ignore-cover flag can be limited to.
  * @type {string[]}
  */

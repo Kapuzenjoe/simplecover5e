@@ -1,11 +1,11 @@
-/**
- * @import { CoverLevel } from "../_types.mjs";
- */
-
 import { COVER_TARGETS_PATH, MODULE_ID, COVER } from "../config.mjs";
 import { setCoverStatusViaGM } from "../cover/status.mjs";
 import { getHiddenNpcName } from "../integrations/hide-npc-names.mjs";
 import { isLegacyDnd5e } from "../utils.mjs";
+
+/**
+ * @import { CoverLevel } from "../_types.mjs";
+ */
 
 const ROLL_CONFIGURATION_SELECTOR = '[data-application-part="configuration"]';
 const DIALOG_NOTES_SELECTOR = 'fieldset[data-simplecover5e="dialog-notes"]';
@@ -169,7 +169,7 @@ async function prepareNotes(dialog) {
         cover,
         hint: getCoverHint(type, cover, getTargetName(target, systemTargets)),
         icon: statusId ? (CONFIG.statusEffects[statusId]?.img ?? "") : "",
-        label: game.i18n.localize(COVER.I18N.LABEL_PREFIX_KEY),
+        label: _loc(COVER.I18N.LABEL_PREFIX_KEY),
         name: `${MODULE_ID}.targets.${index}.newCover`
       });
     }));

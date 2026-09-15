@@ -18,8 +18,8 @@ export function initDaeIntegration() {
       if ( !localization ) continue;
 
       dae.localizationMap[field] = {
-        description: game.i18n.localize(localization.hint),
-        name: game.i18n.localize(localization.name)
+        description: _loc(localization.hint),
+        name: _loc(localization.name)
       };
     }
   });

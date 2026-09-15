@@ -1,7 +1,9 @@
-import { MODULE_ID, SETTING_KEYS, HOVER, COVER } from "../config.mjs";
+import { MODULE_ID, SETTING_KEYS, COVER } from "../config.mjs";
 import { getCover } from "../cover/api.mjs";
 
 import { getTokenTokenDistance } from "./distance.mjs";
+
+const hoverLabels = new WeakMap();
 
 /**
  * Register hooks used by the token hover cover display.
@@ -128,7 +130,7 @@ async function onHoverToken(token, hoverState) {
   }
 
   measurementHud.appendChild(htmlLabel);
-  token[HOVER.DISTANCE_LABEL_PROP] = htmlLabel;
+  hoverLabels.set(token, htmlLabel);
 
   const center = token.center ?? { x: token.x, y: token.y };
 
@@ -195,9 +197,9 @@ function onPreDeleteToken(td, options, userId) {
  */
 function removeHoverDecorations(token) {
   if ( !token ) return;
-  const label = token[HOVER.DISTANCE_LABEL_PROP];
+  const label = hoverLabels.get(token);
   if ( label && (label instanceof HTMLElement) ) {
     label.remove();
   }
-  delete token[HOVER.DISTANCE_LABEL_PROP];
+  hoverLabels.delete(token);
 }

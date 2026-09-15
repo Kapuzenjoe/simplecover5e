@@ -1,3 +1,7 @@
+import { drawCoverDebug, clearCoverDebug } from "../canvas/debug.mjs";
+import { getTokenTokenDistance } from "../canvas/distance.mjs";
+import { MODULE_ID, COVER, SETTING_KEYS } from "../config.mjs";
+
 /**
  * @import {
  *   CoverContext,
@@ -8,10 +12,6 @@
  *   Position
  * } from "../_types.mjs";
  */
-
-import { drawCoverDebug, clearCoverDebug } from "../canvas/debug.mjs";
-import { getTokenTokenDistance } from "../canvas/distance.mjs";
-import { MODULE_ID, COVER, SETTING_KEYS } from "../config.mjs";
 
 import {
   buildCoverContext,

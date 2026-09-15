@@ -48,7 +48,7 @@ function decorateCoverChangeMessage(targetMessage, container) {
     const changedByUuid = new Map(changedTargets.map(target => [target.uuid, target]));
     const actorByToken = new Map((targetMessage.system?.targets ?? []).map(t => [t.token, t.actor]));
     for ( const pill of container.querySelectorAll("target-pill") ) {
-      const target = changedByUuid.get(actorByToken.get(pill.target));
+      const target = pill.targets.map(tokenUuid => changedByUuid.get(actorByToken.get(tokenUuid))).find(t => t);
       if ( !target ) continue;
 
       const icon = buildCoverChangeIcon(target);

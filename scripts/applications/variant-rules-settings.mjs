@@ -110,7 +110,7 @@ export default class SimpleCoverVariantRulesSettingsConfig extends SimpleCoverBa
           label: "COMMON.Cancel"
         }
       ],
-      content: `<p>${game.i18n.localize("SIMPLE_COVER_5E.Settings.GridlessTokenShape.ApplyHint")}</p>`,
+      content: `<p>${_loc("SIMPLE_COVER_5E.Settings.GridlessTokenShape.ApplyHint")}</p>`,
       rejectClose: false,
       window: { title: "SIMPLE_COVER_5E.Settings.GridlessTokenShape.ApplyTitle" }
     });

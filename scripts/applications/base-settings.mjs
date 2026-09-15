@@ -1,5 +1,9 @@
 import { MODULE_ID } from "../config.mjs";
 
+/**
+ * @import { SimpleCoverSettingsFieldset } from "../_types.mjs";
+ */
+
 const { HandlebarsApplicationMixin, ApplicationV2 } = foundry.applications.api;
 
 /**
@@ -21,6 +25,10 @@ export default class SimpleCoverBaseSettingsConfig extends HandlebarsApplication
     }
   };
 
+  /**
+   * Fieldset groups rendered by this form, in order.
+   * @type {SimpleCoverSettingsFieldset[]}
+   */
   static FIELDSETS = [];
 
   /** @override */
@@ -41,6 +49,7 @@ export default class SimpleCoverBaseSettingsConfig extends HandlebarsApplication
   /**
    * Get the footer buttons displayed by the form.
    * @returns {FormFooterButton[]} The footer button configuration.
+   * @protected
    */
   _getButtons() {
     return [
@@ -57,6 +66,7 @@ export default class SimpleCoverBaseSettingsConfig extends HandlebarsApplication
   /**
    * Get grouped form fields for the configured settings.
    * @returns {FormNode[]} The grouped form field data.
+   * @protected
    */
   _getFields() {
     const fieldsets = [];
@@ -77,6 +87,7 @@ export default class SimpleCoverBaseSettingsConfig extends HandlebarsApplication
    * Get form field data for a registered setting.
    * @param {string} key The module setting key.
    * @returns {object|null} The form field data.
+   * @protected
    */
   _getSettingField(key) {
     const setting = game.settings.settings.get(`${MODULE_ID}.${key}`);
@@ -95,11 +106,7 @@ export default class SimpleCoverBaseSettingsConfig extends HandlebarsApplication
 
   /* -------------------------------------------- */
 
-  /**
-   * Prepare the application render context.
-   * @param {ApplicationRenderOptions} options The active render options.
-   * @returns {Promise<object>} The prepared render context.
-   */
+  /** @inheritDoc */
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
     return Object.assign(context, {
@@ -118,6 +125,7 @@ export default class SimpleCoverBaseSettingsConfig extends HandlebarsApplication
    * @param {HTMLFormElement} form The submitted form element.
    * @param {FormDataExtended} formData The expanded form data.
    * @returns {Promise<void>} Resolves after settings have been updated.
+   * @protected
    */
   static async _onSubmit(_event, form, formData) {
     let requiresClientReload = false;

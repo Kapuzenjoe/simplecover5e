@@ -3,15 +3,8 @@
  */
 
 /**
- * @typedef Position
- * @property {number} x The horizontal canvas position.
- * @property {number} y The vertical canvas position.
- * @property {number} [elevation=0] The elevation in scene distance units.
- * @property {string|null} [level=null] The active Levels identifier, if any.
- */
-
-/**
- * @typedef {Position} TestPoint
+ * A Foundry-Core elevated point, plus the active Levels identifier, if any.
+ * @typedef {ElevatedPoint & { level?: string|null }} Position
  */
 
 /**
@@ -44,10 +37,7 @@
  */
 
 /**
- * @typedef DebugPoint
- * @property {number} x The horizontal canvas position.
- * @property {number} y The vertical canvas position.
- * @property {boolean} [blocked=false] Whether the sampled point is blocked.
+ * @typedef {LosPoint} DebugPoint
  */
 
 /**
@@ -183,4 +173,10 @@
  * @property {boolean} interiorNeverBlocks         Never block Cover Lines between two tokens both inside the Region.
  * @property {number} interiorBlockDistance        Distance beyond which two tokens inside the Region are
  *   blocked (0 = always).
+ */
+
+/**
+ * @typedef SimpleCoverSettingsFieldset
+ * @property {string} legend The localization key for the fieldset legend.
+ * @property {string[]} keys The module setting keys rendered in this fieldset.
  */

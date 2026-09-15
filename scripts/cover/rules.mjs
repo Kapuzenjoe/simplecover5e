@@ -1,8 +1,8 @@
+import { MODULE_ID, COVER } from "../config.mjs";
+
 /**
  * @import { CoverLevel, CoverRuleFlagObject } from "../_types.mjs";
  */
-
-import { MODULE_ID, COVER } from "../config.mjs";
 
 const WAND_OF_THE_WAR_MAGE_IDENTIFIERS = new Set([
   "1-wand-of-the-war-mage",
@@ -32,7 +32,7 @@ function hasActorItem(items, identifier, name) {
  * @param {string|number|boolean|CoverRuleFlagObject|null|undefined} value The raw flag value.
  * @returns {string|number|boolean|CoverRuleFlagObject|null} The parsed flag value.
  */
-const parseFlagValue = value => {
+function parseFlagValue(value) {
   if ( (value == null) || (value === "") ) return null;
   if ( typeof value !== "string" ) return value;
 
@@ -50,7 +50,7 @@ const parseFlagValue = value => {
   } catch {
     return value;
   }
-};
+}
 
 /* -------------------------------------------- */
 
@@ -75,9 +75,7 @@ export function ignoresCover(activity, cover="none", targetActor=null) {
   const actionType = activity?.actionType;
   const properties = item?.system?.properties;
 
-  // ------------------------------------------------------------
-  // 1) TARGET: Upgrade Cover
-  // ------------------------------------------------------------
+  // Target: Upgrade Cover
   const upgradeFlags = targetActor?.getFlag(MODULE_ID, "upgradeCover");
   const targetStatuses = targetActor?.statuses;
 
@@ -105,7 +103,7 @@ export function ignoresCover(activity, cover="none", targetActor=null) {
         parsed = Number(value.steps);
       }
 
-      if ( parsed >= 1 ) upgrade = Math.max(upgrade, parsed);
+      if ( parsed >= 1 ) upgrade = Math.max(upgrade, Math.min(2, parsed));
     }
 
     if ( upgrade ) {
@@ -113,9 +111,7 @@ export function ignoresCover(activity, cover="none", targetActor=null) {
     }
   }
 
-  // ------------------------------------------------------------
-  // 2) SOURCE: downgrade / ignore cover
-  // ------------------------------------------------------------
+  // Source: Downgrade / Ignore Cover
   if ( (isAttack || isSave) && (effectiveCover !== "none") ) {
     const current = COVER.ORDER[effectiveCover] ?? COVER.ORDER.none;
     const sourceStatuses = sourceActor?.statuses;
@@ -146,7 +142,7 @@ export function ignoresCover(activity, cover="none", targetActor=null) {
           parsed = Number(value.steps);
         }
 
-        if ( parsed >= 1 ) downgrade = Math.max(downgrade, parsed);
+        if ( parsed >= 1 ) downgrade = Math.max(downgrade, Math.min(2, parsed));
       }
     }
 
@@ -178,10 +174,10 @@ export function ignoresCover(activity, cover="none", targetActor=null) {
     if ( ignoreAll ) {
       effectiveCover = "none";
     }
-    else if ( ignoreThreeQuarters && ((effectiveCover === "threeQuarters") || (effectiveCover === "half")) ) {
+    else if ( ignoreThreeQuarters && ((current === COVER.ORDER.threeQuarters) || (current === COVER.ORDER.half)) ) {
       effectiveCover = "none";
     }
-    else if ( ignoreHalf && (effectiveCover === "half") ) {
+    else if ( ignoreHalf && (current === COVER.ORDER.half) ) {
       effectiveCover = "none";
     }
 
@@ -189,7 +185,7 @@ export function ignoresCover(activity, cover="none", targetActor=null) {
       if ( (actionType === "rwak") && hasActorItem(items, "sharpshooter", "Sharpshooter") ) {
         effectiveCover = "none";
       }
-      if ( (actionType === "rsak") && hasActorItem(items, "spell-sniper", "Spell Sniper") ) {
+      if ( ((actionType === "rsak") || (actionType === "msak")) && hasActorItem(items, "spell-sniper", "Spell Sniper") ) {
         effectiveCover = "none";
       }
     }
@@ -213,9 +209,7 @@ export function ignoresCover(activity, cover="none", targetActor=null) {
     }
   }
 
-  // ------------------------------------------------------------
-  // 3) SOURCE ITEM: ignoreCover property
-  // ------------------------------------------------------------
+  // Source Item: ignoreCover Property
   if ( (effectiveCover !== "none") && properties?.has?.("ignoreCover") ) {
     effectiveCover = "none";
   }

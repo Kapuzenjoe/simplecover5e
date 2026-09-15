@@ -1,9 +1,9 @@
-/**
- * @import { CoverLevel, CoverObstacleRegionBehaviorSystemData, Position, TestPoint } from "../_types.mjs";
- */
-
 import { COVER_OBSTACLE_TYPE } from "../config.mjs";
 import { getTokenTokenDistance } from "../canvas/distance.mjs";
+
+/**
+ * @import { CoverLevel, CoverObstacleRegionBehaviorSystemData, Position } from "../_types.mjs";
+ */
 
 const { BooleanField, NumberField, SetField, StringField } = foundry.data.fields;
 
@@ -43,8 +43,8 @@ export default class CoverObstacleRegionBehaviorType extends foundry.data.region
   /**
    * Determine whether this obstacle blocks the Cover Line between two points, for a pair not already
    * resolved by {@link evaluateTokens}.
-   * @param {TestPoint} a The attacker corner.
-   * @param {TestPoint} b The target corner.
+   * @param {Position} a The attacker corner.
+   * @param {Position} b The target corner.
    * @returns {{ blocked: boolean, cover: CoverLevel }} Whether this obstacle blocks the Cover Line, and the
    *   Cover Line level it contributes.
    */

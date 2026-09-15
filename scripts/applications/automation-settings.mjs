@@ -32,11 +32,7 @@ export default class SimpleCoverAutomationSettingsConfig extends SimpleCoverBase
     }
   ];
 
-  /**
-   * Prepare the automation settings render context.
-   * @param {ApplicationRenderOptions} options The active render options.
-   * @returns {Promise<object>} The prepared render context.
-   */
+  /** @inheritDoc */
   async _prepareContext(options) {
     const context = await super._prepareContext(options);
 
