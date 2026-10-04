@@ -81,7 +81,7 @@ export const COVER = Object.freeze({
  * @readonly
  * @enum {string}
  */
-export const SETTING_KEYS = {
+export const SETTING_KEYS = Object.freeze({
   COVER_HINTS: "coverHints",
   COVER_HINTS_GM_MESSAGE: "coverHintsGmMessage",
   COVER_SCOPE: "coverRemovalScope",
@@ -95,9 +95,9 @@ export const SETTING_KEYS = {
   HOVER_LABEL_POSITION: "hoverLabelPosition",
   HOVER_LABEL_X_OFFSET: "hoverLabelXOffset",
   HOVER_LABEL_Y_OFFSET: "hoverLabelYOffset",
-  IGNORE_ALL_AOE: "IgnoreAllAOE",
+  IGNORE_ALL_AOE: "IgnoreAllAOE", // Legacy
   IGNORE_AOE: "ignoreAOECover",
-  IGNORE_DISTANCE_AOE: "IgnoreDistanceAOE",
+  IGNORE_DISTANCE_AOE: "IgnoreDistanceAOE", // Legacy
   IGNORE_FRIENDLY: "ignoreFriendly",
   INSET_ATTACKER: "insetAttacker",
   INSET_OCCLUDER: "insetOccluder",
@@ -107,7 +107,7 @@ export const SETTING_KEYS = {
   ONLY_IN_COMBAT: "onlyInCombat",
   RMV_ON_COMBAT: "rmvCovCombat",
   RMV_ON_MOVE: "rmvCovMovement"
-};
+});
 
 /**
  * DAE auto-field scopes each ignore-cover flag can be limited to.
