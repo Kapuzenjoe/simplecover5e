@@ -1,3 +1,4 @@
+import { clearCoverDebug } from "../canvas/debug.mjs";
 import { MODULE_ID, SETTING_KEYS, COVER } from "../config.mjs";
 import { log } from "../utils.mjs";
 
@@ -8,51 +9,51 @@ import { log } from "../utils.mjs";
 /**
  * Clear module-managed system cover effects for the configured scope.
  * This is typically called when combat state changes or at end-of-turn boundaries.
+ * Failures are logged instead of thrown.
  * @param {Combat|null} combat The active combat, if any.
  * @returns {Promise<void>} Resolves when the batch delete operation has settled.
  */
 export async function clearSystemCoverEffects(combat) {
-  const scope = game.settings.get(MODULE_ID, SETTING_KEYS.COVER_SCOPE);
-  const targets = resolveTokensForScope(combat, scope);
-  const systemCoverEffects = getSystemCoverEffects();
-  const operations = [];
+  try {
+    const scope = game.settings.get(MODULE_ID, SETTING_KEYS.COVER_SCOPE);
+    const targets = resolveTokensForScope(combat, scope);
+    const systemCoverEffects = getSystemCoverEffects();
+    const operations = [];
+    const seen = new Set();
 
-  for ( const { actor } of targets ) {
-    if ( !actor ) continue;
-    const ids = [];
-    for ( const { statusId, effectId } of systemCoverEffects ) {
-      if ( !effectId ) continue;
-      if ( actor.statuses?.has?.(statusId) && actor.appliedEffects?.some(e => e.id === effectId) ) {
-        ids.push(effectId);
+    for ( const { actor } of targets ) {
+      if ( !actor || seen.has(actor.uuid) ) continue;
+      seen.add(actor.uuid);
+      const ids = [];
+      for ( const { statusId, effectId } of systemCoverEffects ) {
+        if ( !effectId ) continue;
+        if ( actor.statuses?.has?.(statusId) && actor.appliedEffects?.some(e => e.id === effectId) ) {
+          ids.push(effectId);
+        }
+      }
+      if ( ids.length ) {
+        operations.push({ ids, action: "delete", documentName: "ActiveEffect", parent: actor });
       }
     }
-    if ( ids.length ) {
-      operations.push({ ids, action: "delete", documentName: "ActiveEffect", parent: actor });
-    }
-  }
 
-  if ( operations.length ) await foundry.documents.modifyBatch(operations);
+    if ( operations.length ) await foundry.documents.modifyBatch(operations);
+
+    if ( game.settings.get(MODULE_ID, SETTING_KEYS.DEBUG) ) clearCoverDebug();
+  } catch (err) {
+    log("clear cover effects", { extras: [err] });
+  }
 }
 
 /* -------------------------------------------- */
 
 /**
- * Determine the highest active status and embedded cover states on an actor.
+ * Determine the highest active embedded cover state on an actor.
  * @param {Actor5e} actor The actor to evaluate.
  * @returns {ActorCoverStates} The resolved cover states.
  */
 export function getActorCoverStates(actor) {
   const effects = actor?.appliedEffects ?? [];
   const systemCoverEffects = getSystemCoverEffects();
-
-  let statusCover = "none";
-  for ( const { cover, statusId, effectId } of systemCoverEffects ) {
-    const isSystemStatus = actor?.statuses?.has?.(statusId) && effects.some(effect => effect.id === effectId);
-    if ( isSystemStatus ) {
-      statusCover = cover;
-      break;
-    }
-  }
 
   let embeddedCover = "none";
   for ( const effect of effects ) {
@@ -74,23 +75,17 @@ export function getActorCoverStates(actor) {
     }
   }
 
-  return { embeddedCover, statusCover };
+  return { embeddedCover };
 }
 
 /* -------------------------------------------- */
 
 /**
  * Resolve the system cover status effects provided by dnd5e.
- * @returns {{ cover: ("half"|"threeQuarters"|"total"), statusId: string, effectId: string|null }[]} The available
- *   system cover effects.
+ * @returns {{ statusId: string, effectId: string|null }[]} The available system cover effects.
  */
-export function getSystemCoverEffects() {
-  return [
-    ["total", COVER.IDS.total],
-    ["threeQuarters", COVER.IDS.threeQuarters],
-    ["half", COVER.IDS.half]
-  ].map(([cover, statusId]) => ({
-    cover,
+function getSystemCoverEffects() {
+  return [COVER.IDS.total, COVER.IDS.threeQuarters, COVER.IDS.half].map(statusId => ({
     statusId,
     effectId: CONFIG.statusEffects[statusId]._id
   }));
@@ -119,7 +114,7 @@ export function initCoverStatusQueries() {
       if ( !COVER.KEYS.includes(cover) ) return { ok: false, reason: "invalid-cover" };
 
       const actor = await fromUuid(actorUuid);
-      if ( !actor ) {
+      if ( !(actor instanceof Actor) ) {
         log("setCoverStatus: actor not found for uuid", { extras: [actorUuid] });
         return { ok: false, reason: "no-actor" };
       }
@@ -143,11 +138,16 @@ export function initCoverStatusQueries() {
  */
 export async function setCoverStatusViaGM(actorUuid, cover) {
   if ( game.user.isGM ) {
-    if ( !COVER.KEYS.includes(cover) ) return false;
-    const actor = await fromUuid(actorUuid);
-    if ( !actor ) return false;
-    await _applyCoverStatus(actor, cover);
-    return true;
+    try {
+      if ( !COVER.KEYS.includes(cover) ) return false;
+      const actor = await fromUuid(actorUuid);
+      if ( !actor ) return false;
+      await _applyCoverStatus(actor, cover);
+      return true;
+    } catch (e) {
+      log("set cover status failed:", { extras: [e] });
+      return false;
+    }
   }
 
   const gm = game.users.activeGM;

@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.2.4
+
+- Added the missing German translation for the Cover Obstacle Region Behavior.
+- Changed the Remove Cover Effects button to also clear the cover debug drawing.
+- Fixed the Remove Cover Effects button not removing any cover when the Cover Removal Scope is set to Combatants Only.
+- Fixed cover removal sending duplicate delete requests when several tokens share the same actor.
+- Fixed saving throws against repeated area effects using the cover origin of an older leftover template instead of the newest one.
+- Fixed the wall line-of-sight check ignoring walls when the attacker position passed to the API has no Level on a scene other than the viewed one.
+- Fixed a duplicate hover label sometimes staying on the canvas after quickly leaving and re-entering a token.
+
 ## 2.2.3
 
 - Fixed Spell Sniper not bypassing cover for melee spell attacks.

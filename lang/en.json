@@ -25,7 +25,7 @@
       },
       "RemoveOnMove": {
         "Name": "Clear Cover on Movement",
-        "Hint": "Removes cover effects when a token moves during combat, within the configured Cover Removal Scope."
+        "Hint": "Removes cover effects when a token moves, within the configured Cover Removal Scope."
       },
       "losCheck": {
         "Name": "Wall Line of Sight",
@@ -189,9 +189,7 @@
         "threeQuarters": "<strong>+5</strong> to this Dexterity saving throw.",
         "total": "Can't be targeted directly."
       },
-      "CoverModeChanged": "Cover mode changed",
-      "CoverModeDesired": "Calculated: {desiredCover}",
-      "CoverModeNew": "Set: {newMode}"
+      "CoverModeChanged": "Cover mode changed"
     },
     "Flags": {
       "ignoreAllCover": {

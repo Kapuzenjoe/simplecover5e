@@ -25,7 +25,7 @@
       },
       "RemoveOnMove": {
         "Name": "Deckung bei Bewegung",
-        "Hint": "Entfernt Deckungseffekte, wenn sich eine Figur im Kampf bewegt, im konfigurierten Geltungsbereich."
+        "Hint": "Entfernt Deckungseffekte, wenn sich eine Figur bewegt, im konfigurierten Geltungsbereich."
       },
       "losCheck": {
         "Name": "Sichtlinie durch Wände",
@@ -189,9 +189,7 @@
         "threeQuarters": "<strong>+5</strong> auf diesen Geschicklichkeitsrettungswurf.",
         "total": "Kann nicht direkt als Ziel gewählt werden."
       },
-      "CoverModeChanged": "Deckungsmodus geändert",
-      "CoverModeDesired": "Berechnet: {desiredCover}",
-      "CoverModeNew": "Gesetzt: {newMode}"
+      "CoverModeChanged": "Deckungsmodus geändert"
     },
     "Flags": {
       "ignoreAllCover": {
@@ -264,6 +262,41 @@
           "Hint": "Offensives Flag: Verringert die Deckung des Ziels nur für Effekte mit Rettungswurf."
         }
       }
+    },
+    "RegionBehavior": {
+      "CoverObstacle": {
+        "label": "Deckungshindernis",
+        "hint": "Blockiert Deckungslinien, die durch diese Region verlaufen.",
+        "FIELDS": {
+          "sizes": {
+            "label": "Ignorierte Größen",
+            "hint": "Zielfiguren dieser Größen ignorieren dieses Hindernis."
+          },
+          "types": {
+            "label": "Ignorierte Kreaturentypen",
+            "hint": "Zielfiguren dieser Kreaturentypen ignorieren dieses Hindernis."
+          },
+          "interiorNeverBlocks": {
+            "label": "Unendlich",
+            "hint": "Die Deckung wird nie blockiert, solange sich beide Figuren in dieser Region befinden."
+          },
+          "interiorBlockDistance": {
+            "label": "Blockierdistanz im Inneren",
+            "hint": "Blockiert die Deckung, sobald zwei Figuren in dieser Region weiter voneinander entfernt sind als dieser Wert. 0 blockiert immer; aktiviere \"Unendlich\", damit nie blockiert wird."
+          },
+          "cover": {
+            "label": "Deckung",
+            "hint": "Die Stufe der Deckungslinie, die dieses Hindernis gewährt, wenn es blockiert.",
+            "Options": {
+              "half": "Halbe Deckung",
+              "threeQuarters": "Dreivierteldeckung"
+            }
+          }
+        }
+      }
+    },
+    "SheetClass": {
+      "CoverObstacle": "Deckungshindernis"
     }
   }
 }

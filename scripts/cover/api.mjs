@@ -253,7 +253,7 @@ function evaluateTargetCover(attackerDoc, targetDoc, ctx, {
   includeEmbeddedCover = false
 }={}) {
   const los = losCheck
-    ? evaluateLOS(attackerDoc, targetDoc, ctx)
+    ? evaluateLOS(attackerDoc, targetDoc, ctx, { debug })
     : { hasLOS: true, targetLosPoints: [] };
 
   const result = los.hasLOS

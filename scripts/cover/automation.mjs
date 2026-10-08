@@ -1,9 +1,7 @@
 import { applyDialogCoverOverride } from "../applications/roll-configuration-dialog.mjs";
-import { clearCoverDebug } from "../canvas/debug.mjs";
 import { onPreCreateToken } from "../canvas/token-shape.mjs";
 import { COVER_TARGETS_PATH, MODULE_ID, COVER, SETTING_KEYS } from "../config.mjs";
 import { isMidiAutomation } from "../integrations/midi-qol.mjs";
-import { log } from "../utils.mjs";
 
 import { getCover, getCoverForTargets } from "./api.mjs";
 
@@ -63,19 +61,11 @@ function adjustMessageTargetAC(message, targetUuid, newAC) {
  * @returns {Promise<void>} Resolves after any cover cleanup has finished.
  */
 async function clearCoverOnCombatTurnChange(combat, previous, current) {
-  try {
-    if ( !rollAutomationEnabled(combat) ) return;
-    if ( !game.users.activeGM?.isSelf ) return;
-    if ( !game.settings.get(MODULE_ID, SETTING_KEYS.RMV_ON_COMBAT) ) return;
+  if ( !rollAutomationEnabled(combat) ) return;
+  if ( !game.users.activeGM?.isSelf ) return;
+  if ( !game.settings.get(MODULE_ID, SETTING_KEYS.RMV_ON_COMBAT) ) return;
 
-    await clearSystemCoverEffects(combat);
-
-    if ( game.settings.get(MODULE_ID, SETTING_KEYS.DEBUG) ) {
-      clearCoverDebug();
-    }
-  } catch (err) {
-    log("clear on combat turn change", { extras: [err] });
-  }
+  await clearSystemCoverEffects(combat);
 }
 
 /* -------------------------------------------- */
@@ -86,19 +76,11 @@ async function clearCoverOnCombatTurnChange(combat, previous, current) {
  * @returns {Promise<void>} Resolves after any cover cleanup has finished.
  */
 async function clearCoverOnDeleteCombat(combat) {
-  try {
-    if ( !rollAutomationEnabled(combat) ) return;
-    if ( !game.users.activeGM?.isSelf ) return;
-    if ( !game.settings.get(MODULE_ID, SETTING_KEYS.RMV_ON_COMBAT) ) return;
+  if ( !rollAutomationEnabled(combat) ) return;
+  if ( !game.users.activeGM?.isSelf ) return;
+  if ( !game.settings.get(MODULE_ID, SETTING_KEYS.RMV_ON_COMBAT) ) return;
 
-    await clearSystemCoverEffects(combat);
-
-    if ( game.settings.get(MODULE_ID, SETTING_KEYS.DEBUG) ) {
-      clearCoverDebug();
-    }
-  } catch (err) {
-    log("clear on delete combat", { extras: [err] });
-  }
+  await clearSystemCoverEffects(combat);
 }
 
 /* -------------------------------------------- */
@@ -109,27 +91,18 @@ async function clearCoverOnDeleteCombat(combat) {
  * @returns {Promise<void>} Resolves after any cover cleanup has finished.
  */
 async function clearCoverOnMovement(token) {
-  try {
-    const active = game.combats?.active;
-    if ( !rollAutomationEnabled(active) ) return;
-    if ( !game.users.activeGM?.isSelf ) return;
-    if ( !game.settings.get(MODULE_ID, SETTING_KEYS.RMV_ON_MOVE) ) return;
+  const active = game.combats?.active;
+  if ( !rollAutomationEnabled(active) ) return;
+  if ( !game.users.activeGM?.isSelf ) return;
+  if ( !game.settings.get(MODULE_ID, SETTING_KEYS.RMV_ON_MOVE) ) return;
 
-    await clearSystemCoverEffects(active);
-
-    if ( game.settings.get(MODULE_ID, SETTING_KEYS.DEBUG) ) {
-      clearCoverDebug();
-    }
-  } catch (err) {
-    log("clear on token movement", { extras: [err] });
-  }
+  await clearSystemCoverEffects(active);
 }
 
 /* -------------------------------------------- */
 
 /**
  * Resolve a token placeable from chat speaker data.
- * @see Foundry-Core — ChatMessage#getSpeakerActor()
  * @param {object} speaker The chat speaker data.
  * @returns {Token5e|null} The resolved token placeable, if available.
  */
@@ -368,7 +341,7 @@ function resolveAoEOrigin(activity, targetToken) {
   ) ?? [];
 
   const targetDoc = targetToken.document;
-  const containing = regions.find(r => r.document.tokens.has(targetDoc));
+  const containing = regions.findLast(r => r.document.tokens.has(targetDoc));
   if ( !containing ) return null;
 
   const bottom = containing.document.elevation.bottom;

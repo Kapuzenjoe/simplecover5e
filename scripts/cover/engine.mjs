@@ -40,7 +40,7 @@ export function buildCoverContext(scene) {
     insetAttackerPx: Math.clamp(insetAttacker, 1, grid.size * 0.3),
     insetOccluderPx: Math.min(grid.size * 0.3, insetOccluder),
     insetTargetPx: Math.clamp(insetTarget, 1, grid.size * 0.3),
-    level: activeScene ? (canvas?.level ?? null) : null
+    level: (activeScene ? canvas?.level : null) ?? scene.initialLevel
   };
 }
 
@@ -54,7 +54,7 @@ export function buildCoverContext(scene) {
  * @param {DebugTokenShapes|null} [debugTokenShapes=null] Optional debug shape collector.
  * @returns {OccluderPrism} The occluder prism in canvas pixel space.
  */
-export function buildCreaturePrism(td, ctx, debugTokenShapes) {
+function buildCreaturePrism(td, ctx, debugTokenShapes=null) {
   const { grid, insetOccluderPx, distancePixels } = ctx;
   const elevation = Number(td?.elevation ?? 0);
   const zMin = elevation * distancePixels;
@@ -275,11 +275,13 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options=
  * @param {TokenDocument5e|Position} attackerDoc The attacking token document or a generic position.
  * @param {TokenDocument} targetDoc The target token document.
  * @param {CoverContext} ctx The cover evaluation context.
+ * @param {object} [options={}] LOS evaluation options.
+ * @param {boolean|null} [options.debug=null] Whether to test every target point. Null uses the module debug setting.
  * @returns {LosResult} The LOS result and sampled target points.
  */
-export function evaluateLOS(attackerDoc, targetDoc, ctx) {
+export function evaluateLOS(attackerDoc, targetDoc, ctx, { debug = null }={}) {
   if ( !attackerDoc || !targetDoc ) return { hasLOS: true, targetLosPoints: [] };
-  const debugOn = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.DEBUG);
+  const debugOn = debug ?? !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.DEBUG);
 
   const origin = attackerDoc.getVisionOrigin?.() ?? attackerDoc.getCenterPoint?.() ?? {
     elevation: attackerDoc?.elevation ?? 0,

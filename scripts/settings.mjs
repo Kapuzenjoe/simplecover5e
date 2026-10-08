@@ -132,18 +132,14 @@ const SETTINGS = [
   // Legacy — superseded by IGNORE_AOE; kept registered for migration in migration.mjs
   {
     config: false,
-    hint: "SIMPLE_COVER_5E.Settings.IgnoreDistanceAOE.Hint",
     key: SETTING_KEYS.IGNORE_DISTANCE_AOE,
-    name: "SIMPLE_COVER_5E.Settings.IgnoreDistanceAOE.Name",
     requiresReload: false,
     scope: "world",
     type: new foundry.data.fields.BooleanField({ initial: false })
   },
   {
     config: false,
-    hint: "SIMPLE_COVER_5E.Settings.IgnoreAllAOE.Hint",
     key: SETTING_KEYS.IGNORE_ALL_AOE,
-    name: "SIMPLE_COVER_5E.Settings.IgnoreAllAOE.Name",
     requiresReload: false,
     scope: "world",
     type: new foundry.data.fields.BooleanField({ initial: false })
@@ -386,7 +382,7 @@ function onGetSceneControlButtons(controls) {
     button: true,
     icon: "fa-solid fa-shield-exclamation",
     name: MODULE_ID,
-    onChange: (event, active) => clearSystemCoverEffects(),
+    onChange: () => clearSystemCoverEffects(game.combats.active),
     title: "SIMPLE_COVER_5E.Controls.ClearCover.Title"
   };
 }

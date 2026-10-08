@@ -55,6 +55,48 @@ function parseFlagValue(value) {
 /* -------------------------------------------- */
 
 /**
+ * Resolve the number of cover steps granted by an upgrade or downgrade flag group.
+ * @param {Record<string, string|number|boolean|CoverRuleFlagObject>|null|undefined} flags The flag group with
+ *   `all`, `attack` and `save` values.
+ * @param {object} options Resolution options.
+ * @param {number} options.current The cover order the steps are applied to.
+ * @param {"none"|"half"} options.defaultMin The lower bound used when a flag value omits `min`.
+ * @param {boolean} options.isAttack Whether the activity is an attack.
+ * @param {boolean} options.isSave Whether the activity is a saving throw.
+ * @param {Set<string>|undefined} options.statuses The statuses of the actor tested against a flag `condition`.
+ * @returns {number} The number of steps, from 0 to 2.
+ */
+function resolveSteps(flags, { current, defaultMin, isAttack, isSave, statuses }) {
+  if ( !flags ) return 0;
+
+  let steps = 0;
+  for ( const raw of [flags.all, isAttack ? flags.attack : isSave ? flags.save : null] ) {
+    const value = parseFlagValue(raw);
+    if ( value == null ) continue;
+    if ( (typeof value?.condition === "string")
+      && (value.condition.trim() !== "")
+      && !statuses?.has(value.condition)
+    ) continue;
+
+    let parsed = 0;
+    if ( typeof value !== "object" ) {
+      parsed = Number(value);
+    }
+    else {
+      const min = COVER.ORDER[value.min ?? defaultMin] ?? COVER.ORDER[defaultMin];
+      const max = COVER.ORDER[value.max ?? "total"] ?? COVER.ORDER.total;
+      if ( (current < Math.min(min, max)) || (current > Math.max(min, max)) ) continue;
+      parsed = Number(value.steps);
+    }
+
+    if ( parsed >= 1 ) steps = Math.max(steps, Math.min(2, parsed));
+  }
+  return steps;
+}
+
+/* -------------------------------------------- */
+
+/**
  * Resolve the effective cover level for an activity, including ignore-cover rules.
  * @param {Activity5e} activity The activity being evaluated.
  * @param {CoverLevel} [cover="none"] The computed or requested cover level.
@@ -77,34 +119,17 @@ export function ignoresCover(activity, cover="none", targetActor=null) {
 
   // Target: Upgrade Cover
   const upgradeFlags = targetActor?.getFlag(MODULE_ID, "upgradeCover");
-  const targetStatuses = targetActor?.statuses;
 
   // `upgradeCover` improves the cover of the actor who has the flag.
   if ( upgradeFlags ) {
     const current = COVER.ORDER[effectiveCover] ?? COVER.ORDER.none;
-    let upgrade = 0;
-
-    for ( const raw of [upgradeFlags.all, isAttack ? upgradeFlags.attack : isSave ? upgradeFlags.save : null] ) {
-      const value = parseFlagValue(raw);
-      if ( value == null ) continue;
-      if ( (typeof value?.condition === "string")
-        && (value.condition.trim() !== "")
-        && !targetStatuses?.has(value.condition)
-      ) continue;
-
-      let parsed = 0;
-      if ( typeof value !== "object" ) {
-        parsed = Number(value);
-      }
-      else {
-        const min = COVER.ORDER[value.min ?? "none"] ?? COVER.ORDER.none;
-        const max = COVER.ORDER[value.max ?? "total"] ?? COVER.ORDER.total;
-        if ( (current < Math.min(min, max)) || (current > Math.max(min, max)) ) continue;
-        parsed = Number(value.steps);
-      }
-
-      if ( parsed >= 1 ) upgrade = Math.max(upgrade, Math.min(2, parsed));
-    }
+    const upgrade = resolveSteps(upgradeFlags, {
+      current,
+      defaultMin: "none",
+      isAttack,
+      isSave,
+      statuses: targetActor.statuses
+    });
 
     if ( upgrade ) {
       effectiveCover = COVER.KEYS[Math.min(COVER.ORDER.total, current + upgrade)] ?? effectiveCover;
@@ -114,37 +139,15 @@ export function ignoresCover(activity, cover="none", targetActor=null) {
   // Source: Downgrade / Ignore Cover
   if ( (isAttack || isSave) && (effectiveCover !== "none") ) {
     const current = COVER.ORDER[effectiveCover] ?? COVER.ORDER.none;
-    const sourceStatuses = sourceActor?.statuses;
-    let downgradeFlags = sourceFlags?.downgradeCover;
-    let downgrade = 0;
 
     // `downgradeCover` reduces the target’s cover for actions made by the actor who has the flag.
-    if ( downgradeFlags ) {
-      for ( const raw of [
-        downgradeFlags.all,
-        isAttack ? downgradeFlags.attack : isSave ? downgradeFlags.save : null
-      ] ) {
-        const value = parseFlagValue(raw);
-        if ( value == null ) continue;
-        if ( (typeof value?.condition === "string")
-          && (value.condition.trim() !== "")
-          && !sourceStatuses?.has(value.condition)
-        ) continue;
-
-        let parsed = 0;
-        if ( typeof value !== "object" ) {
-          parsed = Number(value);
-        }
-        else {
-          const min = COVER.ORDER[value.min ?? "half"] ?? COVER.ORDER.half;
-          const max = COVER.ORDER[value.max ?? "total"] ?? COVER.ORDER.total;
-          if ( (current < Math.min(min, max)) || (current > Math.max(min, max)) ) continue;
-          parsed = Number(value.steps);
-        }
-
-        if ( parsed >= 1 ) downgrade = Math.max(downgrade, Math.min(2, parsed));
-      }
-    }
+    const downgrade = resolveSteps(sourceFlags?.downgradeCover, {
+      current,
+      defaultMin: "half",
+      isAttack,
+      isSave,
+      statuses: sourceActor?.statuses
+    });
 
     if ( downgrade ) {
       effectiveCover = COVER.KEYS[Math.max(COVER.ORDER.none, current - downgrade)] ?? effectiveCover;

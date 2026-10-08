@@ -97,8 +97,6 @@ async function onHoverToken(token, hoverState) {
     return;
   }
 
-  removeHoverDecorations(token);
-
   const uiScale = canvas.dimensions.uiScale;
   let htmlLabel;
 
@@ -129,6 +127,7 @@ async function onHoverToken(token, hoverState) {
     htmlLabel.append(coverIcon);
   }
 
+  removeHoverDecorations(token);
   measurementHud.appendChild(htmlLabel);
   hoverLabels.set(token, htmlLabel);
 

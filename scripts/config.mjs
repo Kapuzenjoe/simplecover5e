@@ -89,8 +89,8 @@ export const SETTING_KEYS = Object.freeze({
   CREATURES_PRONE: "proneCreatures",
   DEBUG: "debugCover",
   FILTERED_TARGET_POINTS: "filteredTargetPoints",
-  GRIDLESS_DISTANCE_MODE: "gridlessDistanceMode", // Legacy
-  GRIDLESS_TOKEN_SHAPE: "gridlessTokenShape", // Legacy
+  GRIDLESS_DISTANCE_MODE: "gridlessDistanceMode",
+  GRIDLESS_TOKEN_SHAPE: "gridlessTokenShape",
   HOVER: "hover",
   HOVER_LABEL_POSITION: "hoverLabelPosition",
   HOVER_LABEL_X_OFFSET: "hoverLabelXOffset",

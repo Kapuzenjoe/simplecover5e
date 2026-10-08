@@ -130,7 +130,7 @@ api.setDialogNote(dialogConfig, { cover, target, icon = "", label = "", hint = "
 ```
 
 - `dialogConfig`: `object` - The dialog configuration object provided by the dnd5e pre-roll hooks.
-- `cover`: `string | null` - The cover level associated with the note.
+- `cover`: `string | null` - The cover level associated with the note. If set, the note shows a cover selector named `simplecover5e.<target>.cover`. Simple Cover 5e does not apply the selected value; read it from the dialog's form data in a `dnd5e.build*RollConfig` hook.
 - `target`: `string | null` - The target identifier used to update an existing note for the same target.
 - `icon`: `string` - A Font Awesome class string, e.g. `"fa-solid fa-circle-info"`.
 - `label`: `string` - The note label text, e.g. `"Half Cover"`.

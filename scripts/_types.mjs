@@ -33,7 +33,8 @@
  * @property {number} insetAttackerPx The configured attacker inset in pixels.
  * @property {number} insetTargetPx The configured target inset in pixels.
  * @property {number} insetOccluderPx The configured occluder inset in pixels.
- * @property {object|string|null} level Cached active-canvas level for this pass.
+ * @property {Level} level The Level assumed for positions without one: the viewed Level of the active scene,
+ *   otherwise the initial Level of the scene.
  */
 
 /**
@@ -161,7 +162,6 @@
 
 /**
  * @typedef ActorCoverStates
- * @property {CoverLevel} statusCover The highest active system cover status, or "none".
  * @property {CoverLevel} embeddedCover The highest active embedded cover effect, or "none".
  */
 
