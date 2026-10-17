@@ -106,7 +106,7 @@ The button next to **Gridless Token Shape** explicitly applies the selected shap
 
 These settings fine-tune the engine's **pixel-based geometry** used for cover and LoS checks. They help avoid corner-grazing artifacts by moving sampling points inward and by slightly shrinking creature occluder bounds.
 
-All values are **integer pixels only** and **cannot be set below 0**. Additionally, each value is capped at **max 30% of the current grid size**.
+All values are **integer pixels only**. Attacker Inset and Target Inset **cannot be set below 1**, Occluder Inset **cannot be set below 0**. Additionally, each value is capped at **max 30% of the current grid size**.
 
 - **Attacker Inset (px)**
   Moves the attacker's sampling points from the raw token corners toward the token center.

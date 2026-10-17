@@ -25,9 +25,11 @@ export default class CoverObstacleRegionBehaviorConfig extends foundry.applicati
     distanceInput.before(checkboxLabel);
 
     distanceInput.placeholder = "∞";
+    let distance = distanceInput.value || "0";
     const updateDistanceLock = () => {
-      distanceInput.readOnly = checkbox.checked;
-      distanceInput.value = checkbox.checked ? "" : (distanceInput.value || "0");
+      if ( checkbox.checked ) distance = distanceInput.value || distance;
+      distanceInput.value = checkbox.checked ? "" : distance;
+      distanceInput.disabled = checkbox.checked;
     };
     updateDistanceLock();
     checkbox.addEventListener("change", updateDistanceLock);

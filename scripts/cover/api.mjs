@@ -25,7 +25,7 @@ import { getActorCoverStates } from "./status.mjs";
  * Resolve the debug flag and cover context for a cover evaluation, clearing any prior debug drawing first.
  * @param {Scene} scene The scene on which to evaluate cover.
  * @param {boolean|null} debug Whether to force debug output. Null uses the module debug setting.
- * @returns {{ debugOn: boolean, ctx: CoverContext|null }} The resolved debug flag and cover context.
+ * @returns {{ debugOn: boolean, ctx: CoverContext }} The resolved debug flag and cover context.
  */
 function resolveDebugContext(scene, debug) {
   const settingDebug = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.DEBUG);
@@ -71,7 +71,6 @@ export function getCover({
   if ( targetDoc.parent !== scene ) return null;
 
   const { debugOn, ctx } = resolveDebugContext(scene, debug);
-  if ( !ctx ) return null;
 
   const { result, los } = evaluateTargetCover(attackerDoc, targetDoc, ctx, {
     activity,
@@ -123,7 +122,6 @@ export function getCoverForTargets({
   if ( !scene ) return [];
 
   const { debugOn, ctx } = resolveDebugContext(scene, debug);
-  if ( !ctx ) return [];
 
   const list = targets
     ? Array.from(targets)

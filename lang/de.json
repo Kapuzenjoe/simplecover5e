@@ -20,11 +20,11 @@
         "Hint": "Automatische Deckungsberechnung läuft nur, solange ein Kampf aktiv ist."
       },
       "RemoveOnCombat": {
-        "Name": "Deckung bei Zugwechsel",
+        "Name": "Deckung bei Zugwechsel entfernen",
         "Hint": "Entfernt Deckungseffekte bei Zugwechseln im Kampf, im konfigurierten Geltungsbereich."
       },
       "RemoveOnMove": {
-        "Name": "Deckung bei Bewegung",
+        "Name": "Deckung bei Bewegung entfernen",
         "Hint": "Entfernt Deckungseffekte, wenn sich eine Figur bewegt, im konfigurierten Geltungsbereich."
       },
       "losCheck": {
@@ -49,7 +49,7 @@
         "Hint": "Kreaturen gewähren höchstens halbe Deckung. Durch Kreaturen blockierte Linien ergeben niemals Dreivierteldeckung. Wände folgen den normalen DMG-Regeln."
       },
       "IgnoreFriendly": {
-        "Name": "Deckung durch Verbündete",
+        "Name": "Deckung durch Verbündete ignorieren",
         "Hint": "Deckungsprüfungen ignorieren Figuren, die dem Angreifer freundlich gesinnt sind."
       },
       "IgnoreAOECover": {

@@ -72,8 +72,9 @@ export default class SimpleCoverVariantRulesSettingsConfig extends SimpleCoverBa
     const button = document.createElement("button");
     button.type = "button";
     button.dataset.action = "applyGridlessTokenShape";
-    button.dataset.tooltip = "SIMPLE_COVER_5E.Settings.GridlessTokenShape.ApplyExisting";
-    button.setAttribute("aria-label", "SIMPLE_COVER_5E.Settings.GridlessTokenShape.ApplyExisting");
+    const label = _loc("SIMPLE_COVER_5E.Settings.GridlessTokenShape.ApplyExisting");
+    button.dataset.tooltip = label;
+    button.setAttribute("aria-label", label);
     button.innerHTML = '<i class="fa-solid fa-rotate" inert></i>';
     formFields.append(button);
   }

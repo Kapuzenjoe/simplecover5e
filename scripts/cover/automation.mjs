@@ -19,8 +19,8 @@ const EXCLUDED_UNITS = new Set(["self", "touch", "special"]);
  */
 export function initCoverHooks() {
   ignoreCoverProperties();
-  Hooks.on("combatTurnChange", clearCoverOnCombatTurnChange);
-  Hooks.on("deleteCombat", clearCoverOnDeleteCombat);
+  Hooks.on("combatTurnChange", clearCoverOnCombatChange);
+  Hooks.on("deleteCombat", clearCoverOnCombatChange);
   Hooks.on("moveToken", clearCoverOnMovement);
   Hooks.on("preCreateToken", onPreCreateToken);
   Hooks.on("dnd5e.preRollAttack", onPreRollAttack);
@@ -54,28 +54,11 @@ function adjustMessageTargetAC(message, targetUuid, newAC) {
 /* -------------------------------------------- */
 
 /**
- * Clear cover when the active combat turn changes.
- * @param {Combat} combat The combat encounter whose turn changed.
- * @param {Combatant|null} previous The previous combatant.
- * @param {Combatant|null} current The current combatant.
+ * Clear cover when the active combat turn changes or a combat encounter is deleted.
+ * @param {Combat} combat The combat encounter whose turn changed or that is being deleted.
  * @returns {Promise<void>} Resolves after any cover cleanup has finished.
  */
-async function clearCoverOnCombatTurnChange(combat, previous, current) {
-  if ( !rollAutomationEnabled(combat) ) return;
-  if ( !game.users.activeGM?.isSelf ) return;
-  if ( !game.settings.get(MODULE_ID, SETTING_KEYS.RMV_ON_COMBAT) ) return;
-
-  await clearSystemCoverEffects(combat);
-}
-
-/* -------------------------------------------- */
-
-/**
- * Clear cover when a combat encounter is deleted.
- * @param {Combat} combat The combat encounter being deleted.
- * @returns {Promise<void>} Resolves after any cover cleanup has finished.
- */
-async function clearCoverOnDeleteCombat(combat) {
+async function clearCoverOnCombatChange(combat) {
   if ( !rollAutomationEnabled(combat) ) return;
   if ( !game.users.activeGM?.isSelf ) return;
   if ( !game.settings.get(MODULE_ID, SETTING_KEYS.RMV_ON_COMBAT) ) return;
@@ -92,6 +75,7 @@ async function clearCoverOnDeleteCombat(combat) {
  */
 async function clearCoverOnMovement(token) {
   const active = game.combats?.active;
+  if ( !active ) return;
   if ( !rollAutomationEnabled(active) ) return;
   if ( !game.users.activeGM?.isSelf ) return;
   if ( !game.settings.get(MODULE_ID, SETTING_KEYS.RMV_ON_MOVE) ) return;

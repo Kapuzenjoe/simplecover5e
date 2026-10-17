@@ -179,7 +179,11 @@ async function _applyCoverStatus(actor, cover) {
     semaphore = new foundry.utils.Semaphore(1);
     coverStatusSemaphores.set(actor.uuid, semaphore);
   }
-  return semaphore.add(_toggleCoverStatus, actor, cover);
+  try {
+    return await semaphore.add(_toggleCoverStatus, actor, cover);
+  } finally {
+    if ( (semaphore.active === 0) && (semaphore.remaining === 0) ) coverStatusSemaphores.delete(actor.uuid);
+  }
 }
 
 /* -------------------------------------------- */

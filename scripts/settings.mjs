@@ -293,7 +293,7 @@ const SETTINGS = [
     type: new foundry.data.fields.NumberField({
       initial: 1,
       integer: true,
-      min: 0,
+      min: 1,
       nullable: false,
       required: true
     })
@@ -308,7 +308,7 @@ const SETTINGS = [
     type: new foundry.data.fields.NumberField({
       initial: 3,
       integer: true,
-      min: 0,
+      min: 1,
       nullable: false,
       required: true
     })

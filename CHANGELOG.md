@@ -9,6 +9,7 @@
 - Fixed saving throws against repeated area effects using the cover origin of an older leftover template instead of the newest one.
 - Fixed the wall line-of-sight check ignoring walls when the attacker position passed to the API has no Level on a scene other than the viewed one.
 - Fixed a duplicate hover label sometimes staying on the canvas after quickly leaving and re-entering a token.
+- Fixed the Cover Obstacle's Interior Block Distance being reset when the Infinite option is toggled.
 
 ## 2.2.3
 
