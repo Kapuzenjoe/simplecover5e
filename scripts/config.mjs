@@ -1,5 +1,5 @@
 /**
- * @import { CoverConstants } from "./_types.mjs";
+ * @import { CoverConstants, CoverLevel } from "./_types.mjs";
  */
 
 /**
@@ -116,30 +116,27 @@ export const SETTING_KEYS = Object.freeze({
 const DAE_FLAG_SCOPES = Object.freeze(["all", "attack", "save"]);
 
 /**
- * Actor flags that let the flag holder ignore a specific cover level (or all cover) on their own rolls.
- * @type {string[]}
+ * Actor flags that are redirected to a cover rule. Optional `value` is the number of cover steps and `max` the
+ * highest cover level the rule applies to.
+ * @type {Record<string, { type: string, [value]: number, [max]: CoverLevel }>}
+ * @deprecated since Simple Cover 5e 2.3
  */
-const DAE_IGNORE_FLAGS = Object.freeze(["ignoreAllCover", "ignoreHalfCover", "ignoreThreeQuartersCover"]);
-
-/**
- * Actor flags that shift the resolved cover level up (on the target) or down (on the source) by one step.
- * @type {string[]}
- */
-const DAE_RANGED_FLAGS = Object.freeze(["upgradeCover", "downgradeCover"]);
-
-/**
- * All cover-related actor flags registered as DAE auto-fields.
- * @type {string[]}
- */
-const DAE_FLAGS = Object.freeze([...DAE_IGNORE_FLAGS, ...DAE_RANGED_FLAGS]);
+export const SHIM_FLAGS = Object.freeze({
+  ignoreAllCover: { type: "reduceTargetCover", value: 3 },
+  ignoreHalfCover: { type: "reduceTargetCover", value: 3, max: "half" },
+  ignoreThreeQuartersCover: { type: "reduceTargetCover", value: 3, max: "threeQuarters" },
+  upgradeCover: { type: "increaseOwnCover" },
+  downgradeCover: { type: "reduceTargetCover" }
+});
 
 /**
  * DAE auto-field definitions, mapping each flag's full data path to its localization keys.
  * @type {Record<string, { hint: string, name: string }>}
+ * @deprecated since Simple Cover 5e 2.3
  */
 export const FLAGS = Object.freeze(
   Object.fromEntries(
-    DAE_FLAGS.flatMap(flag => {
+    Object.keys(SHIM_FLAGS).flatMap(flag => {
       return DAE_FLAG_SCOPES.map(scope => {
         const baseKey = `SIMPLE_COVER_5E.Flags.${flag}.${scope}`;
         return [

@@ -40,7 +40,7 @@ export function initCoverHooks() {
  * @returns {void}
  */
 function adjustMessageTargetAC(message, targetUuid, newAC) {
-  const targets = message?.data?.system?.targets ?? message?.data?.flags?.dnd5e?.targets;
+  const targets = message?.data?.system?.targets;
   if ( !Array.isArray(targets) ) return;
 
   for ( const t of targets ) {
@@ -115,7 +115,7 @@ function ignoreCoverProperties() {
 /* -------------------------------------------- */
 
 /**
- * Update attack roll configuration when the cover selection changes in the roll dialog.
+ * Update attack roll configuration when the cover selection or the attack mode changes in the roll dialog.
  * @param {RollConfigurationDialog} app The roll configuration dialog.
  * @param {BasicRollConfiguration} config The roll configuration data being updated.
  * @param {FormDataExtended} [formData] Form data entered into the rolling prompt.
@@ -125,8 +125,16 @@ function ignoreCoverProperties() {
 function onBuildAttackRollConfig(app, config, formData, index) {
   if ( !rollAutomationEnabled() ) return;
 
+  const attackMode = formData?.get("attackMode");
+  if ( (attackMode != null) && (attackMode !== app.config.attackMode) ) {
+    app.config.attackMode = attackMode;
+    foundry.utils.setProperty(app.message, COVER_TARGETS_PATH, []);
+    onPreRollAttack(app.config, app, app.message);
+    return;
+  }
+
   const changes = applyDialogCoverOverride(app, formData);
-  const targets = app.message?.data?.system?.targets ?? app.message?.data?.flags?.dnd5e?.targets ?? [];
+  const targets = app.message?.data?.system?.targets ?? [];
 
   for ( const change of changes ) {
     setAttackCoverBonus({
@@ -204,6 +212,7 @@ function onPreRollAttack(config, dialog, message) {
   const losCheck = !!game.settings.get(MODULE_ID, SETTING_KEYS.LOS_CHECK);
   const resultArray = getCoverForTargets({
     activity,
+    attackMode: config.attackMode,
     losCheck,
     targets,
     attacker: attackerToken,

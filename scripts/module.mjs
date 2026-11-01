@@ -5,6 +5,7 @@ import { initCoverDebugHooks } from "./canvas/debug.mjs";
 import { initHoverHooks } from "./canvas/hover.mjs";
 import { initApi, readyApi } from "./cover/api.mjs";
 import { initCoverHooks } from "./cover/automation.mjs";
+import { initCoverRules } from "./cover/rules.mjs";
 import { initCoverStatusQueries } from "./cover/status.mjs";
 import { initCoverObstacleRegionBehavior } from "./data/cover-obstacle.mjs";
 import { initDaeIntegration } from "./integrations/dae.mjs";
@@ -15,6 +16,7 @@ Hooks.once("init", () => {
   initSettings();
   initCoverStatusQueries();
   initCoverHooks();
+  initCoverRules();
   initCoverDebugHooks();
   initCoverObstacleRegionBehavior();
   initCoverObstacleRegionBehaviorSheet();

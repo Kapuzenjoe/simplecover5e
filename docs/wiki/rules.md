@@ -8,11 +8,17 @@ Simple Cover 5e evaluates cover in three stages:
 
 1. **Geometric cover result** (engine): returns a cover level (`none`, `half`, `threeQuarters`) and its associated bonus (+0 / +2 / +5).
 2. **Line of sight** (optional): can promote the result to `total` if wall LoS is blocked.
-3. **Rule adjustments** (rules layer): can override or skip cover based on item properties, actor flags, feats, and optional settings.
+3. **Rule adjustments** (rules layer): can raise or lower the result based on Active Effect rules, feats, items, and optional settings.
+
+Rule adjustments run in this order:
+
+1. **Increase Own Cover** rules of the target raise the cover.
+2. **Reduce Target's Cover** rules of the attacker lower it. Their conditions see the cover after step 1.
+3. The **Ignore Cover** item property sets the cover to `none`.
 
 ## Fixed Rules
 
-These rules are always applied when relevant.
+These rules are always applied when relevant. They are built-in **Reduce Target's Cover** rules and work like the Active Effect rules below.
 
 ### Cover Levels and Bonuses
 
@@ -23,29 +29,22 @@ These rules are always applied when relevant.
 | `threeQuarters` | `5` |
 | `total` | `null` |
 
-### Legacy Item Property: Ignore Cover
-
-If an activity's item has the `ignoreCover` property, cover is ignored for that roll:
-
-- Effective cover becomes `none`
-- Bonus becomes `0`
-
-This is legacy support for older item-based cover exceptions. New actor-specific exceptions should use the scoped actor flags documented below.
-
 ### Feat: Sharpshooter (Ranged Weapon Attacks)
 
-For `actionType === "rwak"` and cover is **not** `total`:
+For weapon attacks that count as ranged and cover is `half` or `threeQuarters`:
 
 - If the attacker has **Sharpshooter**, cover is ignored (`none`, bonus `0`)
+
+A melee weapon thrown or used at range counts as ranged through its attack mode.
 
 Detection:
 
 - By `system.identifier === "sharpshooter"` **or**
 - By item name `"Sharpshooter"`
 
-### Feat: Spell Sniper (Ranged Spell Attacks)
+### Feat: Spell Sniper (Spell Attacks)
 
-For `actionType === "rsak"` and cover is **not** `total`:
+For spell attacks and cover is `half` or `threeQuarters`:
 
 - If the attacker has **Spell Sniper**, cover is ignored (`none`, bonus `0`)
 
@@ -56,7 +55,7 @@ Detection:
 
 ### Item: Wand of the War Mage
 
-For ranged or melee spell attacks (`rsak` or `msak`) where cover is exactly `half`:
+For spell attacks where cover is exactly `half`:
 
 - If the attacker has an equipped **and attuned** *Wand of the War Mage*, half cover is ignored (`none`, bonus `0`)
 
@@ -72,7 +71,7 @@ Detection:
 
 ### Spell: Sacred Flame
 
-If the computed cover is **not** total, cover is ignored for Sacred Flame saving throw activities.
+If the computed cover is `half` or `threeQuarters`, it is ignored for Sacred Flame saving throw activities.
 
 Detection:
 
@@ -111,9 +110,111 @@ When enabled:
 
 When enabled, friendly tokens are ignored as creature occluders during cover evaluation.
 
-## Optional Rules (Actor Flags)
+## Optional Rules (Active Effects)
 
-Simple Cover 5e supports actor-scoped overrides via flags. Each flag supports the scopes `.all`, `.attack`, and `.save`.
+Active Effects can change cover with two change types in the group **Simple Cover 5e**.
+
+| Change Type | Acts when the actor... | Effect |
+|:------------|:-----------------------|:-------|
+| **Reduce Target's Cover** (`simplecover5e.reduceTargetCover`) | makes an attack or forces a saving throw | Lowers the cover of the target |
+| **Increase Own Cover** (`simplecover5e.increaseOwnCover`) | is attacked or makes a saving throw | Raises the cover of the actor |
+
+### Key
+
+The key selects the rolls a change applies to: `d20` (attacks and saving throws), `attack`, or `save`. With dnd5e 6.1.0 or later the key is a drop-down, with dnd5e 6.0.x it is entered as text.
+
+### Value
+
+The value is the number of cover steps, from `1` to `3`. Reduce Target's Cover with `3` lowers any cover to `none`. Larger values count as `3`. A value of `0`, a negative value, or a value that is not a number does nothing. If several changes apply, the highest value is used, steps do not add up.
+
+### Conditions
+
+Conditions work like for other dnd5e rules. The effect and each change can have conditions.
+
+- **Effect conditions** check the actor holding the effect. For example `{ "k": "statuses.prone", "o": "gte", "v": 1 }` applies the effect only while the actor is prone.
+- **Change conditions** are checked for each roll against the roll data of the activity and one extra value:
+  - `simplecover5e.cover`: the cover level before the change (`none`, `half`, `threeQuarters`, or `total`)
+  - `roll.type`: `attack` or `save`
+  - `roll.attack.type`: `melee` or `ranged`
+  - `roll.attack.classification`: `weapon`, `spell`, or `unarmed`
+  - `roll.attack.mode`: the attack mode of the roll, such as `thrown`
+
+Compare `simplecover5e.cover` with `in` or an exact match. Operators such as `gt` and `lt` compare the names alphabetically, not the order of the cover levels. A condition with a misspelled key or value never applies.
+
+Without a change condition, a change applies at every cover level. Reduce Target's Cover only acts when there is cover to reduce, Increase Own Cover also raises `none`.
+
+### Examples
+
+**Enhanced Camouflage:** one step more cover against Half and Three-Quarters Cover.
+
+- Change Type: **Increase Own Cover**, Key: `d20`, Value: `1`
+- Change condition:
+
+```json
+{ "k": "simplecover5e.cover", "o": "in", "v": ["half", "threeQuarters"] }
+```
+
+**Low Profile:** one step more cover, only while prone.
+
+- Effect condition:
+
+```json
+{ "k": "statuses.prone", "o": "gte", "v": 1 }
+```
+
+- Change Type: **Increase Own Cover**, Key: `d20`, Value: `1`
+- Change condition:
+
+```json
+{ "k": "simplecover5e.cover", "o": "in", "v": ["none", "half", "threeQuarters"] }
+```
+
+**Penetration Shot:** the target's cover is one step lower, even Total Cover.
+
+- Change Type: **Reduce Target's Cover**, Key: `d20`, Value: `1`
+- Change condition:
+
+```json
+{ "k": "simplecover5e.cover", "o": "in", "v": ["half", "threeQuarters", "total"] }
+```
+
+### Rules on Items
+
+An Enchantment effect on an item applies its rules only to the rolls of that item. Use it for an item that changes cover only for itself.
+
+**Sniper Bow:** the bow ignores Half and Three-Quarters Cover for its attacks.
+
+- Effect type: **Enchantment**
+- Change Type: **Reduce Target's Cover**, Key: `attack`, Value: `3`
+- Change condition:
+
+```json
+{ "k": "simplecover5e.cover", "o": "in", "v": ["half", "threeQuarters"] }
+```
+
+**Ignore all cover:** the item ignores all cover for its attacks and saving throws. This replaces the deprecated **Ignore Cover** item property.
+
+- Effect type: **Enchantment**
+- Change Type: **Reduce Target's Cover**, Key: `d20`, Value: `3`
+- No change condition
+
+Items are only read for **Reduce Target's Cover**. **Increase Own Cover** on an item has no effect.
+
+## Legacy Actor Flags (Deprecated)
+
+Actor flags are deprecated since Simple Cover 5e 2.3 and will be removed in Simple Cover 5e 3.0. They still work and log a deprecation warning when used. Each flag supports the scopes `.all`, `.attack`, and `.save`.
+
+### Converting Flags to Rules
+
+| Flag | Rule |
+|:-----|:-----|
+| `ignoreAllCover` | **Reduce Target's Cover**, value `3` |
+| `ignoreThreeQuartersCover` | **Reduce Target's Cover**, value `3`, change condition: cover is `threeQuarters` or lower |
+| `ignoreHalfCover` | **Reduce Target's Cover**, value `3`, change condition: cover is `half` or lower |
+| `downgradeCover` | **Reduce Target's Cover** |
+| `upgradeCover` | **Increase Own Cover** |
+
+The scopes map to the key: `.all` to `d20`, `.attack` to `attack`, `.save` to `save`. In a flag value object, `steps` becomes the value, `min` and `max` become a change condition on `simplecover5e.cover`, and `condition` becomes an effect condition on `statuses.<id>`.
 
 ### Source Actor Flags
 
@@ -190,3 +291,12 @@ flags.simplecover5e.upgradeCover.all ADD 2
 ```text
 flags.simplecover5e.downgradeCover.save ADD {"steps":1,"min":"half","max":"total","condition":"prone"}
 ```
+
+## Legacy Item Property (Deprecated)
+
+The `ignoreCover` item property is deprecated since Simple Cover 5e 2.3. It still works. If an activity's item has the property, cover is ignored for that roll:
+
+- Effective cover becomes `none`
+- Bonus becomes `0`
+
+To replace it, use an Enchantment effect as described in [Rules on Items](#rules-on-items).

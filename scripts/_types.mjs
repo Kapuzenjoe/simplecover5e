@@ -80,6 +80,7 @@
  * @property {CoverLevel} [max] The maximum current cover that allows the flag to apply.
  * @property {number} [steps] The number of cover steps to add or remove.
  * @property {string} [condition] The status id required for the flag to apply.
+ * @deprecated since Simple Cover 5e 2.3
  */
 
 /**

@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.3.0
+
+- Added the **Reduce Target's Cover** and **Increase Own Cover** rules for active effects, replacing the cover flags (see Wiki: [Cover Rules](https://github.com/Kapuzenjoe/simplecover5e/wiki/Cover-Rules#optional-rules-active-effects)).
+- Added a warning for the GM when the world loads and actors or items still use the deprecated cover flags or the Ignores Cover property.
+- Changed the cover flags and item property to be deprecated, they will be removed in version 3.0.
+- Changed the minimum required dnd5e version to 6.0.0.
+- Fixed Sharpshooter not ignoring Half and Three-Quarters Cover for melee weapons thrown as a ranged attack.
+- Fixed cover not being recalculated when the attack mode is changed in the roll dialog.
+
 ## 2.2.4
 
 - Added the missing German translation for the Cover Obstacle Region Behavior.

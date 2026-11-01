@@ -263,6 +263,16 @@
         }
       }
     },
+    "Rules": {
+      "Group": "Simple Cover 5e",
+      "LegacyRules": "Deprecated cover flags or Ignores Cover properties are used on: {names}. Replace them with Increase Own Cover or Reduce Target's Cover changes.",
+      "increaseOwnCover": {
+        "Label": "Increase Own Cover"
+      },
+      "reduceTargetCover": {
+        "Label": "Reduce Target's Cover"
+      }
+    },
     "RegionBehavior": {
       "CoverObstacle": {
         "label": "Cover Obstacle",

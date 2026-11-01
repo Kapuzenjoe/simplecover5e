@@ -1,7 +1,6 @@
 <img src="docs/banner.png" alt="Simple Cover 5e — Geometric Cover on Any Grid · Automatic Attack & Save Cover · Cover Rules, Feats & Flags · Library API & Midi-QOL Support" width="100%">
 
 ![Static Badge](https://img.shields.io/badge/Foundry-v14-informational)
-![Static Badge](https://img.shields.io/badge/Dnd5e-v5.3-informational)
 ![Static Badge](https://img.shields.io/badge/Dnd5e-v6.0-informational)
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/peterlankton86911)
@@ -94,10 +93,10 @@ under [Cover Rules](https://github.com/Kapuzenjoe/simplecover5e/wiki/Cover-Rules
   target with Total Cover can't be targeted directly.
 - **Feats and items.** Sharpshooter (ranged weapon attacks), Spell Sniper (spell attacks), and Sacred Flame
   ignore Half and Three-Quarters Cover, but not Total Cover. An equipped and attuned Wand of the War Mage
-  ignores Half Cover on spell attacks. Items with the Ignore Cover property skip cover entirely.
-- **Actor flags.** Active Effects can ignore, upgrade, or downgrade cover with flags for attacks, saving
-  throws, or both. Upgrade and downgrade take 1 or 2 steps and can be limited by minimum and maximum cover or
-  by a status.
+  ignores Half Cover on spell attacks.
+- **Active Effect rules.** Reduce Target's Cover and Increase Own Cover change cover for attacks, saving
+  throws, or both. They take 1 to 3 steps and can be limited by cover level, roll data, or a condition on the
+  effect. The older actor flags still work, are deprecated, and will be removed in 3.0.
 - **Optional rules.** Creatures can be limited to Half Cover and friendly tokens can be ignored as blockers
   (see [Settings](#settings)).
 
@@ -174,7 +173,7 @@ Automation covers rolls, conditions, and clean-up. Library Mode turns all of it 
   through the wall's height range.
 - **Rideable.** A mount carrying riders doesn't block Cover Lines.
 - **Hide NPC Names.** Cover notes in roll dialogs show the replacement name of a hidden NPC.
-- **Dynamic Active Effects.** The cover flags appear in the effect editor with a name and description.
+- **Dynamic Active Effects.** The deprecated cover flags appear in the effect editor with a name and description.
 
 ---
 

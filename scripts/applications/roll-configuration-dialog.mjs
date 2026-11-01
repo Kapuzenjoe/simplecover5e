@@ -1,7 +1,6 @@
 import { COVER_TARGETS_PATH, MODULE_ID, COVER } from "../config.mjs";
 import { setCoverStatusViaGM } from "../cover/status.mjs";
 import { getHiddenNpcName } from "../integrations/hide-npc-names.mjs";
-import { isLegacyDnd5e } from "../utils.mjs";
 
 /**
  * @import { CoverLevel } from "../_types.mjs";
@@ -156,12 +155,10 @@ async function prepareNotes(dialog) {
     });
   }));
 
-  const type = isLegacyDnd5e()
-    ? dialog.message?.data?.flags?.dnd5e?.roll?.type
-    : dialog.message?.data?.type;
+  const type = dialog.message?.data?.type;
   const targets = foundry.utils.getProperty(dialog.message, COVER_TARGETS_PATH) ?? [];
   if ( ((type === "attack") || (type === "save")) && targets.length ) {
-    const systemTargets = dialog.message?.data?.system?.targets ?? dialog.message?.data?.flags?.dnd5e?.targets ?? [];
+    const systemTargets = dialog.message?.data?.system?.targets ?? [];
     const targetNotes = await Promise.all(targets.map((target, index) => {
       const cover = target.newCover ?? target.originalCover ?? "none";
       const statusId = COVER.IDS[cover];

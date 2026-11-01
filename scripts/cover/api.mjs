@@ -47,6 +47,7 @@ function resolveDebugContext(scene, debug) {
  * @param {boolean|null} [options.debug=null] Whether to force debug output. Null uses the module debug setting.
  * @param {boolean} [options.losCheck=false] Whether to perform a wall line-of-sight check.
  * @param {Activity5e|null} [options.activity=null] The activity being evaluated for cover.
+ * @param {string} [options.attackMode=""] The attack mode of the roll, used for the activity's ignore-cover rules.
  * @param {boolean} [options.includeEmbeddedCover=false] Whether embedded cover effects on the target should be
  *   considered.
  * @returns {CoverEvaluationResult|null} The computed cover result, or null if inputs are invalid.
@@ -58,6 +59,7 @@ export function getCover({
   debug = null,
   losCheck = false,
   activity = null,
+  attackMode = "",
   includeEmbeddedCover = false
 }={}) {
   if ( !attacker || !target ) return null;
@@ -74,6 +76,7 @@ export function getCover({
 
   const { result, los } = evaluateTargetCover(attackerDoc, targetDoc, ctx, {
     activity,
+    attackMode,
     includeEmbeddedCover,
     losCheck,
     debug: debugOn
@@ -101,6 +104,7 @@ export function getCover({
  * @param {boolean|null} [options.debug=null] Whether to force debug output. Null uses the module debug setting.
  * @param {boolean} [options.losCheck=false] Whether to perform a wall line-of-sight check.
  * @param {Activity5e|null} [options.activity=null] The activity being evaluated for cover.
+ * @param {string} [options.attackMode=""] The attack mode of the roll, used for the activity's ignore-cover rules.
  * @param {boolean} [options.includeEmbeddedCover=false] Whether embedded cover effects on targets should be considered.
  * @returns {CoverTargetResult[]} The per-target cover results.
  */
@@ -111,6 +115,7 @@ export function getCoverForTargets({
   debug = null,
   losCheck = false,
   activity = null,
+  attackMode = "",
   includeEmbeddedCover = false
 }={}) {
   if ( !attacker ) return [];
@@ -135,6 +140,7 @@ export function getCoverForTargets({
 
     const { result, los } = evaluateTargetCover(attackerDoc, targetDoc, ctx, {
       activity,
+      attackMode,
       includeEmbeddedCover,
       losCheck,
       debug: debugOn
@@ -241,6 +247,7 @@ export function setDialogNote(dialogConfig, note={}) {
  * @param {boolean} [options.debug=false] Whether debug geometry should be collected.
  * @param {boolean} [options.losCheck=false] Whether wall line-of-sight can force total cover.
  * @param {Activity5e|null} [options.activity=null] The activity being evaluated for cover rules.
+ * @param {string} [options.attackMode=""] The attack mode of the roll, used for the activity's ignore-cover rules.
  * @param {boolean} [options.includeEmbeddedCover=false] Whether embedded cover effects should be considered.
  * @returns {{ result: CoverEvaluationResult, los: LosResult }} The final cover result and LOS data.
  */
@@ -248,6 +255,7 @@ function evaluateTargetCover(attackerDoc, targetDoc, ctx, {
   debug = false,
   losCheck = false,
   activity = null,
+  attackMode = "",
   includeEmbeddedCover = false
 }={}) {
   const los = losCheck
@@ -270,7 +278,7 @@ function evaluateTargetCover(attackerDoc, targetDoc, ctx, {
   }
 
   if ( activity ) {
-    ({ cover, bonus } = ignoresCover(activity, cover, targetDoc?.actor));
+    ({ cover, bonus } = ignoresCover(activity, cover, targetDoc?.actor, attackMode));
   }
 
   result.cover = cover;
