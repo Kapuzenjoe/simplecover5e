@@ -383,6 +383,7 @@ function onGetSceneControlButtons(controls) {
     icon: "fa-solid fa-shield-exclamation",
     name: MODULE_ID,
     onChange: () => clearSystemCoverEffects(game.combats.active),
+    order: Object.keys(controls.tokens.tools).length,
     title: "SIMPLE_COVER_5E.Controls.ClearCover.Title"
   };
 }

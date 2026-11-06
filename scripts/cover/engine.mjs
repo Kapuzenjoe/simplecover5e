@@ -1,5 +1,5 @@
 import { MODULE_ID, COVER, COVER_OBSTACLE_TYPE, SETTING_KEYS } from "../config.mjs";
-import { isWallHeightModuleActive, wallHeightBlocks } from "../integrations/wall-height.mjs";
+import { isWallHeightModuleActive } from "../integrations/wall-height.mjs";
 
 import {
   applyProneMode, getCreatureHeight, getTokenExternalRadius, isBlockingCreatureToken, isEllipse
@@ -208,7 +208,7 @@ export function evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, options=
         const segs = [];
 
         for ( const tCorner of tgtCorners ) {
-          const wallResult = wallsBlock(aCorner, tCorner, ctx);
+          const wallResult = wallsBlock(aCorner, tCorner, ctx, { attackerDoc });
           const attacker = { x: aCorner.x, y: aCorner.y, z: attackerZ };
           const target = { x: tCorner.x, y: tCorner.y, z: targetZ };
 
@@ -293,8 +293,6 @@ export function evaluateLOS(attackerDoc, targetDoc, ctx, { debug = null }={}) {
   origin.elevation ??= attackerDoc?.elevation ?? 0;
   origin.level ??= attackerDoc?.level ?? ctx.level ?? null;
 
-  if ( isWallHeightModuleActive() ) origin.elevation = (attackerDoc?.elevation ?? 0) + getCreatureHeight(attackerDoc);
-
   const targetTestPoints = targetDoc.getVisibilityTestPoints?.()
         ?? [{ elevation: targetDoc?.elevation ?? 0, x: targetDoc.x, y: targetDoc.y }];
   for ( const point of targetTestPoints ) point.level = targetDoc?.level ?? null;
@@ -303,7 +301,7 @@ export function evaluateLOS(attackerDoc, targetDoc, ctx, { debug = null }={}) {
   let hasLOS = false;
 
   for ( const p of targetTestPoints ) {
-    const wallResult = wallsBlock(origin, p, ctx);
+    const wallResult = wallsBlock(origin, p, ctx, { attackerDoc });
     targetLosPoints.push({ blocked: wallResult.blocked, x: p.x, y: p.y });
 
     if ( !wallResult.blocked ) {
@@ -368,62 +366,8 @@ function buildTokenCornersForCenter(center, ctx, td, inset) {
   corners.forEach(c => c.elevation = center?.elevation ?? 0);
   corners.forEach(c => c.level = center?.level ?? null);
 
-  // @see Foundry-Core — TokenDocument#_constrainTestPoints()
   td._constrainTestPoints(corners, {});
   return corners;
-}
-
-/* -------------------------------------------- */
-
-/**
- * Compute the ray parameter at which sight testing switches from the source Level's walls to the target
- * Level's walls, matching Foundry's own multi-Level sight-splitting behavior.
- * @see Foundry-Core — DetectionMode.#getIntermediateTValue()
- * @param {Position} origin The segment start point.
- * @param {Position} destination The segment end point.
- * @param {Level|null} fromLevel The Level containing origin.
- * @param {Level|null} toLevel The Level containing destination.
- * @returns {number} The t-value (0-1) at which the source segment ends and the target segment begins.
- */
-function getLevelSplitT(origin, destination, fromLevel, toLevel) {
-  if ( !fromLevel || !toLevel || (fromLevel === toLevel) ) return 1;
-
-  const delta = (destination.elevation ?? 0) - (origin.elevation ?? 0);
-  let to0; let to1; let td0; let td1;
-
-  if ( delta !== 0 ) {
-    to0 = (fromLevel.elevation.bottom - origin.elevation) / delta;
-    to1 = (fromLevel.elevation.top - origin.elevation) / delta;
-    if ( to0 > to1 ) [to0, to1] = [to1, to0];
-
-    td0 = (toLevel.elevation.bottom - origin.elevation) / delta;
-    td1 = (toLevel.elevation.top - origin.elevation) / delta;
-    if ( td0 > td1 ) [td0, td1] = [td1, td0];
-  } else {
-    to0 = fromLevel.elevation.bottom <= origin.elevation ? -Infinity : Infinity;
-    to1 = fromLevel.elevation.top >= origin.elevation ? Infinity : -Infinity;
-    td0 = toLevel.elevation.bottom <= origin.elevation ? -Infinity : Infinity;
-    td1 = toLevel.elevation.top >= origin.elevation ? Infinity : -Infinity;
-  }
-
-  // The ray never reaches the target Level: test the source Level only.
-  if ( (td0 > 1) || (td1 < 0) ) return 1;
-
-  // The ray is never within the source Level: test the target Level only.
-  if ( (to0 > 1) || (to1 < 0) ) return 0;
-
-  // The ray leaves the target Level before it leaves the source Level: test the source Level only.
-  to1 = Math.min(to1, 1);
-  td1 = Math.min(td1, 1);
-  if ( to1 > td1 ) return 1;
-
-  // The ray enters the target Level before it enters the source Level: test the target Level only.
-  to0 = Math.max(to0, 0);
-  td0 = Math.max(td0, 0);
-  if ( to0 > td0 ) return 0;
-
-  // Otherwise split where the ray leaves the source Level and enters the target Level.
-  return Math.max(to1, td0);
 }
 
 /* -------------------------------------------- */
@@ -481,108 +425,37 @@ function segIntersectsPolygonPrism(p, q, prism) {
 /* -------------------------------------------- */
 
 /**
- * Test whether sight-blocking walls or surfaces obstruct one ray segment within a single Level.
- * If the Wall Height module is active, wall collisions are additionally filtered by wall top/bottom values.
- * @see Foundry-Core — DetectionMode.#testCollision()
- * @param {Position} origin The segment start point.
- * @param {Position} destination The segment end point.
- * @param {CoverContext} ctx The cover evaluation context.
- * @param {Level|null} level The Level to test walls and surfaces against.
- * @param {number} tMin The ray parameter marking the start of the segment.
- * @param {number} tMax The ray parameter marking the end of the segment.
- * @returns {{ blocked: boolean, surfaceBlocked: boolean, collisions: object[] }} The segment test result.
+ * Determine whether walls or surfaces block the segment between two corners.
+ * @param {Position} aCorner  The attacker corner
+ * @param {Position} bCorner  The target corner
+ * @param {CoverContext} ctx  The cover evaluation context
+ * @param {object} [options]  Additional wall test options
+ * @param {TokenDocument5e|Position|null} [options.attackerDoc=null]  The attacker token document or position
+ * @returns {{ aCorner: Position, bCorner: Position, blocked: boolean }}  Whether the segment is blocked
  */
-function testSightSegment(origin, destination, ctx, level, tMin, tMax) {
-  const scene = ctx.scene ?? canvas?.scene;
-  const backend = CONFIG.Canvas.polygonBackends.sight;
-
-  const surfaceBlocked = scene?.testSurfaceCollision?.(origin, destination, {
-    tMax,
-    tMin,
+function wallsBlock(aCorner, bCorner, ctx, { attackerDoc=null }={}) {
+  const levels = ctx.scene.levels;
+  const level = levels.get(bCorner.level?.id ?? bCorner.level);
+  const wallHeightEye = attackerDoc?.object?.losHeight ?? aCorner.elevation;
+  const wallHeightBounds = isWallHeightModuleActive() ? { b: wallHeightEye, t: wallHeightEye } : {};
+  const source = {
+    blinded: { darkness: false },
+    data: { angle: 360 },
+    level: levels.get(aCorner.level?.id ?? aCorner.level),
+    los: { type: "sight", edgeTypes: { source: false }, useThreshold: true },
+    object: { document: { hasStatusEffect: () => false }, elevation: aCorner.elevation },
+    origin: { x: aCorner.x, y: aCorner.y, elevation: aCorner.elevation, ...wallHeightBounds }
+  };
+  const test = {
     level,
-    mode: "any",
-    type: "sight"
-  }) ?? false;
-
-  let wallBlocked = false;
-  let collisions = [];
-  if ( isWallHeightModuleActive() ) {
-    collisions = backend.testCollision(origin, destination, {
-      tMax,
-      tMin,
-      level,
-      mode: "all",
-      type: "sight",
-      edgeTypes: { source: false },
-      useThreshold: true
-    }) ?? [];
-    wallBlocked = collisions.length > 0;
-  }
-  else {
-    wallBlocked = backend.testCollision(origin, destination, {
-      tMax,
-      tMin,
-      level,
-      mode: "any",
-      type: "sight",
-      edgeTypes: { source: false },
-      useThreshold: true
-    }) ?? false;
-  }
-
-  return { blocked: surfaceBlocked || wallBlocked, surfaceBlocked, collisions };
-}
-
-/* -------------------------------------------- */
-
-/**
- * Test whether sight-blocking walls obstruct the segment between two positions.
- * If the Wall Height module is active, the intersection is additionally filtered by wall top and bottom values.
- * @see Foundry-Core — DetectionMode._testCollision()
- * @param {Position} aCorner The attacker corner.
- * @param {Position} bCorner The target corner.
- * @param {CoverContext} ctx The cover evaluation context.
- * @returns {{ blocked: boolean, aCorner: Position, bCorner: Position, collisions?: object[] }} A result describing
- *   whether the tested segment is blocked.
- */
-function wallsBlock(aCorner, bCorner, ctx) {
-  const scene = ctx.scene ?? canvas?.scene;
-
-  let fromLevel = aCorner?.level ?? ctx.level ?? null;
-  if ( typeof fromLevel === "string" ) fromLevel = scene?.levels?.get(fromLevel) ?? null;
-
-  let toLevel = bCorner?.level ?? ctx.level ?? null;
-  if ( typeof toLevel === "string" ) toLevel = scene?.levels?.get(toLevel) ?? null;
-
-  toLevel ??= fromLevel;
-
-  const tSplit = getLevelSplitT(aCorner, bCorner, fromLevel, toLevel);
-
-  let blocked = false;
-  let surfaceCollisionBlocked = false;
-  let collisions = [];
-
-  // Segment 1: source level
-  if ( fromLevel && (tSplit > 0) ) {
-    const segment = testSightSegment(aCorner, bCorner, ctx, fromLevel, 0, tSplit);
-    surfaceCollisionBlocked ||= segment.surfaceBlocked;
-    collisions.push(...segment.collisions);
-    if ( segment.blocked ) blocked = true;
-  }
-
-  // Segment 2: target level
-  if ( !blocked && toLevel && (tSplit < 1) ) {
-    const segment = testSightSegment(aCorner, bCorner, ctx, toLevel, tSplit, 1);
-    surfaceCollisionBlocked ||= segment.surfaceBlocked;
-    collisions.push(...segment.collisions);
-    if ( segment.blocked ) blocked = true;
-  }
-
-  if ( !isWallHeightModuleActive() || surfaceCollisionBlocked ) {
-    return { aCorner, bCorner, blocked };
-  }
-
-  return wallHeightBlocks(aCorner, bCorner, collisions)
-    ? { aCorner, bCorner, blocked: true }
-    : { aCorner, bCorner, collisions, blocked: false };
+    los: new Map(),
+    point: { x: bCorner.x, y: bCorner.y, elevation: bCorner.elevation }
+  };
+  const mode = { enabled: true, range: Infinity };
+  const visible = CONFIG.Canvas.detectionModes.basicSight.testVisibility(source, mode, {
+    level,
+    object: null,
+    tests: [test]
+  });
+  return { aCorner, bCorner, blocked: !visible };
 }

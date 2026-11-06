@@ -4,13 +4,19 @@
 
 const DEBUG_Z_INDEX = 1000;
 const DEFAULT_SEGMENT_ALPHA = 0.9;
-const DEFAULT_SEGMENT_WIDTH = 2;
+const SEGMENT_WIDTH_BLOCKED = 2;
+const SEGMENT_WIDTH_CLEAR = 3;
 
 const DEFAULT_SHAPE_ALPHA = 0.7;
 const DEFAULT_SHAPE_LINE_WIDTH = 2;
 
 const SEGMENT_COLOR_BLOCKED = 0xff0000;
 const SEGMENT_COLOR_CLEAR = 0x00ff00;
+
+const SEGMENT_DASH_BLOCKED = { dash: 6, gap: 6, offset: 0 };
+const SEGMENT_DASH_CLEAR = { dash: 2, gap: 10, offset: 8 };
+
+const SEGMENT_LABEL_FONT_SIZE = 16;
 
 const TOKEN_COLOR_ATTACKER = 0x00ff00;
 const TOKEN_COLOR_TARGET = 0x0000ff;
@@ -26,12 +32,19 @@ const DEFAULT_POINT_LINE_WIDTH = 1;
 let debugGraphics = null;
 
 /**
+ * @type {{ blocked: foundry.canvas.rendering.shaders.DashLineShader,
+ *   clear: foundry.canvas.rendering.shaders.DashLineShader }|null}
+ */
+let segmentShaders = null;
+
+/**
  * Clear the current cover debug graphics without destroying the shared graphics object.
  * @returns {void}
  */
 export function clearCoverDebug() {
   if ( !debugGraphics || debugGraphics.destroyed ) return;
   debugGraphics.clear();
+  for ( const child of debugGraphics.removeChildren() ) child.destroy();
 }
 
 /* -------------------------------------------- */
@@ -115,7 +128,7 @@ export function initCoverDebugHooks() {
 /* -------------------------------------------- */
 
 /**
- * Draw a single debug segment onto the graphics context.
+ * Draw a single debug segment onto the graphics context, labelled with its slope when the end points differ in height.
  * @param {PIXI.Graphics} g The graphics object to draw on.
  * @param {DebugSegment} segment The segment configuration to render.
  * @returns {void}
@@ -130,11 +143,31 @@ function drawDebugSegment(g, segment) {
   const blocked = !!segment.blocked;
   const color = (blocked ? SEGMENT_COLOR_BLOCKED : SEGMENT_COLOR_CLEAR);
   const alpha = DEFAULT_SEGMENT_ALPHA;
-  const width = DEFAULT_SEGMENT_WIDTH;
+  const width = blocked ? SEGMENT_WIDTH_BLOCKED : SEGMENT_WIDTH_CLEAR;
+  const { DashLineShader } = foundry.canvas.rendering.shaders;
+  segmentShaders ??= {
+    blocked: new DashLineShader(SEGMENT_DASH_BLOCKED),
+    clear: new DashLineShader(SEGMENT_DASH_CLEAR)
+  };
+  const shader = blocked ? segmentShaders.blocked : segmentShaders.clear;
 
-  g.lineStyle(width, color, alpha);
+  g.lineStyle({ alpha, color, shader, width });
   g.moveTo(from.x, from.y);
   g.lineTo(to.x, to.y);
+
+  const rise = to.elevation - from.elevation;
+  if ( !rise ) return;
+
+  const run = Math.hypot(to.x - from.x, to.y - from.y) / canvas.scene.dimensions.distancePixels;
+  const angle = Math.round(Math.toDegrees(Math.atan2(rise, run)));
+  if ( !angle ) return;
+
+  const { PreciseText } = foundry.canvas.containers;
+  const style = PreciseText.getTextStyle({ fontSize: SEGMENT_LABEL_FONT_SIZE });
+  const label = new PreciseText(`${angle > 0 ? "+" : ""}${angle}°`, style);
+  label.anchor.set(0.5);
+  label.position.set((from.x + to.x) / 2, (from.y + to.y) / 2);
+  g.addChild(label);
 }
 
 /* -------------------------------------------- */

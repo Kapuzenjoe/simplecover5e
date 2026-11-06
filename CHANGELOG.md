@@ -6,6 +6,7 @@
 - Added a warning for the GM when the world loads and actors or items still use the deprecated cover flags or the Ignores Cover property.
 - Changed the cover flags and item property to be deprecated, they will be removed in version 3.0.
 - Changed the minimum required dnd5e version to 6.0.0.
+- Changed the Wall Height integration to basic support, since the module is outdated for Foundry v14; Cover Obstacle Regions cover blocking objects.
 - Fixed Sharpshooter not ignoring Half and Three-Quarters Cover for melee weapons thrown as a ranged attack.
 - Fixed cover not being recalculated when the attack mode is changed in the roll dialog.
 
@@ -48,7 +49,7 @@
 ## 2.2.0
 
 - **New Feature: Cover Obstacle Regions.** A new Region Behavior lets Regions block Cover Lines like a creature would (#40).
-  - Optional Size / Creature Type filters exempt matching tokens (attacker and target).
+  - Optional Size / Creature Type filters exempt matching target tokens.
   - **Interior Block Distance**: blank/infinity never blocks while both are inside the Region, `0` always blocks, otherwise blocks once they're that far apart.
 - Blocking creature tokens now use their true token shape instead of an approximated square. Standard square-grid tokens are unaffected, but hex-grid creatures, gridless circles/ellipses, and non-square multi-cell tokens (e.g. a 2×1 creature) now use their real footprint.
 - Fixed hex-grid creature tokens occluding cover from an incorrect position when not exactly centered on their grid cell (e.g. after moving with grid snapping disabled).

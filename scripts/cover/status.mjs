@@ -231,7 +231,7 @@ function isPlayerOwned({ token, actor }) {
 function resolveTokensForScope(combat, scope) {
   const combatScene =
     combat?.combatants?.find(c => c?.token?.parent)?.token?.parent
-    ?? (typeof combat?.scene === "string" ? game.scenes.get(combat.scene) : combat?.scene)
+    ?? combat?.scene
     ?? null;
   const scene = combatScene ?? canvas?.scene;
 

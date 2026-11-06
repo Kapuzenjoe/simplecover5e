@@ -169,8 +169,9 @@ Automation covers rolls, conditions, and clean-up. Library Mode turns all of it 
 - **Midi-QOL.** Official integration with Midi-QOL v13.0.30 and later. With Midi-QOL's cover calculation set
   to Simple Cover 5e, the module only provides the cover while Midi-QOL runs the workflow.
 - **RSReforged.** Compatible with RSReforged v4.13.4 and later, the successor to Ready Set Roll.
-- **Wall Height.** Wall top and bottom bounds count as 3D barriers: a line is only blocked if it passes
-  through the wall's height range.
+- **Wall Height.** A wall with top and bottom bounds only blocks a line if the attacker's line-of-sight height
+  from Wall Height lies within the wall's height range.
+  For low walls and other objects that should grant cover, use a Cover Obstacle Region.
 - **Rideable.** A mount carrying riders doesn't block Cover Lines.
 - **Hide NPC Names.** Cover notes in roll dialogs show the replacement name of a hidden NPC.
 - **Dynamic Active Effects.** The deprecated cover flags appear in the effect editor with a name and description.

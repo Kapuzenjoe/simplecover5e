@@ -101,9 +101,12 @@ function getTargetName(target, systemTargets) {
  */
 async function onRenderRollConfigurationDialog(dialog, html) {
   const notes = await prepareNotes(dialog);
-  if ( !notes ) return;
-
-  html.querySelector(DIALOG_NOTES_SELECTOR)?.remove();
+  const existingNotes = html.querySelector(DIALOG_NOTES_SELECTOR);
+  existingNotes?.remove();
+  if ( !notes ) {
+    if ( existingNotes ) dialog.setPosition();
+    return;
+  }
 
   const configuration = html.querySelector(ROLL_CONFIGURATION_SELECTOR);
   if ( !configuration ) return;

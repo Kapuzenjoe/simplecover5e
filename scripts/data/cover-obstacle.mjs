@@ -87,7 +87,7 @@ export default class CoverObstacleRegionBehaviorType extends foundry.data.region
 
   /**
    * Check whether a token is exempt from this obstacle via the size/type filters.
-   * @param {TokenDocument} token The attacker or target token document.
+   * @param {TokenDocument} token The target token document.
    * @returns {boolean} True if the token's size or type is ignored.
    */
   #isIgnoredToken(token) {
