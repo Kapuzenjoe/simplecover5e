@@ -1,5 +1,5 @@
 import { MODULE_ID, COVER, COVER_OBSTACLE_TYPE, SETTING_KEYS } from "../config.mjs";
-import { isWallHeightModuleActive } from "../integrations/wall-height.mjs";
+import { getWallHeightBounds } from "../integrations/wall-height.mjs";
 
 import {
   applyProneMode, getCreatureHeight, getTokenExternalRadius, isBlockingCreatureToken, isEllipse
@@ -193,10 +193,11 @@ export default class CoverEvaluation {
     for ( const point of targetTestPoints ) point.level = target?.level ?? null;
 
     const targetLosPoints = [];
+    const targetRange = [this.#targetBottom, this.#targetBottom + this.#targetHeight];
     let hasLOS = false;
 
     for ( const p of targetTestPoints ) {
-      const blocked = this.#wallsBlock(origin, p);
+      const blocked = this.#wallsBlock(origin, p, { elevations: targetRange });
       targetLosPoints.push({ blocked, x: p.x, y: p.y });
 
       if ( !blocked ) {
@@ -461,7 +462,7 @@ export default class CoverEvaluation {
       }
     }
 
-    if ( (COVER.ORDER[cover] < COVER.ORDER[wallCover]) && this.#wallsBlock(aCorner, tPoint, wallType) ) {
+    if ( (COVER.ORDER[cover] < COVER.ORDER[wallCover]) && this.#wallsBlock(aCorner, tPoint, { type: wallType }) ) {
       cover = wallCover;
       blocker = "wall";
     }
@@ -476,14 +477,15 @@ export default class CoverEvaluation {
    * Determine whether walls or surfaces block the segment between two corners.
    * @param {Position} aCorner The attacker corner.
    * @param {Position} bCorner The target corner.
-   * @param {string} [type="sight"] The wall restriction type to test, `sight` or `move`.
+   * @param {object} [options] Additional options.
+   * @param {string} [options.type="sight"] The wall restriction type to test, `sight` or `move`.
+   * @param {number[]} [options.elevations] Further elevations that the line has to span for Wall Height.
    * @returns {boolean} Whether the segment is blocked.
    */
-  #wallsBlock(aCorner, bCorner, type="sight") {
+  #wallsBlock(aCorner, bCorner, { type="sight", elevations=[] }={}) {
     const { levels } = this.#scene;
     const level = levels.get(bCorner.level?.id ?? bCorner.level);
-    const wallHeightEye = this.#attacker?.object?.losHeight ?? aCorner.elevation;
-    const wallHeightBounds = isWallHeightModuleActive() ? { b: wallHeightEye, t: wallHeightEye } : {};
+    const wallHeightBounds = getWallHeightBounds(aCorner.elevation, bCorner.elevation, ...elevations);
     const source = {
       blinded: { darkness: false },
       data: { angle: 360 },

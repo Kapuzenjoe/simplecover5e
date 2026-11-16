@@ -14,18 +14,13 @@ export function readyMigration() {
 /* -------------------------------------------- */
 
 /**
- * Warn the GM about actors and items that still use the deprecated cover flags or the Ignore Cover property.
+ * Warn the GM about actors that still use the deprecated cover flags.
  * @deprecated since Simple Cover 5e 2.3
  */
 function warnLegacyCoverRules() {
-  const hasProperty = item => item.system.properties?.has?.("ignoreCover");
   const names = game.actors
     .filter(actor => Object.keys(SHIM_FLAGS).some(name => actor.flags?.[MODULE_ID]?.[name]))
     .map(actor => actor.name);
-  names.push(...game.items.filter(hasProperty).map(item => item.name));
-  for ( const actor of game.actors ) {
-    names.push(...actor.items.filter(hasProperty).map(item => `${actor.name}: ${item.name}`));
-  }
   if ( !names.length ) return;
   ui.notifications.warn(_loc("SIMPLE_COVER_5E.Rules.LegacyRules", { names: names.join(", ") }), { permanent: true });
 }

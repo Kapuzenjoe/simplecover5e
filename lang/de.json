@@ -277,7 +277,7 @@
     },
     "Rules": {
       "Group": "Simple Cover 5e",
-      "LegacyRules": "Veraltete Deckungs-Flags oder Ignoriert-Deckung-Eigenschaften werden verwendet bei: {names}. Ersetze sie durch Änderungen vom Typ Eigene Deckung erhöhen oder Deckung des Ziels verringern.",
+      "LegacyRules": "Veraltete Deckungs-Flags werden verwendet bei: {names}. Ersetze sie durch Änderungen vom Typ Eigene Deckung erhöhen oder Deckung des Ziels verringern.",
       "increaseOwnCover": {
         "Label": "Eigene Deckung erhöhen"
       },

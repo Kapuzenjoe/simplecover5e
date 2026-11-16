@@ -3,7 +3,7 @@
 ## 2.3.0
 
 - Added the **Reduce Target's Cover** and **Increase Own Cover** rules for active effects, replacing the cover flags (see Wiki: [Cover Rules](https://github.com/Kapuzenjoe/simplecover5e/wiki/Cover-Rules#optional-rules-active-effects)).
-- Added a warning for the GM when the world loads and actors or items still use the deprecated cover flags or the Ignores Cover property.
+- Added a warning for the GM when the world loads and actors still use the deprecated cover flags.
 - Added 3D cover that also considers how much of the target is visible vertically, not only along the DMG lines.
 - Added yellow and orange Cover Debug Lines for Half Cover and Three-Quarters Cover, red now marks Total Cover.
 - Added labels to the Cover Debug Lines that show what blocks a line and roughly how much of the target's height is blocked.

@@ -8,8 +8,6 @@ import { log } from "../utils.mjs";
 
 /**
  * Clear module-managed system cover effects for the configured scope.
- * This is typically called when combat state changes or at end-of-turn boundaries.
- * Failures are logged instead of thrown.
  * @param {Combat|null} combat The active combat, if any.
  * @returns {Promise<void>} Resolves when the batch delete operation has settled.
  */
