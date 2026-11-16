@@ -28,8 +28,8 @@
         "Hint": "Entfernt Deckungseffekte, wenn sich eine Figur bewegt, im konfigurierten Geltungsbereich."
       },
       "losCheck": {
-        "Name": "Sichtlinie durch Wände",
-        "Hint": "Prüft die Sichtlinie zusätzlich gegen sichtblockierende Wände. Erkennt Ziele, die vollständig durch Wände blockiert sind."
+        "Name": "Sichtlinienprüfung",
+        "Hint": "Wendet vollständige Deckung auf Kreaturen an, zu denen wegen Wänden keine Sichtlinie besteht."
       },
       "coverHints": {
         "Name": "Deckungshinweise in Würfen",
@@ -44,9 +44,21 @@
         "Name": "Deckungsänderung-Anzeigen",
         "Hint": "Fügt ein Warnsymbol bei Angriffszielen und Rettungswurfergebnissen hinzu, wenn Deckung im Würfeldialog geändert wird. Nur für den SL sichtbar."
       },
-      "CreaturesHalfOnly": {
-        "Name": "Halbe Deckung (Kreaturen)",
-        "Hint": "Kreaturen gewähren höchstens halbe Deckung. Durch Kreaturen blockierte Linien ergeben niemals Dreivierteldeckung. Wände folgen den normalen DMG-Regeln."
+      "CreatureCover": {
+        "Name": "Deckung durch Kreaturen",
+        "Hint": "Die Stufe der Deckungslinie, die eine Kreatur gewährt."
+      },
+      "WallCover": {
+        "Name": "Deckung durch Wände",
+        "Hint": "Legt die Stufe der Deckungslinie fest, die Wände gewähren."
+      },
+      "WallCoverType": {
+        "Name": "Wandtyp für Deckung",
+        "Hint": "Legt die Wandbeschränkung fest, die Deckungslinien blockiert.",
+        "Options": {
+          "Sight": "Sicht",
+          "Move": "Bewegung"
+        }
       },
       "IgnoreFriendly": {
         "Name": "Deckung durch Verbündete ignorieren",
@@ -296,10 +308,11 @@
           },
           "cover": {
             "label": "Deckung",
-            "hint": "Die Stufe der Deckungslinie, die dieses Hindernis gewährt, wenn es blockiert.",
+            "hint": "Die höchste Stufe der Deckungslinie, die dieses Hindernis gewährt.",
             "Options": {
               "half": "Halbe Deckung",
-              "threeQuarters": "Dreivierteldeckung"
+              "threeQuarters": "Dreivierteldeckung",
+              "total": "Vollständige Deckung"
             }
           }
         }

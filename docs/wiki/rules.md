@@ -6,8 +6,8 @@ This page documents how Simple Cover 5e determines *effective cover* after the g
 
 Simple Cover 5e evaluates cover in three stages:
 
-1. **Geometric cover result** (engine): returns a cover level (`none`, `half`, `threeQuarters`) and its associated bonus (+0 / +2 / +5).
-2. **Line of sight** (optional): can promote the result to `total` if wall LoS is blocked.
+1. **Line of sight** (optional): if walls leave no line of sight, the result is `total` and the Cover Lines are skipped.
+2. **Geometric cover result** (engine): returns a cover level (`none`, `half`, `threeQuarters`, `total`) and its associated bonus (+0 / +2 / +5 / `null`).
 3. **Rule adjustments** (rules layer): can raise or lower the result based on Active Effect rules, feats, items, and optional settings.
 
 Rule adjustments run in this order:
@@ -15,6 +15,18 @@ Rule adjustments run in this order:
 1. **Increase Own Cover** rules of the target raise the cover.
 2. **Reduce Target's Cover** rules of the attacker lower it. Their conditions see the cover after step 1.
 3. The **Ignore Cover** item property sets the cover to `none`.
+
+## Geometric Cover
+
+The engine draws a Cover Line from each corner of the attacker to each corner of the target (four lines for a square token). It uses the attacker corner that is blocked the least.
+
+Each line is tested at several heights of the target. A line takes the level of its blockers when they hide enough of the target's height: at least half of it for Half Cover, at least three quarters for Three-Quarters Cover, and all of it for Total Cover. The level a wall or creature can grant is limited by *Cover from Walls* and *Cover from Creatures*.
+
+| Blocked Cover Lines | Cover |
+|:--------------------|:-----:|
+| At least one | `half` |
+| Three of four (four of six on hex grids) | `threeQuarters` |
+| All lines, each at Total level | `total` |
 
 ## Fixed Rules
 
@@ -83,24 +95,29 @@ Detection:
 
 These rules can be enabled/disabled via module settings (see the Settings page).
 
-### Wall Line of Sight Check
+### Line of Sight Check
 
 - **Setting:** `losCheck`
-- **UI Name:** *Wall Line of Sight Check*
-- **Purpose:** Detect cases where the target is fully blocked by sight-blocking walls.
+- **UI Name:** *Line of Sight Check*
+- **Purpose:** Treat creatures that walls hide from the attacker as having Total Cover.
 
-When enabled, the module performs an additional wall-only LoS test. If the LoS test fails, the target is treated as having **Total Cover**.
+When enabled, the module tests the line from the attacker's center to the target's center and corner points against sight-blocking walls. The test ignores detection, such as invisibility or darkness. If no point is in line of sight, the target has **Total Cover** and the Cover Lines are skipped.
 
-### Limit Cover from Creatures to Half Cover
+### Cover from Walls
 
-- **Setting:** `creaturesHalfCoverOnly`
-- **UI Name:** *Limit Cover from Creatures to 1/2 Cover*
-- **Purpose:** Prevent creatures from granting Three-Quarters Cover on their own.
+- **Setting:** `wallCover`
+- **UI Name:** *Cover from Walls*
+- **Purpose:** Set the Cover Line level that walls grant.
 
-When enabled:
-- Creatures can grant **at most Half Cover**
-- As soon as at least one line is blocked by creatures, the target gains Half Cover
-- Walls continue to follow the standard DMG-style cover thresholds
+The default is **Three-Quarters Cover**. A Cover Line blocked by a wall counts at the chosen level (`half`, `threeQuarters`, or `total`). With the default, walls grant Total Cover only through the Line of Sight Check. With `total`, walls that hide the whole target from every Cover Line also grant Total Cover, even if the target is in line of sight.
+
+### Cover from Creatures
+
+- **Setting:** `creatureCover`
+- **UI Name:** *Cover from Creatures*
+- **Purpose:** Set the Cover Line level that creatures grant.
+
+The default is **Three-Quarters Cover**. A Cover Line blocked by a creature counts at the chosen level. With `half`, creatures grant at most Half Cover: as soon as one line is blocked by creatures, the target gains Half Cover.
 
 ### Ignore Cover from Friendly Tokens
 

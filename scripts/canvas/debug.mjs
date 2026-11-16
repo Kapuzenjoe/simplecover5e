@@ -1,5 +1,7 @@
+import { COVER } from "../config.mjs";
+
 /**
- * @import { CoverDebugOptions, DebugPoint, DebugPolygon, DebugSegment } from "../_types.mjs";
+ * @import { CoverDebugOptions, DebugPoint, DebugPolygon, DebugProbe, DebugSegment } from "../_types.mjs";
  */
 
 const DEBUG_Z_INDEX = 1000;
@@ -12,11 +14,15 @@ const DEFAULT_SHAPE_LINE_WIDTH = 2;
 
 const SEGMENT_COLOR_BLOCKED = 0xff0000;
 const SEGMENT_COLOR_CLEAR = 0x00ff00;
+const SEGMENT_COLOR_HALF = 0xffff00;
+const SEGMENT_COLOR_THREE_QUARTERS = 0xffa500;
 
 const SEGMENT_DASH_BLOCKED = { dash: 6, gap: 6, offset: 0 };
 const SEGMENT_DASH_CLEAR = { dash: 2, gap: 10, offset: 8 };
 
-const SEGMENT_LABEL_FONT_SIZE = 16;
+const SEGMENT_LABEL_FONT_SIZE = 12;
+
+const BLOCKER_ICONS = { creature: "", region: "", wall: "" };
 
 const TOKEN_COLOR_ATTACKER = 0x00ff00;
 const TOKEN_COLOR_TARGET = 0x0000ff;
@@ -114,21 +120,10 @@ export function drawCoverDebug({ segments = [], tokenShapes, targetLosPoints = [
   );
 }
 
-
 /* -------------------------------------------- */
 
 /**
- * Register hooks used by the cover debug overlay.
- * @returns {void}
- */
-export function initCoverDebugHooks() {
-  Hooks.on("canvasReady", clearCoverDebug);
-}
-
-/* -------------------------------------------- */
-
-/**
- * Draw a single debug segment onto the graphics context, labelled with its slope when the end points differ in height.
+ * Draw a single debug segment with its label.
  * @param {PIXI.Graphics} g The graphics object to draw on.
  * @param {DebugSegment} segment The segment configuration to render.
  * @returns {void}
@@ -141,7 +136,12 @@ function drawDebugSegment(g, segment) {
   if ( !from || !to ) return;
 
   const blocked = !!segment.blocked;
-  const color = (blocked ? SEGMENT_COLOR_BLOCKED : SEGMENT_COLOR_CLEAR);
+  const blockedColors = {
+    half: SEGMENT_COLOR_HALF,
+    threeQuarters: SEGMENT_COLOR_THREE_QUARTERS,
+    total: SEGMENT_COLOR_BLOCKED
+  };
+  const color = (blocked ? blockedColors[segment.lineCover] : SEGMENT_COLOR_CLEAR);
   const alpha = DEFAULT_SEGMENT_ALPHA;
   const width = blocked ? SEGMENT_WIDTH_BLOCKED : SEGMENT_WIDTH_CLEAR;
   const { DashLineShader } = foundry.canvas.rendering.shaders;
@@ -154,20 +154,79 @@ function drawDebugSegment(g, segment) {
   g.lineStyle({ alpha, color, shader, width });
   g.moveTo(from.x, from.y);
   g.lineTo(to.x, to.y);
+  drawSegmentLabel(g, segment, color);
+}
 
-  const rise = to.elevation - from.elevation;
-  if ( !rise ) return;
+/* -------------------------------------------- */
 
-  const run = Math.hypot(to.x - from.x, to.y - from.y) / canvas.scene.dimensions.distancePixels;
-  const angle = Math.round(Math.toDegrees(Math.atan2(rise, run)));
-  if ( !angle ) return;
+/**
+ * Draw the blocking element, the estimated blocked share, and the slope of a Cover Line along its middle.
+ * @param {PIXI.Graphics} g The graphics object to draw on.
+ * @param {DebugSegment} segment The segment to label.
+ * @param {number} color The label color.
+ * @returns {void}
+ */
+function drawSegmentLabel(g, { a, b, probes }, color) {
+  const run = Math.hypot(b.x - a.x, b.y - a.y);
+  if ( !run ) return;
+
+  const rise = b.elevation - a.elevation;
+  const angle = Math.round(Math.toDegrees(Math.atan2(rise, run / canvas.scene.dimensions.distancePixels)));
+  const strongest = probes?.reduce((best, probe) => {
+    return (COVER.ORDER[probe.cover] > COVER.ORDER[best.cover]) ? probe : best;
+  }, probes[0]);
+  const icon = BLOCKER_ICONS[strongest?.blocker];
+
+  const values = [];
+  if ( icon && (probes.length > 1) ) values.push(`≈${Math.round(estimateBlockedShare(probes) * 20) * 5} %`);
+  if ( angle ) values.push(`${angle > 0 ? "+" : ""}${angle}°`);
+  if ( !icon && !values.length ) return;
 
   const { PreciseText } = foundry.canvas.containers;
-  const style = PreciseText.getTextStyle({ fontSize: SEGMENT_LABEL_FONT_SIZE });
-  const label = new PreciseText(`${angle > 0 ? "+" : ""}${angle}°`, style);
-  label.anchor.set(0.5);
-  label.position.set((from.x + to.x) / 2, (from.y + to.y) / 2);
-  g.addChild(label);
+  const fontAwesome = getComputedStyle(document.body).getPropertyValue("--font-awesome").trim();
+  const texts = [
+    [icon, { fontFamily: [fontAwesome], fontWeight: "900" }],
+    [values.join("  "), {}]
+  ].filter(([string]) => string).map(([string, style]) => {
+    const textStyle = PreciseText.getTextStyle({ ...style, fill: color, fontSize: SEGMENT_LABEL_FONT_SIZE });
+    return new PreciseText(string, textStyle);
+  });
+
+  const direction = Math.atan2(b.y - a.y, b.x - a.x);
+  const rotation = (Math.abs(direction) > (Math.PI / 2)) ? direction + Math.PI : direction;
+  const gap = SEGMENT_LABEL_FONT_SIZE / 2;
+  const offset = SEGMENT_LABEL_FONT_SIZE;
+  const cos = Math.cos(rotation);
+  const sin = Math.sin(rotation);
+  const middle = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  let x = -(texts.reduce((sum, text) => sum + text.width, 0) + (gap * (texts.length - 1))) / 2;
+  for ( const text of texts ) {
+    text.anchor.set(0, 0.5);
+    text.rotation = rotation;
+    text.position.set(middle.x + (cos * x) + (sin * offset), middle.y + (sin * x) - (cos * offset));
+    g.addChild(text);
+    x += text.width + gap;
+  }
+}
+
+/* -------------------------------------------- */
+
+/**
+ * Estimate the share of the target's height that is blocked along a Cover Line.
+ * Each probe stands for the part of the height closest to it.
+ * @param {DebugProbe[]} probes The probes of the Cover Line.
+ * @returns {number} Blocked share between 0 and 1.
+ */
+function estimateBlockedShare(probes) {
+  const sorted = probes.toSorted((a, b) => a.fraction - b.fraction);
+  let share = 0;
+  let start = 0;
+  for ( const [i, probe] of sorted.entries() ) {
+    const end = sorted[i + 1] ? (probe.fraction + sorted[i + 1].fraction) / 2 : 1;
+    if ( probe.cover !== "none" ) share += end - start;
+    start = end;
+  }
+  return share;
 }
 
 /* -------------------------------------------- */

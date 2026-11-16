@@ -46,6 +46,11 @@ async function migrateSettings() {
       await game.settings.set(MODULE_ID, SETTING_KEYS.IGNORE_ALL_AOE, false);
       await game.settings.set(MODULE_ID, SETTING_KEYS.IGNORE_DISTANCE_AOE, false);
     }
+
+    if ( game.settings.get(MODULE_ID, SETTING_KEYS.CREATURES_HALF_ONLY) ) {
+      await game.settings.set(MODULE_ID, SETTING_KEYS.CREATURE_COVER, "half");
+      await game.settings.set(MODULE_ID, SETTING_KEYS.CREATURES_HALF_ONLY, false);
+    }
   } catch (err) {
     log("settings migration failed:", { extras: [err] });
   }

@@ -153,9 +153,25 @@ function shimFlags(actor, type, category) {
 /* -------------------------------------------- */
 
 /**
- * Register the cover rules as active effect change types.
+ * Register the `ignoreCover` item property on dnd5e items.
+ * @returns {void}
+ */
+function registerIgnoreCoverProperty() {
+  CONFIG.DND5E.itemProperties.ignoreCover = {
+    label: _loc("SIMPLE_COVER_5E.ItemProperties.IgnoreCover.Label")
+  };
+  CONFIG.DND5E.validProperties.weapon.add("ignoreCover");
+  CONFIG.DND5E.validProperties.spell.add("ignoreCover");
+  CONFIG.DND5E.validProperties.feat.add("ignoreCover");
+}
+
+/* -------------------------------------------- */
+
+/**
+ * Register the cover rules as active effect change types and the `ignoreCover` item property.
  */
 export function initCoverRules() {
+  registerIgnoreCoverProperty();
   const keyOptions = [
     { value: "d20", label: "DND5E.EFFECT.Change.Key.D20" },
     { value: "attack", label: "DND5E.EFFECT.Change.Key.Attack" },

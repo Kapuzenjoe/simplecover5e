@@ -1,8 +1,8 @@
 import SimpleCoverAutomationSettingsConfig from "./applications/automation-settings.mjs";
 import SimpleCoverVariantRulesSettingsConfig from "./applications/variant-rules-settings.mjs";
 import { clearCoverDebug } from "./canvas/debug.mjs";
-import { MODULE_ID, SETTING_KEYS } from "./config.mjs";
-import { clearSystemCoverEffects } from "./cover/status.mjs";
+import { COVER, MODULE_ID, SETTING_KEYS } from "./config.mjs";
+import { clearSystemCoverEffects } from "./data/cover-status.mjs";
 
 /**
  * Clear cover debug graphics when debug rendering is disabled.
@@ -103,9 +103,63 @@ const SETTINGS = [
   },
   {
     config: false,
-    hint: "SIMPLE_COVER_5E.Settings.CreaturesHalfOnly.Hint",
+    hint: "SIMPLE_COVER_5E.Settings.CreatureCover.Hint",
+    key: SETTING_KEYS.CREATURE_COVER,
+    name: "SIMPLE_COVER_5E.Settings.CreatureCover.Name",
+    requiresReload: false,
+    scope: "world",
+    type: new foundry.data.fields.StringField({
+      blank: false,
+      choices: {
+        half: COVER.I18N.LABEL.half,
+        threeQuarters: COVER.I18N.LABEL.threeQuarters,
+        total: COVER.I18N.LABEL.total
+      },
+      initial: "threeQuarters",
+      required: true,
+      trim: true
+    })
+  },
+  {
+    config: false,
+    hint: "SIMPLE_COVER_5E.Settings.WallCover.Hint",
+    key: SETTING_KEYS.WALL_COVER,
+    name: "SIMPLE_COVER_5E.Settings.WallCover.Name",
+    requiresReload: false,
+    scope: "world",
+    type: new foundry.data.fields.StringField({
+      blank: false,
+      choices: {
+        half: COVER.I18N.LABEL.half,
+        threeQuarters: COVER.I18N.LABEL.threeQuarters,
+        total: COVER.I18N.LABEL.total
+      },
+      initial: "threeQuarters",
+      required: true,
+      trim: true
+    })
+  },
+  {
+    config: false,
+    hint: "SIMPLE_COVER_5E.Settings.WallCoverType.Hint",
+    key: SETTING_KEYS.WALL_COVER_TYPE,
+    name: "SIMPLE_COVER_5E.Settings.WallCoverType.Name",
+    requiresReload: false,
+    scope: "world",
+    type: new foundry.data.fields.StringField({
+      blank: false,
+      choices: {
+        sight: "SIMPLE_COVER_5E.Settings.WallCoverType.Options.Sight",
+        move: "SIMPLE_COVER_5E.Settings.WallCoverType.Options.Move"
+      },
+      initial: "sight",
+      required: true,
+      trim: true
+    })
+  },
+  {
+    config: false,
     key: SETTING_KEYS.CREATURES_HALF_ONLY,
-    name: "SIMPLE_COVER_5E.Settings.CreaturesHalfOnly.Name",
     requiresReload: false,
     scope: "world",
     type: new foundry.data.fields.BooleanField({ initial: false })
@@ -361,22 +415,11 @@ const SETTINGS = [
 /* -------------------------------------------- */
 
 /**
- * Initialize module settings and setting-related hooks.
- * @returns {void}
- */
-export function initSettings() {
-  registerSettings();
-  Hooks.on("getSceneControlButtons", onGetSceneControlButtons);
-}
-
-/* -------------------------------------------- */
-
-/**
  * Add the module tool to the Token controls for GMs.
  * @param {Record<string, SceneControl>} controls The current scene control configuration.
  * @returns {void}
  */
-function onGetSceneControlButtons(controls) {
+export function onGetSceneControlButtons(controls) {
   if ( !game.user.isGM ) return;
   controls.tokens.tools[MODULE_ID] = {
     button: true,
@@ -394,7 +437,7 @@ function onGetSceneControlButtons(controls) {
  * Register all module settings and configuration menus.
  * @returns {void}
  */
-function registerSettings() {
+export function registerSettings() {
   for ( const { key, ...data } of SETTINGS ) {
     game.settings.register(MODULE_ID, key, data);
   }

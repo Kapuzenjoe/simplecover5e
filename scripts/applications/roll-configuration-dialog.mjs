@@ -1,5 +1,5 @@
 import { COVER_TARGETS_PATH, MODULE_ID, COVER } from "../config.mjs";
-import { setCoverStatusViaGM } from "../cover/status.mjs";
+import { setCoverStatusViaGM } from "../data/cover-status.mjs";
 import { getHiddenNpcName } from "../integrations/hide-npc-names.mjs";
 
 /**
@@ -51,16 +51,6 @@ export function applyDialogCoverOverride(app, formData) {
 /* -------------------------------------------- */
 
 /**
- * Register hooks used by cover notes in the roll configuration dialog.
- * @returns {void}
- */
-export function initRollDialogHooks() {
-  Hooks.on("renderRollConfigurationDialog", onRenderRollConfigurationDialog);
-}
-
-/* -------------------------------------------- */
-
-/**
  * Resolve the localized cover hint text.
  * @param {"attack"|"save"} type The roll type.
  * @param {CoverLevel} cover The cover level.
@@ -99,7 +89,7 @@ function getTargetName(target, systemTargets) {
  * @param {HTMLElement} html The rendered dialog element.
  * @returns {Promise<void>} Resolves after the dialog has been updated.
  */
-async function onRenderRollConfigurationDialog(dialog, html) {
+export async function onRenderRollConfigurationDialog(dialog, html) {
   const notes = await prepareNotes(dialog);
   const existingNotes = html.querySelector(DIALOG_NOTES_SELECTOR);
   existingNotes?.remove();

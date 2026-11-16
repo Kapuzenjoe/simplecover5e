@@ -1,5 +1,4 @@
 import CoverObstacleRegionBehaviorType from "../data/cover-obstacle.mjs";
-import { COVER_OBSTACLE_TYPE } from "../config.mjs";
 
 /**
  * Config sheet for the Cover Obstacle region behavior.
@@ -42,28 +41,4 @@ export default class CoverObstacleRegionBehaviorConfig extends foundry.applicati
       distanceGroup?.querySelector("label")?.append(span);
     }
   }
-}
-
-/* -------------------------------------------- */
-
-/**
- * Register the config sheet used by the obstacle Region Behavior.
- * @returns {void}
- */
-export function initCoverObstacleRegionBehaviorSheet() {
-  CONFIG.RegionBehavior.typeIcons[COVER_OBSTACLE_TYPE] = "fa-solid fa-shield-halved";
-
-  const DocumentSheetConfig = foundry.applications.apps.DocumentSheetConfig;
-  DocumentSheetConfig.unregisterSheet(
-    CONFIG.RegionBehavior.documentClass, "core", foundry.applications.sheets.RegionBehaviorConfig, {
-      types: [COVER_OBSTACLE_TYPE]
-    }
-  );
-  DocumentSheetConfig.registerSheet(
-    CONFIG.RegionBehavior.documentClass, "simplecover5e", CoverObstacleRegionBehaviorConfig, {
-      label: "SIMPLE_COVER_5E.SheetClass.CoverObstacle",
-      makeDefault: true,
-      types: [COVER_OBSTACLE_TYPE]
-    }
-  );
 }

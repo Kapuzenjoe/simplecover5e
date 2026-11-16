@@ -1,36 +1,16 @@
 import { applyDialogCoverOverride } from "../applications/roll-configuration-dialog.mjs";
-import { onPreCreateToken } from "../canvas/token-shape.mjs";
 import { COVER_TARGETS_PATH, MODULE_ID, COVER, SETTING_KEYS } from "../config.mjs";
 import { isMidiAutomation } from "../integrations/midi-qol.mjs";
+import { isDefeatedToken } from "../utils.mjs";
 
-import { getCover, getCoverForTargets } from "./api.mjs";
+import { getCover, getCoverForTargets } from "../api.mjs";
 
 /**
  * @import { CoverLevel } from "../_types.mjs";
  */
-import { clearSystemCoverEffects, setCoverStatusViaGM } from "./status.mjs";
-import { isDefeatedToken } from "./token.mjs";
+import { clearSystemCoverEffects, setCoverStatusViaGM } from "./cover-status.mjs";
 
 const EXCLUDED_UNITS = new Set(["self", "touch", "special"]);
-
-/**
- * Register cover automation hooks for the native dnd5e workflow.
- * @returns {void}
- */
-export function initCoverHooks() {
-  ignoreCoverProperties();
-  Hooks.on("combatTurnChange", clearCoverOnCombatChange);
-  Hooks.on("deleteCombat", clearCoverOnCombatChange);
-  Hooks.on("moveToken", clearCoverOnMovement);
-  Hooks.on("preCreateToken", onPreCreateToken);
-  Hooks.on("dnd5e.preRollAttack", onPreRollAttack);
-  Hooks.on("dnd5e.preRollSavingThrow", onPreRollSavingThrow);
-  Hooks.on("dnd5e.postSavingThrowRollConfiguration", onPostSavingThrowRollConfiguration);
-  Hooks.on("dnd5e.buildAttackRollConfig", onBuildAttackRollConfig);
-  Hooks.on("dnd5e.buildSavingThrowRollConfig", onBuildSavingThrowRollConfig);
-}
-
-/* -------------------------------------------- */
 
 /**
  * Adjust the displayed AC for a specific target in the pending dnd5e roll message.
@@ -58,7 +38,7 @@ function adjustMessageTargetAC(message, targetUuid, newAC) {
  * @param {Combat} combat The combat encounter whose turn changed or that is being deleted.
  * @returns {Promise<void>} Resolves after any cover cleanup has finished.
  */
-async function clearCoverOnCombatChange(combat) {
+export async function clearCoverOnCombatChange(combat) {
   if ( !rollAutomationEnabled(combat) ) return;
   if ( !game.users.activeGM?.isSelf ) return;
   if ( !game.settings.get(MODULE_ID, SETTING_KEYS.RMV_ON_COMBAT) ) return;
@@ -73,7 +53,7 @@ async function clearCoverOnCombatChange(combat) {
  * @param {TokenDocument} token The token document that moved.
  * @returns {Promise<void>} Resolves after any cover cleanup has finished.
  */
-async function clearCoverOnMovement(token) {
+export async function clearCoverOnMovement(token) {
   const active = game.combats?.active;
   if ( !active ) return;
   if ( !rollAutomationEnabled(active) ) return;
@@ -100,21 +80,6 @@ function getSpeakerToken(speaker) {
 /* -------------------------------------------- */
 
 /**
- * Register the `ignoreCover` item property on DnD5e items.
- * @returns {void}
- */
-function ignoreCoverProperties() {
-  CONFIG.DND5E.itemProperties.ignoreCover = {
-    label: _loc("SIMPLE_COVER_5E.ItemProperties.IgnoreCover.Label")
-  };
-  CONFIG.DND5E.validProperties.weapon.add("ignoreCover");
-  CONFIG.DND5E.validProperties.spell.add("ignoreCover");
-  CONFIG.DND5E.validProperties.feat.add("ignoreCover");
-}
-
-/* -------------------------------------------- */
-
-/**
  * Update attack roll configuration when the cover selection or the attack mode changes in the roll dialog.
  * @param {RollConfigurationDialog} app The roll configuration dialog.
  * @param {BasicRollConfiguration} config The roll configuration data being updated.
@@ -122,7 +87,7 @@ function ignoreCoverProperties() {
  * @param {number} index The index of the roll being prepared.
  * @returns {void}
  */
-function onBuildAttackRollConfig(app, config, formData, index) {
+export function onBuildAttackRollConfig(app, config, formData, index) {
   if ( !rollAutomationEnabled() ) return;
 
   const attackMode = formData?.get("attackMode");
@@ -158,7 +123,7 @@ function onBuildAttackRollConfig(app, config, formData, index) {
  * @param {number} index The index of the roll being prepared.
  * @returns {void}
  */
-function onBuildSavingThrowRollConfig(app, config, formData, index) {
+export function onBuildSavingThrowRollConfig(app, config, formData, index) {
   if ( !rollAutomationEnabled() ) return;
 
   for ( const change of applyDialogCoverOverride(app, formData) ) {
@@ -176,7 +141,7 @@ function onBuildSavingThrowRollConfig(app, config, formData, index) {
  * @param {BasicRollMessageConfiguration} message The pending roll message configuration.
  * @returns {false|void} Returns false to prevent the saving throw roll.
  */
-function onPostSavingThrowRollConfiguration(rolls, config, dialog, message) {
+export function onPostSavingThrowRollConfiguration(rolls, config, dialog, message) {
   const isTotalCoverSave =
     (config?.ability === "dex")
     && rolls?.some?.(roll => roll?.options?.[MODULE_ID]?.totalCover === true);
@@ -196,7 +161,7 @@ function onPostSavingThrowRollConfiguration(rolls, config, dialog, message) {
  * @param {BasicRollMessageConfiguration} message The pending roll message configuration.
  * @returns {void}
  */
-function onPreRollAttack(config, dialog, message) {
+export function onPreRollAttack(config, dialog, message) {
   if ( !rollAutomationEnabled() ) return;
 
   const actor = config.subject?.actor;
@@ -248,7 +213,7 @@ function onPreRollAttack(config, dialog, message) {
  * @param {BasicRollMessageConfiguration} message The pending roll message configuration.
  * @returns {void}
  */
-function onPreRollSavingThrow(config, dialog, message) {
+export function onPreRollSavingThrow(config, dialog, message) {
   if ( !rollAutomationEnabled() ) return;
 
   const actor = config.subject;

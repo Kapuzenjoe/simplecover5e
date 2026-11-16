@@ -28,8 +28,8 @@
         "Hint": "Removes cover effects when a token moves, within the configured Cover Removal Scope."
       },
       "losCheck": {
-        "Name": "Wall Line of Sight",
-        "Hint": "Also tests line of sight against sight-blocking walls. Detects targets fully obstructed by walls."
+        "Name": "Line of Sight Check",
+        "Hint": "Apply Total Cover to creatures with no line of sight past walls."
       },
       "coverHints": {
         "Name": "Cover Notes in Roll Dialogs",
@@ -44,9 +44,21 @@
         "Name": "Cover Change Indicators",
         "Hint": "Adds a warning icon to attack target rows and saving throw totals when cover is changed in the roll dialog. Visible to the GM only."
       },
-      "CreaturesHalfOnly": {
-        "Name": "Half Cover from Creatures",
-        "Hint": "Creatures grant at most Half Cover. Lines blocked by creatures only yield Half Cover, never Three-Quarters Cover. Walls follow standard DMG rules."
+      "CreatureCover": {
+        "Name": "Cover from Creatures",
+        "Hint": "Set the Cover Line level a creature grants."
+      },
+      "WallCover": {
+        "Name": "Cover from Walls",
+        "Hint": "Set the Cover Line level that walls grant."
+      },
+      "WallCoverType": {
+        "Name": "Wall Type for Cover",
+        "Hint": "Set the wall restriction that blocks Cover Lines.",
+        "Options": {
+          "Sight": "Sight",
+          "Move": "Movement"
+        }
       },
       "IgnoreFriendly": {
         "Name": "Ignore Friendly Cover",
@@ -296,10 +308,11 @@
           },
           "cover": {
             "label": "Cover",
-            "hint": "The Cover Line level this obstacle grants when it blocks.",
+            "hint": "The highest Cover Line level this obstacle grants.",
             "Options": {
               "half": "Half Cover",
-              "threeQuarters": "Three-Quarters Cover"
+              "threeQuarters": "Three-Quarters Cover",
+              "total": "Total Cover"
             }
           }
         }

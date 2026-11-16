@@ -1,20 +1,9 @@
+import { getCover } from "../api.mjs";
 import { MODULE_ID, SETTING_KEYS, COVER } from "../config.mjs";
-import { getCover } from "../cover/api.mjs";
 
 import { getTokenTokenDistance } from "./distance.mjs";
 
 const hoverLabels = new WeakMap();
-
-/**
- * Register hooks used by the token hover cover display.
- * @returns {void}
- */
-export function initHoverHooks() {
-  Hooks.on("hoverToken", onHoverToken);
-  Hooks.on("preDeleteToken", onPreDeleteToken);
-}
-
-/* -------------------------------------------- */
 
 /**
  * Update the hover UI for a token based on the single controlled token.
@@ -24,7 +13,7 @@ export function initHoverHooks() {
  * @param {boolean} hoverState True when hover starts, or false when hover ends.
  * @returns {Promise<void>} Resolves after the hover decorations have been updated.
  */
-async function onHoverToken(token, hoverState) {
+export async function onHoverToken(token, hoverState) {
   if ( !token ) return;
 
   const hoverMode = game.settings.get(MODULE_ID, SETTING_KEYS.HOVER);
@@ -183,7 +172,7 @@ async function onHoverToken(token, hoverState) {
  * @param {string} userId The ID of the user who initiated the deletion.
  * @returns {void}
  */
-function onPreDeleteToken(td, options, userId) {
+export function onPreDeleteToken(td, options, userId) {
   removeHoverDecorations(td?.object);
 }
 

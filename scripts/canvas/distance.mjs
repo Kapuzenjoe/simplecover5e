@@ -1,5 +1,5 @@
 import { MODULE_ID, SETTING_KEYS } from "../config.mjs";
-import { getCreatureHeight, getTokenExternalRadius } from "../cover/token.mjs";
+import { getCreatureHeight, getTokenExternalRadius } from "../utils.mjs";
 
 /**
  * @import { Position } from "../_types.mjs";

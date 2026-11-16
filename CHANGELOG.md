@@ -4,6 +4,12 @@
 
 - Added the **Reduce Target's Cover** and **Increase Own Cover** rules for active effects, replacing the cover flags (see Wiki: [Cover Rules](https://github.com/Kapuzenjoe/simplecover5e/wiki/Cover-Rules#optional-rules-active-effects)).
 - Added a warning for the GM when the world loads and actors or items still use the deprecated cover flags or the Ignores Cover property.
+- Added 3D cover that also considers how much of the target is visible vertically, not only along the DMG lines.
+- Added yellow and orange Cover Debug Lines for Half Cover and Three-Quarters Cover, red now marks Total Cover.
+- Added labels to the Cover Debug Lines that show what blocks a line and roughly how much of the target's height is blocked.
+- Added the **Cover from Walls** and **Cover from Creatures** settings to choose the cover level that walls and creatures grant, including Total Cover. **Cover from Creatures** replaces **Limit Cover from Creatures to Half Cover**.
+- Added the **Wall Type for Cover** setting to choose whether walls that block sight or movement block Cover Lines.
+- Added Total Cover as a cover level for the Cover Obstacle Region Behavior.
 - Changed the cover flags and item property to be deprecated, they will be removed in version 3.0.
 - Changed the minimum required dnd5e version to 6.0.0.
 - Changed the Wall Height integration to basic support, since the module is outdated for Foundry v14; Cover Obstacle Regions cover blocking objects.

@@ -64,8 +64,14 @@ Simple Cover 5e provides a dedicated configuration menu for rules that influence
 
 These settings enable or disable optional cover rules. This page lists what can be configured; the mechanical rule details are documented in [Cover Rules](Cover-Rules).
 
-- **Wall Line of Sight Check**
-  Performs an additional wall-only line-of-sight check.
+- **Line of Sight Check**
+  Applies Total Cover to creatures with no line of sight past walls. The check starts at the attacker's center and ignores detection, such as invisibility or darkness.
+
+- **Cover from Walls**
+  Sets the Cover Line level that walls grant. The Cover Lines run from the corners of the attacker to the corners of the target. Default: Three-Quarters Cover.
+
+- **Wall Type for Cover**
+  Sets which walls block Cover Lines. Options are **Sight** (default) and **Movement**. The Line of Sight Check always uses sight.
 
 - **Limit Cover from Creatures to Half Cover**
   Prevents creatures from granting more than Half Cover on their own.
@@ -173,7 +179,8 @@ Additional pixel offsets applied to the hover label position:
 
 When enabled, Simple Cover 5e draws helper visuals on the canvas while computing cover:
 
-- Lines between the evaluated sample points (green for clear, red for blocked)
+- Lines between the evaluated sample points (green for clear, yellow for Half Cover, orange for Three-Quarters Cover)
+- Labels on blocked lines with an icon for the blocking element (wall, Region, or creature) and the estimated share of the target's height that is blocked
 - Outlines of the token shapes used internally (attacker, target, and creature occluders)
 - Markers for line-of-sight sample points (when LoS checks are enabled)
 

@@ -3,16 +3,6 @@ import { MODULE_ID, COVER, SETTING_KEYS } from "../config.mjs";
 const CARD_SUMMARY_SELECTOR = ".card-summary[data-message-id]";
 
 /**
- * Register hooks used by cover notes in chat messages.
- * @returns {void}
- */
-export function initChatMessageHooks() {
-  Hooks.on("dnd5e.renderChatMessage", onRenderChatMessage);
-}
-
-/* -------------------------------------------- */
-
-/**
  * Build the warning icon shown next to a cover value that was overridden in the roll dialog.
  * @param {object} target The stored cover target descriptor with a `newCover` override.
  * @returns {HTMLElement} The decorated icon element.
@@ -91,7 +81,7 @@ function getChangedCoverTargets(targetMessage) {
  * @param {ChatMessage5e} chatMessage The rendered chat message.
  * @param {HTMLElement} html The rendered chat message markup.
  */
-function onRenderChatMessage(chatMessage, html) {
+export function onRenderChatMessage(chatMessage, html) {
   if ( !game.user.isGM ) return;
 
   html.querySelectorAll(".simplecover5e-cover-change").forEach(el => el.remove());

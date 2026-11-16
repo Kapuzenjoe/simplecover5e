@@ -25,19 +25,6 @@
  */
 
 /**
- * @typedef CoverContext
- * @property {Scene} scene The scene being evaluated.
- * @property {BaseGrid} grid The scene grid helper.
- * @property {number} halfGridSize Half the current grid size in pixels.
- * @property {number} distancePixels The pixel-to-distance scale for the scene.
- * @property {number} insetAttackerPx The configured attacker inset in pixels.
- * @property {number} insetTargetPx The configured target inset in pixels.
- * @property {number} insetOccluderPx The configured occluder inset in pixels.
- * @property {Level} level The Level assumed for positions without one: the viewed Level of the active scene,
- *   otherwise the initial Level of the scene.
- */
-
-/**
  * @typedef {LosPoint} DebugPoint
  */
 
@@ -46,11 +33,23 @@
  */
 
 /**
+ * @typedef {"creature"|"region"|"wall"} CoverBlocker
+ */
+
+/**
+ * @typedef DebugProbe
+ * @property {number} fraction            Fraction of the target's height at which the line ends.
+ * @property {CoverLevel} cover           Cover level given at this height.
+ * @property {CoverBlocker|null} blocker  Element that gives this cover level.
+ */
+
+/**
  * @typedef DebugSegment
  * @property {DebugPoint} a The start point of the sampled segment.
  * @property {DebugPoint} b The end point of the sampled segment.
  * @property {CoverLevel} lineCover The cover level this Cover Line contributes.
  * @property {boolean} blocked Whether the sampled segment is blocked.
+ * @property {DebugProbe[]|null} probes Heights probed along this line, or null without debug output.
  */
 
 /**
@@ -158,6 +157,8 @@
  * @property {CoverBonusMap} BONUS Maps cover levels to AC/Dexterity-save bonus (null for total cover).
  * @property {CoverOrderMap} ORDER Numeric ordering for comparing cover levels.
  * @property {CoverLevel[]} KEYS The cover levels in canonical order.
+ * @property {Record<"ellipse"|"hexagonal"|"square", { threshold: number, total: number }>} LINES The number of
+ *   Cover Lines per attacker corner by target shape, and how many of them give three-quarters cover.
  * @property {CoverI18N} I18N Localization keys used for cover labels and roll dialog hints.
  */
 

@@ -1,39 +1,33 @@
-import { drawCoverDebug, clearCoverDebug } from "../canvas/debug.mjs";
-import { getTokenTokenDistance } from "../canvas/distance.mjs";
-import { MODULE_ID, COVER, SETTING_KEYS } from "../config.mjs";
+import { drawCoverDebug, clearCoverDebug } from "./canvas/debug.mjs";
+import { getTokenTokenDistance } from "./canvas/distance.mjs";
+import { MODULE_ID, COVER, SETTING_KEYS } from "./config.mjs";
 
 /**
  * @import {
- *   CoverContext,
  *   CoverEvaluationResult,
  *   CoverTargetResult,
  *   DialogNoteData,
  *   LosResult,
  *   Position
- * } from "../_types.mjs";
+ * } from "./_types.mjs";
  */
 
-import {
-  buildCoverContext,
-  evaluateCoverFromOccluders,
-  evaluateLOS
-} from "./engine.mjs";
-import { ignoresCover } from "./rules.mjs";
-import { getActorCoverStates } from "./status.mjs";
+import CoverEvaluation from "./data/cover-evaluation.mjs";
+import { ignoresCover } from "./data/cover-rules.mjs";
+import { getActorCoverStates } from "./data/cover-status.mjs";
 
 /**
- * Resolve the debug flag and cover context for a cover evaluation, clearing any prior debug drawing first.
- * @param {Scene} scene The scene on which to evaluate cover.
+ * Resolve the debug flag for a cover evaluation, clearing any prior debug drawing first.
  * @param {boolean|null} debug Whether to force debug output. Null uses the module debug setting.
- * @returns {{ debugOn: boolean, ctx: CoverContext }} The resolved debug flag and cover context.
+ * @returns {boolean} Whether debug output is enabled.
  */
-function resolveDebugContext(scene, debug) {
+function resolveDebug(debug) {
   const settingDebug = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.DEBUG);
   const debugOn = (debug === null) ? settingDebug : !!debug;
 
   if ( debugOn && game.users.activeGM ) clearCoverDebug();
 
-  return { debugOn, ctx: buildCoverContext(scene) };
+  return debugOn;
 }
 
 /* -------------------------------------------- */
@@ -72,9 +66,9 @@ export function getCover({
   if ( !scene ) return null;
   if ( targetDoc.parent !== scene ) return null;
 
-  const { debugOn, ctx } = resolveDebugContext(scene, debug);
+  const debugOn = resolveDebug(debug);
 
-  const { result, los } = evaluateTargetCover(attackerDoc, targetDoc, ctx, {
+  const { result, los } = evaluateTargetCover(attackerDoc, targetDoc, scene, {
     activity,
     attackMode,
     includeEmbeddedCover,
@@ -126,7 +120,7 @@ export function getCoverForTargets({
   scene ??= attackerDoc.parent ?? canvas?.scene;
   if ( !scene ) return [];
 
-  const { debugOn, ctx } = resolveDebugContext(scene, debug);
+  const debugOn = resolveDebug(debug);
 
   const list = targets
     ? Array.from(targets)
@@ -138,7 +132,7 @@ export function getCoverForTargets({
     if ( !targetDoc ) continue;
     if ( targetDoc.parent !== scene ) continue;
 
-    const { result, los } = evaluateTargetCover(attackerDoc, targetDoc, ctx, {
+    const { result, los } = evaluateTargetCover(attackerDoc, targetDoc, scene, {
       activity,
       attackMode,
       includeEmbeddedCover,
@@ -242,7 +236,7 @@ export function setDialogNote(dialogConfig, note={}) {
  * Evaluate the cover workflow for a prepared attacker/target pair.
  * @param {TokenDocument5e|Position} attackerDoc The attacking token document or a generic position.
  * @param {TokenDocument} targetDoc The target token document.
- * @param {CoverContext} ctx The cover evaluation context.
+ * @param {Scene} scene The scene on which both are evaluated.
  * @param {object} [options={}] Cover workflow options.
  * @param {boolean} [options.debug=false] Whether debug geometry should be collected.
  * @param {boolean} [options.losCheck=false] Whether wall line-of-sight can force total cover.
@@ -251,20 +245,16 @@ export function setDialogNote(dialogConfig, note={}) {
  * @param {boolean} [options.includeEmbeddedCover=false] Whether embedded cover effects should be considered.
  * @returns {{ result: CoverEvaluationResult, los: LosResult }} The final cover result and LOS data.
  */
-function evaluateTargetCover(attackerDoc, targetDoc, ctx, {
+function evaluateTargetCover(attackerDoc, targetDoc, scene, {
   debug = false,
   losCheck = false,
   activity = null,
   attackMode = "",
   includeEmbeddedCover = false
 }={}) {
-  const los = losCheck
-    ? evaluateLOS(attackerDoc, targetDoc, ctx, { debug })
-    : { hasLOS: true, targetLosPoints: [] };
-
-  const result = los.hasLOS
-    ? evaluateCoverFromOccluders(attackerDoc, targetDoc, ctx, { debug })
-    : { bonus: null, cover: "total" };
+  const evaluation = new CoverEvaluation(attackerDoc, targetDoc, scene, { debug });
+  const los = losCheck ? evaluation.evaluateLOS() : { hasLOS: true, targetLosPoints: [] };
+  const result = los.hasLOS ? evaluation.evaluateCover() : { bonus: null, cover: "total" };
 
   let cover = result.cover ?? "none";
   let bonus = result.bonus;
@@ -302,16 +292,14 @@ function getLibraryMode() {
  * Evaluate line of sight (LOS) from an attacker to a target.
  * @param {TokenDocument5e|Position} attackerDoc The attacking token document or a generic position.
  * @param {TokenDocument} targetDoc The target token document.
- * @param {CoverContext|null} [ctx=null] The cover evaluation context.
+ * @param {{ scene?: Scene }|null} [ctx=null] A legacy evaluation context. Only its scene is used.
  * @returns {LosResult|null} The LOS result and sampled target points.
  */
 function getLOS(attackerDoc, targetDoc, ctx=null) {
-  const s = targetDoc?.parent ?? canvas?.scene;
-  if ( !s ) return null;
+  const scene = ctx?.scene ?? targetDoc?.parent ?? canvas?.scene;
+  if ( !scene ) return null;
 
-  ctx ??= buildCoverContext(s);
-
-  return evaluateLOS(attackerDoc, targetDoc, ctx);
+  return new CoverEvaluation(attackerDoc, targetDoc, scene).evaluateLOS();
 }
 
 /* -------------------------------------------- */

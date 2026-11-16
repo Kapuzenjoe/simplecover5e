@@ -94,38 +94,28 @@ function getSystemCoverEffects() {
 /* -------------------------------------------- */
 
 /**
- * Register GM query handlers used to synchronize dnd5e cover statuses.
- * @returns {void}
+ * Handle the GM-side query used to synchronize a dnd5e cover status.
+ * @param {{ actorUuid?: string, cover?: CoverLevel }|null|undefined} data The query payload.
+ * @returns {Promise<{ ok: boolean, reason?: string }>} The query result.
  */
-export function initCoverStatusQueries() {
-  CONFIG.queries ??= {};
-  if ( CONFIG.queries[`${MODULE_ID}.setCoverStatus`] ) return;
+export async function onSetCoverStatus(data) {
+  try {
+    if ( !game.user.isGM ) return { ok: false, reason: "not-gm" };
+    const { actorUuid, cover = "none" } = data ?? {};
+    if ( !COVER.KEYS.includes(cover) ) return { ok: false, reason: "invalid-cover" };
 
-  /**
-   * Handle the GM-side query used to synchronize a dnd5e cover status.
-   * @param {{ actorUuid?: string, cover?: CoverLevel }|null|undefined} data The
-   *   query payload.
-   * @returns {Promise<{ ok: boolean, reason?: string }>} The query result.
-   */
-  CONFIG.queries[`${MODULE_ID}.setCoverStatus`] = async data => {
-    try {
-      if ( !game.user.isGM ) return { ok: false, reason: "not-gm" };
-      const { actorUuid, cover = "none" } = data ?? {};
-      if ( !COVER.KEYS.includes(cover) ) return { ok: false, reason: "invalid-cover" };
-
-      const actor = await fromUuid(actorUuid);
-      if ( !(actor instanceof Actor) ) {
-        log("setCoverStatus: actor not found for uuid", { extras: [actorUuid] });
-        return { ok: false, reason: "no-actor" };
-      }
-
-      await _applyCoverStatus(actor, cover);
-      return { ok: true };
-    } catch (err) {
-      log("query setCoverStatus failed:", { extras: [err, data] });
-      return { ok: false, reason: "exception" };
+    const actor = await fromUuid(actorUuid);
+    if ( !(actor instanceof Actor) ) {
+      log("setCoverStatus: actor not found for uuid", { extras: [actorUuid] });
+      return { ok: false, reason: "no-actor" };
     }
-  };
+
+    await _applyCoverStatus(actor, cover);
+    return { ok: true };
+  } catch (err) {
+    log("query setCoverStatus failed:", { extras: [err, data] });
+    return { ok: false, reason: "exception" };
+  }
 }
 
 /* -------------------------------------------- */

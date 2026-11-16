@@ -25,6 +25,7 @@ export const COVER_OBSTACLE_TYPE = `${MODULE_ID}.coverObstacle`;
  *
  * - IDS: maps cover levels to system effect ids (or null for none).
  * - BONUS: maps cover levels to AC/DEX bonus (null for total cover).
+ * - LINES: number of Cover Lines per attacker corner by target shape, and how many give three-quarters cover.
  * - ORDER: numeric ordering for comparing cover levels.
  * - I18N: localization keys used for cover labels and roll dialog hints.
  * @readonly
@@ -67,6 +68,11 @@ export const COVER = Object.freeze({
     total: "coverTotal"
   }),
   KEYS: Object.freeze(["none", "half", "threeQuarters", "total"]),
+  LINES: Object.freeze({
+    ellipse: Object.freeze({ threshold: 6, total: 8 }),
+    hexagonal: Object.freeze({ threshold: 4, total: 6 }),
+    square: Object.freeze({ threshold: 3, total: 4 })
+  }),
   ORDER: Object.freeze({
     half: 1,
     none: 0,
@@ -85,6 +91,7 @@ export const SETTING_KEYS = Object.freeze({
   COVER_HINTS: "coverHints",
   COVER_HINTS_GM_MESSAGE: "coverHintsGmMessage",
   COVER_SCOPE: "coverRemovalScope",
+  CREATURE_COVER: "creatureCover",
   CREATURES_HALF_ONLY: "creaturesHalfCoverOnly",
   CREATURES_PRONE: "proneCreatures",
   DEBUG: "debugCover",
@@ -106,7 +113,9 @@ export const SETTING_KEYS = Object.freeze({
   LOS_CHECK: "losCheck",
   ONLY_IN_COMBAT: "onlyInCombat",
   RMV_ON_COMBAT: "rmvCovCombat",
-  RMV_ON_MOVE: "rmvCovMovement"
+  RMV_ON_MOVE: "rmvCovMovement",
+  WALL_COVER: "wallCover",
+  WALL_COVER_TYPE: "wallCoverType"
 });
 
 /**
