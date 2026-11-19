@@ -4,11 +4,10 @@ This page documents how Simple Cover 5e determines *effective cover* after the g
 
 ## Overview
 
-Simple Cover 5e evaluates cover in three stages:
+Simple Cover 5e evaluates cover in two stages:
 
-1. **Line of sight** (optional): if walls leave no line of sight, the result is `total` and the Cover Lines are skipped.
-2. **Geometric cover result** (engine): returns a cover level (`none`, `half`, `threeQuarters`, `total`) and its associated bonus (+0 / +2 / +5 / `null`).
-3. **Rule adjustments** (rules layer): can raise or lower the result based on Active Effect rules, feats, items, and optional settings.
+1. **Geometric cover result** (engine): returns a cover level (`none`, `half`, `threeQuarters`, `total`) and its associated bonus (+0 / +2 / +5 / `null`).
+2. **Rule adjustments** (rules layer): can raise or lower the result based on Active Effect rules, feats, items, and optional settings.
 
 Rule adjustments run in this order:
 
@@ -20,7 +19,7 @@ Rule adjustments run in this order:
 
 The engine draws a Cover Line from each corner of the attacker to each corner of the target (four lines for a square token). It uses the attacker corner that is blocked the least.
 
-Each line is tested at several heights of the target. A line takes the level of its blockers when they hide enough of the target's height: at least half of it for Half Cover, at least three quarters for Three-Quarters Cover, and all of it for Total Cover. The level a wall or creature can grant is limited by *Cover from Walls* and *Cover from Creatures*.
+Each line is tested at several heights of the target. A line takes the level of its blockers when they hide enough of the target's height: at least half of it for Half Cover, at least three quarters for Three-Quarters Cover, and all of it for Total Cover. Walls grant Total Cover only if no point of the target can be reached from the attacker's vision origin, otherwise Three-Quarters Cover. The level a creature can grant is limited by *Cover from Creatures*.
 
 | Blocked Cover Lines | Cover |
 |:--------------------|:-----:|
@@ -94,22 +93,6 @@ Detection:
 ## Optional Rules (Module Settings)
 
 These rules can be enabled/disabled via module settings (see the Settings page).
-
-### Line of Sight Check
-
-- **Setting:** `losCheck`
-- **UI Name:** *Line of Sight Check*
-- **Purpose:** Treat creatures that walls hide from the attacker as having Total Cover.
-
-When enabled, the module tests the line from the attacker's center to the target's center and corner points against sight-blocking walls. The test ignores detection, such as invisibility or darkness. If no point is in line of sight, the target has **Total Cover** and the Cover Lines are skipped.
-
-### Cover from Walls
-
-- **Setting:** `wallCover`
-- **UI Name:** *Cover from Walls*
-- **Purpose:** Set the Cover Line level that walls grant.
-
-The default is **Three-Quarters Cover**. A Cover Line blocked by a wall counts at the chosen level (`half`, `threeQuarters`, or `total`). With the default, walls grant Total Cover only through the Line of Sight Check. With `total`, walls that hide the whole target from every Cover Line also grant Total Cover, even if the target is in line of sight.
 
 ### Cover from Creatures
 

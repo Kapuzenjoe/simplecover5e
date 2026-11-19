@@ -27,10 +27,6 @@
         "Name": "Clear Cover on Movement",
         "Hint": "Removes cover effects when a token moves, within the configured Cover Removal Scope."
       },
-      "losCheck": {
-        "Name": "Line of Sight Check",
-        "Hint": "Apply Total Cover to creatures with no line of sight past walls."
-      },
       "coverHints": {
         "Name": "Cover Notes in Roll Dialogs",
         "Hint": "Shows cover notes in attack and saving throw roll dialogs. Not available when Midi-QOL manages cover.",
@@ -47,10 +43,6 @@
       "CreatureCover": {
         "Name": "Cover from Creatures",
         "Hint": "Set the Cover Line level a creature grants."
-      },
-      "WallCover": {
-        "Name": "Cover from Walls",
-        "Hint": "Set the Cover Line level that walls grant."
       },
       "WallCoverType": {
         "Name": "Wall Type for Cover",

@@ -8,3 +8,14 @@ export function isMidiAutomation() {
     ?.optionalRules?.coverCalculation;
   return coverCalculation === "simplecover5e";
 }
+
+/* -------------------------------------------- */
+
+/**
+ * Test whether Midi-QOL lets the actor ignore walls for Total Cover.
+ * @param {Actor|null} [actor] The attacking actor.
+ * @returns {boolean} True if the actor has the Midi-QOL flag.
+ */
+export function ignoresWalls(actor) {
+  return !!actor?.flags?.["midi-qol"]?.ignoreWalls;
+}

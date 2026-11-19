@@ -114,7 +114,6 @@ export const SETTING_KEYS = Object.freeze({
   ONLY_IN_COMBAT: "onlyInCombat",
   RMV_ON_COMBAT: "rmvCovCombat",
   RMV_ON_MOVE: "rmvCovMovement",
-  WALL_COVER: "wallCover",
   WALL_COVER_TYPE: "wallCoverType"
 });
 

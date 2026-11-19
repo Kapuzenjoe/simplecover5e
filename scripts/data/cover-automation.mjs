@@ -174,11 +174,9 @@ export function onPreRollAttack(config, dialog, message) {
     .filter(t => t?.document && !isDefeatedToken(t));
   if ( !targets.length ) return;
 
-  const losCheck = !!game.settings.get(MODULE_ID, SETTING_KEYS.LOS_CHECK);
   const resultArray = getCoverForTargets({
     activity,
     attackMode: config.attackMode,
-    losCheck,
     targets,
     attacker: attackerToken,
     includeEmbeddedCover: true,
@@ -263,11 +261,9 @@ export function onPreRollSavingThrow(config, dialog, message) {
     return;
   }
 
-  const losCheck = !!game.settings.get(MODULE_ID, SETTING_KEYS.LOS_CHECK);
   const result = getCover({
     activity,
     attacker,
-    losCheck,
     includeEmbeddedCover: true,
     scene: sourceScene,
     target: targetToken

@@ -94,37 +94,9 @@ const SETTINGS = [
   },
   {
     config: false,
-    hint: "SIMPLE_COVER_5E.Settings.losCheck.Hint",
-    key: SETTING_KEYS.LOS_CHECK,
-    name: "SIMPLE_COVER_5E.Settings.losCheck.Name",
-    requiresReload: false,
-    scope: "world",
-    type: new foundry.data.fields.BooleanField({ initial: true })
-  },
-  {
-    config: false,
     hint: "SIMPLE_COVER_5E.Settings.CreatureCover.Hint",
     key: SETTING_KEYS.CREATURE_COVER,
     name: "SIMPLE_COVER_5E.Settings.CreatureCover.Name",
-    requiresReload: false,
-    scope: "world",
-    type: new foundry.data.fields.StringField({
-      blank: false,
-      choices: {
-        half: COVER.I18N.LABEL.half,
-        threeQuarters: COVER.I18N.LABEL.threeQuarters,
-        total: COVER.I18N.LABEL.total
-      },
-      initial: "threeQuarters",
-      required: true,
-      trim: true
-    })
-  },
-  {
-    config: false,
-    hint: "SIMPLE_COVER_5E.Settings.WallCover.Hint",
-    key: SETTING_KEYS.WALL_COVER,
-    name: "SIMPLE_COVER_5E.Settings.WallCover.Name",
     requiresReload: false,
     scope: "world",
     type: new foundry.data.fields.StringField({
@@ -152,7 +124,7 @@ const SETTINGS = [
         sight: "SIMPLE_COVER_5E.Settings.WallCoverType.Options.Sight",
         move: "SIMPLE_COVER_5E.Settings.WallCoverType.Options.Move"
       },
-      initial: "sight",
+      initial: "move",
       required: true,
       trim: true
     })
@@ -197,6 +169,13 @@ const SETTINGS = [
     requiresReload: false,
     scope: "world",
     type: new foundry.data.fields.BooleanField({ initial: false })
+  },
+  {
+    config: false,
+    key: SETTING_KEYS.LOS_CHECK,
+    requiresReload: false,
+    scope: "world",
+    type: new foundry.data.fields.BooleanField({ initial: true })
   },
   {
     config: false,

@@ -27,10 +27,6 @@
         "Name": "Deckung bei Bewegung entfernen",
         "Hint": "Entfernt Deckungseffekte, wenn sich eine Figur bewegt, im konfigurierten Geltungsbereich."
       },
-      "losCheck": {
-        "Name": "Sichtlinienprüfung",
-        "Hint": "Wendet vollständige Deckung auf Kreaturen an, zu denen wegen Wänden keine Sichtlinie besteht."
-      },
       "coverHints": {
         "Name": "Deckungshinweise in Würfen",
         "Hint": "Zeigt Deckungshinweise in Angriffs- und Rettungswurf-Dialogen. Nicht verfügbar, wenn Midi-QOL die Deckung verwaltet.",
@@ -47,10 +43,6 @@
       "CreatureCover": {
         "Name": "Deckung durch Kreaturen",
         "Hint": "Die Stufe der Deckungslinie, die eine Kreatur gewährt."
-      },
-      "WallCover": {
-        "Name": "Deckung durch Wände",
-        "Hint": "Legt die Stufe der Deckungslinie fest, die Wände gewähren."
       },
       "WallCoverType": {
         "Name": "Wandtyp für Deckung",

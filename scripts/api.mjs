@@ -33,13 +33,12 @@ function resolveDebug(debug) {
 /* -------------------------------------------- */
 
 /**
- * Compute cover between a single attacker and a single target, optionally including a line-of-sight check.
+ * Compute cover between a single attacker and a single target.
  * @param {object} [options={}] Options controlling the cover evaluation.
  * @param {Token5e|TokenDocument5e|Position} options.attacker The attacking token, token document, or generic position.
  * @param {Token|TokenDocument} options.target The target token or token document.
  * @param {Scene} [options.scene] The scene on which to evaluate cover.
  * @param {boolean|null} [options.debug=null] Whether to force debug output. Null uses the module debug setting.
- * @param {boolean} [options.losCheck=false] Whether to perform a wall line-of-sight check.
  * @param {Activity5e|null} [options.activity=null] The activity being evaluated for cover.
  * @param {string} [options.attackMode=""] The attack mode of the roll, used for the activity's ignore-cover rules.
  * @param {boolean} [options.includeEmbeddedCover=false] Whether embedded cover effects on the target should be
@@ -51,7 +50,6 @@ export function getCover({
   target,
   scene,
   debug = null,
-  losCheck = false,
   activity = null,
   attackMode = "",
   includeEmbeddedCover = false
@@ -72,7 +70,6 @@ export function getCover({
     activity,
     attackMode,
     includeEmbeddedCover,
-    losCheck,
     debug: debugOn
   });
 
@@ -90,13 +87,12 @@ export function getCover({
 /* -------------------------------------------- */
 
 /**
- * Compute cover between a single attacker and multiple targets, optionally including a line-of-sight check.
+ * Compute cover between a single attacker and multiple targets.
  * @param {object} [options={}] Options controlling the cover evaluation.
  * @param {Token5e|TokenDocument5e|Position} options.attacker The attacking token, token document, or generic position.
  * @param {Token5e[]|TokenDocument5e[]|null} [options.targets] Explicit targets, or the user's current targets.
  * @param {Scene} [options.scene] The scene on which to evaluate cover.
  * @param {boolean|null} [options.debug=null] Whether to force debug output. Null uses the module debug setting.
- * @param {boolean} [options.losCheck=false] Whether to perform a wall line-of-sight check.
  * @param {Activity5e|null} [options.activity=null] The activity being evaluated for cover.
  * @param {string} [options.attackMode=""] The attack mode of the roll, used for the activity's ignore-cover rules.
  * @param {boolean} [options.includeEmbeddedCover=false] Whether embedded cover effects on targets should be considered.
@@ -107,7 +103,6 @@ export function getCoverForTargets({
   targets = null,
   scene,
   debug = null,
-  losCheck = false,
   activity = null,
   attackMode = "",
   includeEmbeddedCover = false
@@ -136,7 +131,6 @@ export function getCoverForTargets({
       activity,
       attackMode,
       includeEmbeddedCover,
-      losCheck,
       debug: debugOn
     });
 
@@ -239,7 +233,6 @@ export function setDialogNote(dialogConfig, note={}) {
  * @param {Scene} scene The scene on which both are evaluated.
  * @param {object} [options={}] Cover workflow options.
  * @param {boolean} [options.debug=false] Whether debug geometry should be collected.
- * @param {boolean} [options.losCheck=false] Whether wall line-of-sight can force total cover.
  * @param {Activity5e|null} [options.activity=null] The activity being evaluated for cover rules.
  * @param {string} [options.attackMode=""] The attack mode of the roll, used for the activity's ignore-cover rules.
  * @param {boolean} [options.includeEmbeddedCover=false] Whether embedded cover effects should be considered.
@@ -247,14 +240,13 @@ export function setDialogNote(dialogConfig, note={}) {
  */
 function evaluateTargetCover(attackerDoc, targetDoc, scene, {
   debug = false,
-  losCheck = false,
   activity = null,
   attackMode = "",
   includeEmbeddedCover = false
 }={}) {
   const evaluation = new CoverEvaluation(attackerDoc, targetDoc, scene, { debug });
-  const los = losCheck ? evaluation.evaluateLOS() : { hasLOS: true, targetLosPoints: [] };
-  const result = los.hasLOS ? evaluation.evaluateCover() : { bonus: null, cover: "total" };
+  const result = evaluation.evaluateCover();
+  const los = evaluation.los ?? { hasLOS: true, targetLosPoints: [] };
 
   let cover = result.cover ?? "none";
   let bonus = result.bonus;

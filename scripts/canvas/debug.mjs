@@ -24,6 +24,8 @@ const SEGMENT_LABEL_FONT_SIZE = 12;
 
 const BLOCKER_ICONS = { creature: "", region: "", wall: "" };
 
+const REACH_ICON = "";
+
 const TOKEN_COLOR_ATTACKER = 0x00ff00;
 const TOKEN_COLOR_TARGET = 0x0000ff;
 const TOKEN_COLOR_OCCLUDER = 0xffa500;
@@ -160,13 +162,14 @@ function drawDebugSegment(g, segment) {
 /* -------------------------------------------- */
 
 /**
- * Draw the blocking element, the estimated blocked share, and the slope of a Cover Line along its middle.
+ * Draw the blocking element, the estimated blocked share, the slope, and the reach mark of a Cover Line along its
+ * middle.
  * @param {PIXI.Graphics} g The graphics object to draw on.
  * @param {DebugSegment} segment The segment to label.
  * @param {number} color The label color.
  * @returns {void}
  */
-function drawSegmentLabel(g, { a, b, probes }, color) {
+function drawSegmentLabel(g, { a, b, probes, reach }, color) {
   const run = Math.hypot(b.x - a.x, b.y - a.y);
   if ( !run ) return;
 
@@ -180,12 +183,13 @@ function drawSegmentLabel(g, { a, b, probes }, color) {
   const values = [];
   if ( icon && (probes.length > 1) ) values.push(`≈${Math.round(estimateBlockedShare(probes) * 20) * 5} %`);
   if ( angle ) values.push(`${angle > 0 ? "+" : ""}${angle}°`);
-  if ( !icon && !values.length ) return;
+  if ( !icon && !reach && !values.length ) return;
 
   const { PreciseText } = foundry.canvas.containers;
   const fontAwesome = getComputedStyle(document.body).getPropertyValue("--font-awesome").trim();
   const texts = [
     [icon, { fontFamily: [fontAwesome], fontWeight: "900" }],
+    [reach ? REACH_ICON : "", { fontFamily: [fontAwesome], fontWeight: "900" }],
     [values.join("  "), {}]
   ].filter(([string]) => string).map(([string, style]) => {
     const textStyle = PreciseText.getTextStyle({ ...style, fill: color, fontSize: SEGMENT_LABEL_FONT_SIZE });

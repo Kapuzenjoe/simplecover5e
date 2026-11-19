@@ -39,9 +39,7 @@ export async function onHoverToken(token, hoverState) {
 
   let coverKey = "";
   if ( (hoverMode === "coverOnly") || (hoverMode === "coverAndDistance") ) {
-    const losCheck = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.LOS_CHECK);
     const result = getCover({
-      losCheck,
       attacker: actorToken,
       debug: false,
       includeEmbeddedCover: true,

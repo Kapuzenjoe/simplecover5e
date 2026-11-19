@@ -11,13 +11,12 @@ const sc = game.modules.get("simplecover5e")?.api;
 ### Get Cover
 
 ```js
-api.getCover({ attacker, target, scene?, debug?, losCheck?, activity?, attackMode?, includeEmbeddedCover? })
+api.getCover({ attacker, target, scene?, debug?, activity?, attackMode?, includeEmbeddedCover? })
 ```
 
 Compute cover between a single attacker (`Token | TokenDocument`) or a position object (`{ x, y, elevation? }`) and a single target (`Token | TokenDocument`). This returns `null` if inputs are invalid; otherwise it returns a result object.
 
 - `debug`: `null` uses the module Debug setting; `true` forces debug on; `false` forces it off.
-- `losCheck`: when `true`, an additional wall LoS check is performed; if LoS fails, the result is forced to **Total Cover**.
 - `activity`: when provided, Simple Cover 5e applies ignore-cover rules to the computed cover before returning.
 - `attackMode`: the dnd5e attack mode of the roll, for example `thrown`. It decides whether a melee weapon attack counts as a ranged attack for ignore-cover rules such as Sharpshooter. Only used together with `activity`.
 - `includeEmbeddedCover`: when `true`, embedded cover effects on the target actor are treated as manual cover. This lets effects such as Swallow's Total Cover take priority over calculated cover before activity-based ignore-cover rules are applied.
@@ -36,7 +35,7 @@ Compute cover between a single attacker (`Token | TokenDocument`) or a position 
 **Example:**
 
 ```js
-const result = sc.getCover({ attacker, target, losCheck: true });
+const result = sc.getCover({ attacker, target });
 if (result) {
   // result.cover is "none", "half", "threeQuarters", or "total"
   // result.bonus is 0|2|5|null (null for total cover)
@@ -47,8 +46,7 @@ if (result) {
 ```js
 const result = sc.getCover({
   attacker: { x: 4160, y: 3040 },
-  target: targetDoc,
-  losCheck: true
+  target: targetDoc
 });
 if (result) {
   // result.cover is "none", "half", "threeQuarters", or "total"
@@ -60,7 +58,7 @@ if (result) {
 ### Get Cover for Multiple Targets
 
 ```js
-api.getCoverForTargets({ attacker, targets?, scene?, debug?, losCheck?, activity?, attackMode?, includeEmbeddedCover? })
+api.getCoverForTargets({ attacker, targets?, scene?, debug?, activity?, attackMode?, includeEmbeddedCover? })
 ```
 
 Compute cover for a single attacker (`Token | TokenDocument`) or a position object (`{ x, y, elevation? }`) against multiple targets (`Token[] | TokenDocument[] | null`). If `targets` is omitted, the function defaults to the current user's targeted tokens. Returns an array of entries:
@@ -80,7 +78,7 @@ The options behave the same as `getCover(...)`, including `attackMode` and `incl
 **Example:**
 
 ```js
-const entries = sc.getCoverForTargets({ attacker, losCheck: true });
+const entries = sc.getCoverForTargets({ attacker });
 
 for (const { target, result, los } of entries) {
   console.log(target.name, result.cover, los.hasLOS);
@@ -109,7 +107,7 @@ api.getLOS(attackerDoc, targetDoc, ctx = null)
 // returns: { hasLOS: boolean, targetLosPoints: Array<{ x: number, y: number, blocked: boolean }> } | null
 ```
 
-Check whether the target is in **line of sight (LoS)**. The LoS test uses Foundry visibility test points and checks them from the attacker's vision origin against walls. If `hasLOS` is `false`, the target is not visible and is treated as blocked. The `ctx` value is optional.
+Check whether any point of the target can be reached from the attacker's vision origin, using the walls of **Wall Type for Cover**. The `ctx` value is optional.
 
 The array `targetLosPoints` is used only for debugging purposes.
 

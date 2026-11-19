@@ -2,16 +2,28 @@
 
 ## 2.3.0
 
+### Highlights
+
+- **New cover algorithm:** Cover now also depends on how much of the target's height is blocked (50 %, 75 %, and so on). Walls now block by movement instead of sight by default. The Line of Sight Check is gone: walls give Total Cover only if no part of the target can be reached.
+- **dnd5e rules:** Reduce Target's Cover and Increase Own Cover are dnd5e Active Effect rules with the system's roll conditions. They replace the cover flags. Sharpshooter, Spell Sniper, Wand of the War Mage, and Sacred Flame use them as well.
+
+### Changes
+
 - Added the **Reduce Target's Cover** and **Increase Own Cover** rules for active effects, replacing the cover flags (see Wiki: [Cover Rules](https://github.com/Kapuzenjoe/simplecover5e/wiki/Cover-Rules#optional-rules-active-effects)).
 - Added a warning for the GM when the world loads and actors still use the deprecated cover flags.
 - Added 3D cover that also considers how much of the target is visible vertically, not only along the DMG lines.
 - Added yellow and orange Cover Debug Lines for Half Cover and Three-Quarters Cover, red now marks Total Cover.
 - Added labels to the Cover Debug Lines that show what blocks a line and roughly how much of the target's height is blocked.
-- Added the **Cover from Walls** and **Cover from Creatures** settings to choose the cover level that walls and creatures grant, including Total Cover. **Cover from Creatures** replaces **Limit Cover from Creatures to Half Cover**.
-- Added the **Wall Type for Cover** setting to choose whether walls that block sight or movement block Cover Lines.
+- Added a route icon to Cover Debug Lines that were lowered from Total Cover because the target can be reached.
+- Added the **Cover from Creatures** setting to choose the cover level that creatures grant, including Total Cover. It replaces **Limit Cover from Creatures to Half Cover**.
+- Added the **Wall Type for Cover** setting to choose whether walls that block movement or sight block Cover Lines.
 - Added Total Cover as a cover level for the Cover Obstacle Region Behavior.
 - Changed the cover flags and item property to be deprecated, they will be removed in version 3.0.
 - Changed the minimum required dnd5e version to 6.0.0.
+- Changed walls to block Cover Lines by movement instead of sight. **Wall Type for Cover** switches this back.
+- Changed walls to grant Total Cover when they block every Cover Line and no part of the target can be reached.
+  - A part is reachable if the line from the attacker's vision origin to it is not blocked by walls of the **Wall Type for Cover**.
+- Removed the **Line of Sight Check** setting and the `losCheck` option of `getCover` and `getCoverForTargets`, which the new wall algorithm makes obsolete.
 - Changed the Wall Height integration to basic support, since the module is outdated for Foundry v14; Cover Obstacle Regions cover blocking objects.
 - Fixed Sharpshooter not ignoring Half and Three-Quarters Cover for melee weapons thrown as a ranged attack.
 - Fixed cover not being recalculated when the attack mode is changed in the roll dialog.

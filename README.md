@@ -10,7 +10,7 @@ roll.
 
 Cover is measured on the scene itself. The module traces lines from the attacker to the target, and walls,
 creatures, and Regions in the way block them. The share of blocked lines sets Half Cover or Three-Quarters
-Cover. A line-of-sight check adds Total Cover.
+Cover. Walls that block every line add Total Cover.
 
 The bonus goes straight into the roll, as a higher AC or as a bonus on Dexterity saving throws. It works on
 square, hex, and gridless scenes.
@@ -58,8 +58,7 @@ Everything else is optional, see [Settings](#settings).
 - **Obstacle filters.** Target tokens of chosen sizes or creature types ignore the obstacle.
 - **Inside a Region.** When attacker and target both stand inside, Interior Block Distance decides. 0 always
   blocks, a larger value blocks once the two are farther apart, and Infinite never blocks.
-- **Line of Sight.** The Wall Line of Sight Check tests the view from the attacker's vision position
-  to the target and grants Total Cover when walls block it.
+- **Walls.** Total Cover from walls requires that no part of the target can be reached.
 
 The screenshots show the debug overlay (see [Hover & Debug](#hover--debug)).
 

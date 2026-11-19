@@ -50,6 +50,7 @@
  * @property {CoverLevel} lineCover The cover level this Cover Line contributes.
  * @property {boolean} blocked Whether the sampled segment is blocked.
  * @property {DebugProbe[]|null} probes Heights probed along this line, or null without debug output.
+ * @property {boolean} [reach] Whether the reach test lowered this Cover Line from Total Cover.
  */
 
 /**

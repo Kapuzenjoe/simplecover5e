@@ -1,5 +1,6 @@
 import { MODULE_ID, COVER, COVER_OBSTACLE_TYPE, SETTING_KEYS } from "../config.mjs";
 import { getWallHeightBounds } from "../integrations/wall-height.mjs";
+import { ignoresWalls } from "../integrations/midi-qol.mjs";
 
 import {
   applyProneMode, getCreatureHeight, getTokenExternalRadius, isBlockingCreatureToken, isEllipse
@@ -38,6 +39,12 @@ export default class CoverEvaluation {
 
   /** @type {DebugTokenShapes|null} The debug geometry collected during the evaluation, if debugging. */
   #debugShapes;
+
+  /** @type {LosResult|null} The LOS result of the last evaluation, if it was tested. */
+  #los = null;
+
+  /** @type {boolean} Whether a creature or Region Obstacle gave Total Cover. */
+  #nonWallTotal = false;
 
   /** @type {object[]} The Cover Obstacle behaviors of the scene and their results for the pair. */
   #regionObstacles;
@@ -85,7 +92,7 @@ export default class CoverEvaluation {
       insetAttacker: Math.clamp(Number(get(SETTING_KEYS.INSET_ATTACKER) ?? 0), 1, maxInset),
       insetOccluder: Math.min(maxInset, Number(get(SETTING_KEYS.INSET_OCCLUDER) ?? 0)),
       insetTarget: Math.clamp(Number(get(SETTING_KEYS.INSET_TARGET) ?? 0), 1, maxInset),
-      wallCover: get(SETTING_KEYS.WALL_COVER),
+      wallCover: ignoresWalls(attackerDoc?.actor) ? "threeQuarters" : "total",
       wallType: get(SETTING_KEYS.WALL_COVER_TYPE)
     };
 
@@ -131,10 +138,22 @@ export default class CoverEvaluation {
   /* -------------------------------------------- */
 
   /**
+   * The LOS result of the last cover evaluation.
+   * @type {LosResult|null}
+   */
+  get los() {
+    return this.#los;
+  }
+
+  /* -------------------------------------------- */
+
+  /**
    * Evaluate the cover of the target against the attacker.
    * @returns {CoverEvaluationResult} The cover result and optional debug data.
    */
   evaluateCover() {
+    this.#los = null;
+    this.#nonWallTotal = false;
     this.#creaturePrisms = this.#collectCreaturePrisms();
     this.#regionObstacles = this.#collectRegionObstacles();
 
@@ -163,7 +182,19 @@ export default class CoverEvaluation {
       }
     }
 
-    return this.#toResult(COVER.KEYS[(best.reachable < 0) ? 2 : best.coverLevel], best.segs);
+    let cover = COVER.KEYS[(best.reachable < 0) ? 2 : best.coverLevel];
+    if ( (cover === "total") && !this.#nonWallTotal ) {
+      this.#los = this.evaluateLOS();
+      if ( this.#los.hasLOS ) {
+        cover = "threeQuarters";
+        for ( const seg of best.segs ) {
+          if ( seg.lineCover !== "total" ) continue;
+          seg.lineCover = "threeQuarters";
+          seg.reach = true;
+        }
+      }
+    }
+    return this.#toResult(cover, best.segs);
   }
 
   /* -------------------------------------------- */
@@ -197,7 +228,7 @@ export default class CoverEvaluation {
     let hasLOS = false;
 
     for ( const p of targetTestPoints ) {
-      const blocked = this.#wallsBlock(origin, p, { elevations: targetRange });
+      const blocked = this.#wallsBlock(origin, p, { elevations: targetRange, type: this.#settings.wallType });
       targetLosPoints.push({ blocked, x: p.x, y: p.y });
 
       if ( !blocked ) {
@@ -461,6 +492,8 @@ export default class CoverEvaluation {
         blocker = "region";
       }
     }
+
+    if ( cover === "total" ) this.#nonWallTotal = true;
 
     if ( (COVER.ORDER[cover] < COVER.ORDER[wallCover]) && this.#wallsBlock(aCorner, tPoint, { type: wallType }) ) {
       cover = wallCover;
