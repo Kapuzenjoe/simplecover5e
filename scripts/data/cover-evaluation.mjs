@@ -27,6 +27,9 @@ export default class CoverEvaluation {
   /** @type {TokenDocument5e|Position} The attacking token document or a generic position. */
   #attacker;
 
+  /** @type {string|undefined} The ID of the token at the attacker position. */
+  #attackerId;
+
   /** @type {number} The elevation of the attacker's vision origin, resolved once because it reads the prone
    *  setting. */
   #attackerVisionElevation;
@@ -73,15 +76,17 @@ export default class CoverEvaluation {
    * @param {TokenDocument} targetDoc The target token document.
    * @param {Scene} scene The scene on which both are evaluated.
    * @param {object} [options={}]
+   * @param {string} [options.attackerId] The ID of the token at the attacker position.
    * @param {boolean|null} [options.debug=null] Whether to collect debug geometry and test every LOS point.
    *   Null uses the module debug setting.
    */
-  constructor(attackerDoc, targetDoc, scene, { debug=null }={}) {
+  constructor(attackerDoc, targetDoc, scene, { attackerId, debug=null }={}) {
     const { grid } = scene;
     const get = key => game.settings.get(MODULE_ID, key);
     const maxInset = grid.size * 0.3;
 
     this.#attacker = attackerDoc;
+    this.#attackerId = attackerId;
     this.#target = targetDoc;
     this.#scene = scene;
     this.#debugShapes = (debug ?? !!get(SETTING_KEYS.DEBUG)) ? { attacker: [], occluders: [], target: [] } : null;
@@ -210,13 +215,12 @@ export default class CoverEvaluation {
     if ( !attacker || !target ) return { hasLOS: true, targetLosPoints: [] };
 
     const origin = attacker.getVisionOrigin?.() ?? attacker.getCenterPoint?.() ?? {
-      elevation: attacker?.elevation ?? 0,
       level: attacker?.level ?? null,
       x: attacker.x,
       y: attacker.y
     };
 
-    origin.elevation ??= attacker?.elevation ?? 0;
+    origin.elevation = this.#attackerVisionElevation;
     origin.level ??= attacker?.level ?? this.#level;
 
     const targetTestPoints = target.getVisibilityTestPoints?.()
@@ -254,7 +258,10 @@ export default class CoverEvaluation {
         && (!ignoreFriendly || (this.#attacker?.disposition !== td?.disposition))
         && isBlockingCreatureToken(td);
     });
-    return new Map(blockers.map(td => [td.id, this.#buildCreaturePrism(td)]));
+    const prisms = new Map(blockers.map(td => [td.id, this.#buildCreaturePrism(td)]));
+    const { x, y } = this.#attacker.getCenterPoint?.() ?? this.#attacker;
+    if ( prisms.get(this.#attackerId)?.polygon.contains(x, y) ) prisms.delete(this.#attackerId);
+    return prisms;
   }
 
   /* -------------------------------------------- */

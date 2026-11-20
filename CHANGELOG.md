@@ -4,7 +4,7 @@
 
 ### Highlights
 
-- **New cover algorithm:** Cover now also depends on how much of the target's height is blocked (50 %, 75 %, and so on). Walls now block by movement instead of sight by default. The Line of Sight Check is gone: walls give Total Cover only if no part of the target can be reached.
+- **Advanced cover algorithm:** Cover now also depends on how much of the target's height is blocked (50 %, 75 %, and so on). Walls now block by movement instead of sight by default. The Line of Sight Check is gone: walls give Total Cover only if no part of the target can be reached.
 - **dnd5e rules:** Reduce Target's Cover and Increase Own Cover are dnd5e Active Effect rules with the system's roll conditions. They replace the cover flags. Sharpshooter, Spell Sniper, Wand of the War Mage, and Sacred Flame use them as well.
 
 ### Changes
@@ -27,7 +27,7 @@
 - Changed the Wall Height integration to basic support, since the module is outdated for Foundry v14; Cover Obstacle Regions cover blocking objects.
 - Fixed Sharpshooter not ignoring Half and Three-Quarters Cover for melee weapons thrown as a ranged attack.
 - Fixed cover not being recalculated when the attack mode is changed in the roll dialog.
-
+- Fixed the caster blocking Cover Lines for Midi-QOL saving throws against an emanation.
 ## 2.2.4
 
 - Added the missing German translation for the Cover Obstacle Region Behavior.

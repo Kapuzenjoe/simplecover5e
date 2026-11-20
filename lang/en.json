@@ -58,7 +58,7 @@
       },
       "IgnoreAOECover": {
         "Name": "Ignore Cover: AoE Templates",
-        "Hint": "When to skip cover checks for area-of-effect templates. Ranged AoE skips cover for templates with a ranged origin (not self/touch/special). All AoE skips cover whenever any template is defined.",
+        "Hint": "Skips cover checks for area-of-effect templates.",
         "Options": {
           "None": "Disabled",
           "Range": "Ranged AoE",
@@ -93,7 +93,7 @@
       },
       "GridlessDistanceMode": {
         "Name": "Gridless Distance Mode",
-        "Hint": "Distance measurement mode for gridless scenes. Between Tokens measures between token boundaries. To Target Space matches diagonal results on square/hex grids with the Exact (√2) diagonal setting.",
+        "Hint": "Distance measurement mode for gridless scenes.",
         "Options": {
           "EdgeEdge": "Distance Between Tokens",
           "EdgeToCenter": "Distance to Target Space"
@@ -129,23 +129,23 @@
       },
       "LibraryMode": {
         "Name": "[CAUTION] Enable Library Mode",
-        "Hint": "Library Mode disables Simple Cover 5e cover automation features. Enable this only if you explicitly need Library Mode or if another module handles automation for you (e.g., Midi-QOL). Some modules may enable Library Mode automatically. Documentation: https://github.com/Kapuzenjoe/simplecover5e/wiki/API-(Library-Mode)."
+        "Hint": "Disables the cover automation of Simple Cover 5e, e.g. when Midi-QOL handles it."
       },
       "insetAttacker": {
         "Name": "Attacker Inset (px)",
-        "Hint": "Moves the attacker's sampling points from the raw corner toward the token center (default: 1; max: 30% of the current grid size)."
+        "Hint": "Moves the attacker's sampling points from the raw corner toward the token center (max: 30% of the current grid size)."
       },
       "insetTarget": {
         "Name": "Target Inset (px)",
-        "Hint": "Moves the target's sampling points from the raw corner toward the token center (default: 3; max: 30% of the current grid size)."
+        "Hint": "Moves the target's sampling points from the raw corner toward the token center (max: 30% of the current grid size)."
       },
       "insetOccluder": {
         "Name": "Occluder Inset (px)",
-        "Hint": "Shrinks the occluder bounding box for creatures (default: 6; max: 30% of the current grid size)."
+        "Hint": "Shrinks the occluder bounding box for creatures (max: 30% of the current grid size)."
       },
       "FilteredTargetPoints": {
         "Name": "Filtered Target Points",
-        "Hint": "Controls how target test points removed by token clipping affect cover evaluation. Default: \"Treat as Blocked\". \"Dynamic Threshold\" keeps the current Half Cover behavior, but grants Three-Quarters Cover when at least three-quarters of the remaining lines are blocked instead of always using the full target shape.",
+        "Hint": "Controls how target test points removed by token clipping affect cover evaluation.",
         "Options": {
           "Blocked": "Treat as Blocked",
           "Clear": "Treat as Clear",
@@ -280,7 +280,7 @@
     "RegionBehavior": {
       "CoverObstacle": {
         "label": "Cover Obstacle",
-        "hint": "Blocks cover rays passing through this Region.",
+        "hint": "Blocks Cover Lines passing through this Region.",
         "FIELDS": {
           "sizes": {
             "label": "Ignored Sizes",

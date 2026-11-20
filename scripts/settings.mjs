@@ -90,7 +90,7 @@ const SETTINGS = [
     name: "SIMPLE_COVER_5E.Settings.coverHintsGmMessage.Name",
     requiresReload: false,
     scope: "world",
-    type: new foundry.data.fields.BooleanField({ initial: false })
+    type: new foundry.data.fields.BooleanField({ initial: true })
   },
   {
     config: false,
@@ -375,7 +375,7 @@ const SETTINGS = [
         clear: "SIMPLE_COVER_5E.Settings.FilteredTargetPoints.Options.Clear",
         dynamic: "SIMPLE_COVER_5E.Settings.FilteredTargetPoints.Options.Dynamic"
       },
-      initial: "blocked",
+      initial: "dynamic",
       required: true,
       trim: true
     })
