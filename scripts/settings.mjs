@@ -1,6 +1,7 @@
 import SimpleCoverAutomationSettingsConfig from "./applications/automation-settings.mjs";
 import SimpleCoverVariantRulesSettingsConfig from "./applications/variant-rules-settings.mjs";
 import { clearCoverDebug } from "./canvas/debug.mjs";
+import { refreshTargetLabels } from "./canvas/hover.mjs";
 import { COVER, MODULE_ID, SETTING_KEYS } from "./config.mjs";
 import { clearSystemCoverEffects } from "./data/cover-status.mjs";
 
@@ -229,6 +230,7 @@ const SETTINGS = [
     hint: "SIMPLE_COVER_5E.Settings.TargetLabels.Hint",
     key: SETTING_KEYS.TARGET_LABELS,
     name: "SIMPLE_COVER_5E.Settings.TargetLabels.Name",
+    onChange: () => refreshTargetLabels(),
     requiresReload: false,
     scope: "user",
     type: new foundry.data.fields.BooleanField({ initial: false })

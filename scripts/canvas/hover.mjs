@@ -185,7 +185,7 @@ function getLabelSource(token) {
  * Update the labels of all targeted tokens and of the hovered token.
  * @returns {void}
  */
-function refreshTargetLabels() {
+export function refreshTargetLabels() {
   const tokens = new Set(game.user.targets);
   const hovered = canvas.tokens?.hover;
   if ( hovered ) tokens.add(hovered);

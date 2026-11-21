@@ -87,7 +87,7 @@ export default class CoverEvaluation {
     this.#debugShapes = (debug ?? !!get(SETTING_KEYS.DEBUG)) ? { attacker: [], occluders: [], target: [] } : null;
     this.#settings = {
       creatureCover: get(SETTING_KEYS.CREATURE_COVER),
-      filteredTargetPoints: get(SETTING_KEYS.FILTERED_TARGET_POINTS) ?? "blocked",
+      filteredTargetPoints: get(SETTING_KEYS.FILTERED_TARGET_POINTS) ?? "dynamic",
       ignoreFriendly: !!get(SETTING_KEYS.IGNORE_FRIENDLY),
       insetAttacker: Math.clamp(Number(get(SETTING_KEYS.INSET_ATTACKER) ?? 0), 1, maxInset),
       insetOccluder: Math.min(maxInset, Number(get(SETTING_KEYS.INSET_OCCLUDER) ?? 0)),
