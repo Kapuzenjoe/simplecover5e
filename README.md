@@ -1,7 +1,6 @@
 <img src="docs/banner.png" alt="Simple Cover 5e — Geometric Cover on Any Grid · Automatic Attack & Save Cover · Cover Rules, Feats & Flags · Library API & Midi-QOL Support" width="100%">
 
 ![Static Badge](https://img.shields.io/badge/Foundry-v14-informational)
-![Static Badge](https://img.shields.io/badge/Dnd5e-v5.3-informational)
 ![Static Badge](https://img.shields.io/badge/Dnd5e-v6.0-informational)
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/peterlankton86911)
@@ -11,7 +10,7 @@ roll.
 
 Cover is measured on the scene itself. The module traces lines from the attacker to the target, and walls,
 creatures, and Regions in the way block them. The share of blocked lines sets Half Cover or Three-Quarters
-Cover. A line-of-sight check adds Total Cover.
+Cover. Walls that block every line add Total Cover.
 
 The bonus goes straight into the roll, as a higher AC or as a bonus on Dexterity saving throws. It works on
 square, hex, and gridless scenes.
@@ -45,20 +44,21 @@ Everything else is optional, see [Settings](#settings).
   corner of the target.
 - **Grids.** On gridless scenes tokens count as squares or circles, and large tokens are sampled at several
   points to approximate a multi-space footprint.
-- **Walls.** Walls that block sight block Cover Lines.
+- **Walls.** Walls that block movement block Cover Lines. Walls that block sight can count instead (see
+  [Settings](#settings)).
 - **Creatures.** Other creatures block lines as 3D bodies with their real token shape. Hidden and defeated
   creatures, ethereal ones, and creatures with 0 max HP are ignored.
 - **Height and Elevation.** Lines run in 3D. A creature's height comes from the token's depth and the scene's
-  grid distance, so a tall creature blocks a line that a short one lets pass. Prone creatures can count as
-  smaller (see [Settings](#settings)).
+  grid distance. Prone creatures can count as smaller (see [Settings](#settings)). Each line is tested at
+  several heights of the target. A blocker has to hide at least half of the target's height for Half Cover
+  and at least three quarters for Three-Quarters Cover.
 - **Cover Obstacle Regions.** Add the Cover Obstacle behavior to a Region and it blocks Cover Lines like a
-  creature would, for terrain that is neither a wall nor a token. The GM sets whether it grants Half Cover or
-  Three-Quarters Cover.
+  creature would, for terrain that is neither a wall nor a token. The GM sets the highest cover it grants,
+  Half Cover, Three-Quarters Cover, or Total Cover.
 - **Obstacle filters.** Target tokens of chosen sizes or creature types ignore the obstacle.
 - **Inside a Region.** When attacker and target both stand inside, Interior Block Distance decides. 0 always
   blocks, a larger value blocks once the two are farther apart, and Infinite never blocks.
-- **Line of Sight.** The Wall Line of Sight Check tests the view from the attacker's vision position
-  to the target and grants Total Cover when walls block it.
+- **Walls.** Total Cover from walls requires that no part of the target can be reached.
 
 The screenshots show the debug overlay (see [Hover & Debug](#hover--debug)).
 
@@ -94,12 +94,12 @@ under [Cover Rules](https://github.com/Kapuzenjoe/simplecover5e/wiki/Cover-Rules
   target with Total Cover can't be targeted directly.
 - **Feats and items.** Sharpshooter (ranged weapon attacks), Spell Sniper (spell attacks), and Sacred Flame
   ignore Half and Three-Quarters Cover, but not Total Cover. An equipped and attuned Wand of the War Mage
-  ignores Half Cover on spell attacks. Items with the Ignore Cover property skip cover entirely.
-- **Actor flags.** Active Effects can ignore, upgrade, or downgrade cover with flags for attacks, saving
-  throws, or both. Upgrade and downgrade take 1 or 2 steps and can be limited by minimum and maximum cover or
-  by a status.
-- **Optional rules.** Creatures can be limited to Half Cover and friendly tokens can be ignored as blockers
-  (see [Settings](#settings)).
+  ignores Half Cover on spell attacks.
+- **Active Effect rules.** Reduce Target's Cover and Increase Own Cover change cover for attacks, saving
+  throws, or both. They take 1 to 3 steps and can be limited by cover level, roll data, or a condition on the
+  effect. The older actor flags still work, are deprecated, and will be removed in 3.0.
+- **Optional rules.** The cover level that creatures grant can be chosen, and friendly tokens can be ignored
+  as blockers (see [Settings](#settings)).
 
 ---
 
@@ -146,9 +146,12 @@ Automation covers rolls, conditions, and clean-up. Library Mode turns all of it 
 
 - **Hover label.** Select one token and hover another to see the hovered token's cover icon and the distance
   between the two, in the style of the core ruler label. The distance includes elevation.
-- **Debug overlay.** Show Cover Debug Lines draws the evaluated Cover Lines, green when clear and red when
-  blocked. It also outlines the token shapes used for attacker, target, and blocking creatures and marks the
-  line-of-sight sample points.
+  Persistent Target Labels keeps the label on your targeted tokens.
+- **Debug overlay.** Show Cover Debug Lines draws the evaluated Cover Lines, green when clear, yellow for Half
+  Cover, orange for Three-Quarters Cover, and red for Total Cover. It also outlines the token shapes used for
+  attacker, target, and blocking creatures and marks the line-of-sight sample points. Lines also show an icon
+  for the wall, Region, or creature that blocks them and the estimated share of the target's height that is
+  blocked.
 
 <table>
   <tr>
@@ -170,11 +173,12 @@ Automation covers rolls, conditions, and clean-up. Library Mode turns all of it 
 - **Midi-QOL.** Official integration with Midi-QOL v13.0.30 and later. With Midi-QOL's cover calculation set
   to Simple Cover 5e, the module only provides the cover while Midi-QOL runs the workflow.
 - **RSReforged.** Compatible with RSReforged v4.13.4 and later, the successor to Ready Set Roll.
-- **Wall Height.** Wall top and bottom bounds count as 3D barriers: a line is only blocked if it passes
-  through the wall's height range.
+- **Wall Height.** A wall with top and bottom bounds only blocks a line if its height range covers the
+  vertical span of the line, from the attacker's body center to the target point.
+  For low walls and other objects that should grant cover, use a Cover Obstacle Region.
 - **Rideable.** A mount carrying riders doesn't block Cover Lines.
 - **Hide NPC Names.** Cover notes in roll dialogs show the replacement name of a hidden NPC.
-- **Dynamic Active Effects.** The cover flags appear in the effect editor with a name and description.
+- **Dynamic Active Effects.** The deprecated cover flags appear in the effect editor with a name and description.
 
 ---
 

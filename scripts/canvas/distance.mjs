@@ -1,5 +1,5 @@
 import { MODULE_ID, SETTING_KEYS } from "../config.mjs";
-import { getCreatureHeight, getTokenExternalRadius } from "../cover/token.mjs";
+import { getCreatureHeight, getTokenExternalRadius } from "../utils.mjs";
 
 /**
  * @import { Position } from "../_types.mjs";
@@ -25,10 +25,10 @@ export function getTokenTokenDistance(sourceToken, targetToken) {
   const grid = scene.grid;
   const mode = game.settings.get(MODULE_ID, SETTING_KEYS.GRIDLESS_DISTANCE_MODE) ?? "edgeToCenter";
 
-  const sourceBottom = sourceDoc.elevation;
-  const sourceTop = sourceDoc.elevation + getCreatureHeight(sourceDoc);
-  const targetBottom = targetDoc.elevation;
-  const targetTop = targetDoc.elevation + getCreatureHeight(targetDoc);
+  const sourceBottom = sourceDoc.elevation ?? 0;
+  const sourceTop = sourceBottom + getCreatureHeight(sourceDoc);
+  const targetBottom = targetDoc.elevation ?? 0;
+  const targetTop = targetBottom + getCreatureHeight(targetDoc);
 
   let sourceElevation; let targetElevation;
   if ( (sourceBottom <= targetTop) && (targetBottom <= sourceTop) ) {

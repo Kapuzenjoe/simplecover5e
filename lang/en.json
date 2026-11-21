@@ -27,10 +27,6 @@
         "Name": "Clear Cover on Movement",
         "Hint": "Removes cover effects when a token moves, within the configured Cover Removal Scope."
       },
-      "losCheck": {
-        "Name": "Wall Line of Sight",
-        "Hint": "Also tests line of sight against sight-blocking walls. Detects targets fully obstructed by walls."
-      },
       "coverHints": {
         "Name": "Cover Notes in Roll Dialogs",
         "Hint": "Shows cover notes in attack and saving throw roll dialogs. Not available when Midi-QOL manages cover.",
@@ -44,9 +40,17 @@
         "Name": "Cover Change Indicators",
         "Hint": "Adds a warning icon to attack target rows and saving throw totals when cover is changed in the roll dialog. Visible to the GM only."
       },
-      "CreaturesHalfOnly": {
-        "Name": "Half Cover from Creatures",
-        "Hint": "Creatures grant at most Half Cover. Lines blocked by creatures only yield Half Cover, never Three-Quarters Cover. Walls follow standard DMG rules."
+      "CreatureCover": {
+        "Name": "Cover from Creatures",
+        "Hint": "Set the Cover Line level a creature grants."
+      },
+      "WallCoverType": {
+        "Name": "Wall Type for Cover",
+        "Hint": "Set the wall restriction that blocks Cover Lines.",
+        "Options": {
+          "Sight": "Sight",
+          "Move": "Movement"
+        }
       },
       "IgnoreFriendly": {
         "Name": "Ignore Friendly Cover",
@@ -54,7 +58,7 @@
       },
       "IgnoreAOECover": {
         "Name": "Ignore Cover: AoE Templates",
-        "Hint": "When to skip cover checks for area-of-effect templates. Ranged AoE skips cover for templates with a ranged origin (not self/touch/special). All AoE skips cover whenever any template is defined.",
+        "Hint": "Skips cover checks for area-of-effect templates.",
         "Options": {
           "None": "Disabled",
           "Range": "Ranged AoE",
@@ -69,6 +73,10 @@
           "CoverOnly": "Cover icons only",
           "CoverAndDistance": "Cover icons and distance"
         }
+      },
+      "TargetLabels": {
+        "Name": "Persistent Target Labels",
+        "Hint": "Keeps the label visible on your targeted tokens."
       },
       "HoverLabelPosition": {
         "Name": "Hover Label Position",
@@ -89,7 +97,7 @@
       },
       "GridlessDistanceMode": {
         "Name": "Gridless Distance Mode",
-        "Hint": "Distance measurement mode for gridless scenes. Between Tokens measures between token boundaries. To Target Space matches diagonal results on square/hex grids with the Exact (√2) diagonal setting.",
+        "Hint": "Distance measurement mode for gridless scenes.",
         "Options": {
           "EdgeEdge": "Distance Between Tokens",
           "EdgeToCenter": "Distance to Target Space"
@@ -125,23 +133,23 @@
       },
       "LibraryMode": {
         "Name": "[CAUTION] Enable Library Mode",
-        "Hint": "Library Mode disables Simple Cover 5e cover automation features. Enable this only if you explicitly need Library Mode or if another module handles automation for you (e.g., Midi-QOL). Some modules may enable Library Mode automatically. Documentation: https://github.com/Kapuzenjoe/simplecover5e/wiki/API-(Library-Mode)."
+        "Hint": "Disables the cover automation of Simple Cover 5e, e.g. when Midi-QOL handles it."
       },
       "insetAttacker": {
         "Name": "Attacker Inset (px)",
-        "Hint": "Moves the attacker's sampling points from the raw corner toward the token center (default: 1; max: 30% of the current grid size)."
+        "Hint": "Moves the attacker's sampling points from the raw corner toward the token center (max: 30% of the current grid size)."
       },
       "insetTarget": {
         "Name": "Target Inset (px)",
-        "Hint": "Moves the target's sampling points from the raw corner toward the token center (default: 3; max: 30% of the current grid size)."
+        "Hint": "Moves the target's sampling points from the raw corner toward the token center (max: 30% of the current grid size)."
       },
       "insetOccluder": {
         "Name": "Occluder Inset (px)",
-        "Hint": "Shrinks the occluder bounding box for creatures (default: 6; max: 30% of the current grid size)."
+        "Hint": "Shrinks the occluder bounding box for creatures (max: 30% of the current grid size)."
       },
       "FilteredTargetPoints": {
         "Name": "Filtered Target Points",
-        "Hint": "Controls how target test points removed by token clipping affect cover evaluation. Default: \"Treat as Blocked\". \"Dynamic Threshold\" keeps the current Half Cover behavior, but grants Three-Quarters Cover when at least three-quarters of the remaining lines are blocked instead of always using the full target shape.",
+        "Hint": "Controls how target test points removed by token clipping affect cover evaluation.",
         "Options": {
           "Blocked": "Treat as Blocked",
           "Clear": "Treat as Clear",
@@ -263,10 +271,20 @@
         }
       }
     },
+    "Rules": {
+      "Group": "Simple Cover 5e",
+      "LegacyRules": "Deprecated cover flags are used on: {names}. Replace them with Increase Own Cover or Reduce Target's Cover changes.",
+      "increaseOwnCover": {
+        "Label": "Increase Own Cover"
+      },
+      "reduceTargetCover": {
+        "Label": "Reduce Target's Cover"
+      }
+    },
     "RegionBehavior": {
       "CoverObstacle": {
         "label": "Cover Obstacle",
-        "hint": "Blocks cover rays passing through this Region.",
+        "hint": "Blocks Cover Lines passing through this Region.",
         "FIELDS": {
           "sizes": {
             "label": "Ignored Sizes",
@@ -286,10 +304,11 @@
           },
           "cover": {
             "label": "Cover",
-            "hint": "The Cover Line level this obstacle grants when it blocks.",
+            "hint": "The highest Cover Line level this obstacle grants.",
             "Options": {
               "half": "Half Cover",
-              "threeQuarters": "Three-Quarters Cover"
+              "threeQuarters": "Three-Quarters Cover",
+              "total": "Total Cover"
             }
           }
         }

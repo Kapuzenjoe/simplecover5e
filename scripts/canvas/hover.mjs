@@ -1,58 +1,44 @@
+import { getCover } from "../api.mjs";
 import { MODULE_ID, SETTING_KEYS, COVER } from "../config.mjs";
-import { getCover } from "../cover/api.mjs";
 
 import { getTokenTokenDistance } from "./distance.mjs";
 
-const hoverLabels = new WeakMap();
+const hoverLabels = new Map();
+
+const refreshTargetLabelsDebounced = foundry.utils.debounce(() => refreshTargetLabels(), 0);
 
 /**
- * Register hooks used by the token hover cover display.
- * @returns {void}
+ * Update the hover UI for a hovered token.
+ * @param {Token5e} token The hovered token.
+ * @returns {Promise<void>} Resolves after the hover decorations have been updated.
  */
-export function initHoverHooks() {
-  Hooks.on("hoverToken", onHoverToken);
-  Hooks.on("preDeleteToken", onPreDeleteToken);
+export function onHoverToken(token) {
+  return refreshTokenLabel(token);
 }
 
 /* -------------------------------------------- */
 
 /**
- * Update the hover UI for a token based on the single controlled token.
+ * Update the label of a token based on the single controlled token.
  * The output is client-side only and controlled by the hover setting.
  * @see Foundry-Core — TokenRuler#_getWaypointLabelContext()
- * @param {Token5e} token The hovered token.
- * @param {boolean} hoverState True when hover starts, or false when hover ends.
- * @returns {Promise<void>} Resolves after the hover decorations have been updated.
+ * @param {Token5e} token The hovered or targeted token.
+ * @returns {Promise<void>} Resolves after the label has been updated.
  */
-async function onHoverToken(token, hoverState) {
+async function refreshTokenLabel(token) {
   if ( !token ) return;
 
   const hoverMode = game.settings.get(MODULE_ID, SETTING_KEYS.HOVER);
+  const actorToken = getLabelSource(token);
 
-  if ( !hoverState || (hoverMode === "off") ) {
-    removeHoverDecorations(token);
-    return;
-  }
-
-  const controlled = canvas?.tokens?.controlled ?? [];
-  if ( controlled.length !== 1 ) {
-    removeHoverDecorations(token);
-    return;
-  }
-
-  const actorToken = controlled[0];
-
-  const actorIsOwner = actorToken?.document?.isOwner || game.user.isGM;
-  if ( !actorIsOwner || (actorToken === token) ) {
+  if ( !actorToken || (hoverMode === "off") ) {
     removeHoverDecorations(token);
     return;
   }
 
   let coverKey = "";
   if ( (hoverMode === "coverOnly") || (hoverMode === "coverAndDistance") ) {
-    const losCheck = !!game.settings?.get?.(MODULE_ID, SETTING_KEYS.LOS_CHECK);
     const result = getCover({
-      losCheck,
       attacker: actorToken,
       debug: false,
       includeEmbeddedCover: true,
@@ -111,7 +97,7 @@ async function onHoverToken(token, hoverState) {
         distance: { total: distanceText }
       }
     );
-    if ( !token.hover ) return;
+    if ( getLabelSource(token) !== actorToken ) return;
     htmlLabel = foundry.utils.parseHTML(rendered);
   }
   else {
@@ -129,7 +115,7 @@ async function onHoverToken(token, hoverState) {
 
   removeHoverDecorations(token);
   measurementHud.appendChild(htmlLabel);
-  hoverLabels.set(token, htmlLabel);
+  hoverLabels.set(token.id, htmlLabel);
 
   const center = token.center ?? { x: token.x, y: token.y };
 
@@ -177,28 +163,122 @@ async function onHoverToken(token, hoverState) {
 /* -------------------------------------------- */
 
 /**
- * Remove hover decorations before a token is deleted.
- * @param {TokenDocument5e} td The token document being deleted.
+ * Resolve the token that the label of the given token is measured from.
+ * @param {Token5e} token The token that would carry the label.
+ * @returns {Token5e|null} The single controlled token, or null if the token carries no label.
+ */
+function getLabelSource(token) {
+  const targeted = game.settings.get(MODULE_ID, SETTING_KEYS.TARGET_LABELS) && game.user.targets.has(token);
+  if ( (!token.hover && !targeted) || !token.visible ) return null;
+
+  const controlled = canvas?.tokens?.controlled ?? [];
+  if ( controlled.length !== 1 ) return null;
+
+  const actorToken = controlled[0];
+  const actorIsOwner = actorToken?.document?.isOwner || game.user.isGM;
+  return (actorIsOwner && (actorToken !== token)) ? actorToken : null;
+}
+
+/* -------------------------------------------- */
+
+/**
+ * Update the labels of all targeted tokens and of the hovered token.
+ * @returns {void}
+ */
+export function refreshTargetLabels() {
+  const tokens = new Set(game.user.targets);
+  const hovered = canvas.tokens?.hover;
+  if ( hovered ) tokens.add(hovered);
+  for ( const token of tokens ) void refreshTokenLabel(token);
+}
+
+/* -------------------------------------------- */
+
+/**
+ * Update the label of a token when the user targets or untargets it.
+ * @param {User} user The user who targeted or untargeted the token.
+ * @param {Token5e} token The token that was targeted or untargeted.
+ * @returns {void}
+ */
+export function onTargetToken(user, token) {
+  if ( user.isSelf ) void refreshTokenLabel(token);
+}
+
+/* -------------------------------------------- */
+
+/**
+ * Update the labels of all targeted tokens when the selection changes.
+ * @returns {void}
+ */
+export function onControlToken() {
+  refreshTargetLabelsDebounced();
+}
+
+/* -------------------------------------------- */
+
+/**
+ * Hide the label of a token while the token is not visible to the user.
+ * @param {Token5e} token The token that was refreshed.
+ * @param {object} flags The render flags of the refresh.
+ * @returns {void}
+ */
+export function onRefreshToken(token, flags) {
+  if ( !flags.refreshVisibility ) return;
+  hoverLabels.get(token.id)?.classList.toggle("hidden", !token.visible);
+}
+
+/* -------------------------------------------- */
+
+/**
+ * Update the labels of all targeted tokens after the controlled token or a targeted token has moved.
+ * @param {TokenDocument5e} document The token document that moved.
+ * @param {TokenMovementOperation} movement The movement of the token.
+ * @returns {Promise<void>} Resolves after the labels have been updated.
+ */
+export async function onMoveToken(document, movement) {
+  if ( !game.settings.get(MODULE_ID, SETTING_KEYS.TARGET_LABELS) ) return;
+  const token = document.object;
+  if ( !token || (!token.controlled && !game.user.targets.has(token)) ) return;
+  await movement.animation.ended;
+  refreshTargetLabels();
+}
+
+/* -------------------------------------------- */
+
+/**
+ * Remove all hover labels when the canvas is torn down.
+ * @returns {void}
+ */
+export function onCanvasTearDown() {
+  for ( const label of hoverLabels.values() ) label.remove();
+  hoverLabels.clear();
+}
+
+/* -------------------------------------------- */
+
+/**
+ * Remove the hover decorations of a deleted token.
+ * @param {TokenDocument5e} td The token document that was deleted.
  * @param {object} options Additional hook options.
  * @param {string} userId The ID of the user who initiated the deletion.
  * @returns {void}
  */
-function onPreDeleteToken(td, options, userId) {
-  removeHoverDecorations(td?.object);
+export function onDeleteToken(td, options, userId) {
+  removeHoverDecorations(td);
 }
 
 /* -------------------------------------------- */
 
 /**
  * Remove any hover label elements previously attached to a token.
- * @param {Token5e} token The token to clean up.
+ * @param {Token5e|TokenDocument5e} token The token to clean up.
  * @returns {void}
  */
 function removeHoverDecorations(token) {
   if ( !token ) return;
-  const label = hoverLabels.get(token);
+  const label = hoverLabels.get(token.id);
   if ( label && (label instanceof HTMLElement) ) {
     label.remove();
   }
-  hoverLabels.delete(token);
+  hoverLabels.delete(token.id);
 }

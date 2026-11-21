@@ -3,6 +3,7 @@ import { FLAGS } from "../config.mjs";
 /**
  * Register DAE auto-fields once DAE has finished its setup.
  * @returns {void}
+ * @deprecated since Simple Cover 5e 2.3
  */
 export function initDaeIntegration() {
   Hooks.once("dae.setupComplete", () => {

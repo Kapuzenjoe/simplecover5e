@@ -1,5 +1,4 @@
 import CoverObstacleRegionBehaviorType from "../data/cover-obstacle.mjs";
-import { COVER_OBSTACLE_TYPE } from "../config.mjs";
 
 /**
  * Config sheet for the Cover Obstacle region behavior.
@@ -24,12 +23,12 @@ export default class CoverObstacleRegionBehaviorConfig extends foundry.applicati
     checkboxGroup?.remove();
     distanceInput.before(checkboxLabel);
 
-    distanceInput.placeholder = "∞";
     let distance = distanceInput.value || "0";
     const updateDistanceLock = () => {
       if ( checkbox.checked ) distance = distanceInput.value || distance;
       distanceInput.value = checkbox.checked ? "" : distance;
       distanceInput.disabled = checkbox.checked;
+      distanceInput.placeholder = checkbox.checked ? "∞" : "0";
     };
     updateDistanceLock();
     checkbox.addEventListener("change", updateDistanceLock);
@@ -42,28 +41,4 @@ export default class CoverObstacleRegionBehaviorConfig extends foundry.applicati
       distanceGroup?.querySelector("label")?.append(span);
     }
   }
-}
-
-/* -------------------------------------------- */
-
-/**
- * Register the config sheet used by the obstacle Region Behavior.
- * @returns {void}
- */
-export function initCoverObstacleRegionBehaviorSheet() {
-  CONFIG.RegionBehavior.typeIcons[COVER_OBSTACLE_TYPE] = "fa-solid fa-shield-halved";
-
-  const DocumentSheetConfig = foundry.applications.apps.DocumentSheetConfig;
-  DocumentSheetConfig.unregisterSheet(
-    CONFIG.RegionBehavior.documentClass, "core", foundry.applications.sheets.RegionBehaviorConfig, {
-      types: [COVER_OBSTACLE_TYPE]
-    }
-  );
-  DocumentSheetConfig.registerSheet(
-    CONFIG.RegionBehavior.documentClass, "simplecover5e", CoverObstacleRegionBehaviorConfig, {
-      label: "SIMPLE_COVER_5E.SheetClass.CoverObstacle",
-      makeDefault: true,
-      types: [COVER_OBSTACLE_TYPE]
-    }
-  );
 }

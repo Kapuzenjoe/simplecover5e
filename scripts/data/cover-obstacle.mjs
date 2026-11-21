@@ -1,4 +1,3 @@
-import { COVER_OBSTACLE_TYPE } from "../config.mjs";
 import { getTokenTokenDistance } from "../canvas/distance.mjs";
 
 /**
@@ -28,7 +27,8 @@ export default class CoverObstacleRegionBehaviorType extends foundry.data.region
         initial: "threeQuarters",
         choices: {
           half: "SIMPLE_COVER_5E.RegionBehavior.CoverObstacle.FIELDS.cover.Options.half",
-          threeQuarters: "SIMPLE_COVER_5E.RegionBehavior.CoverObstacle.FIELDS.cover.Options.threeQuarters"
+          threeQuarters: "SIMPLE_COVER_5E.RegionBehavior.CoverObstacle.FIELDS.cover.Options.threeQuarters",
+          total: "SIMPLE_COVER_5E.RegionBehavior.CoverObstacle.FIELDS.cover.Options.total"
         }
       }),
       sizes: new SetField(new StringField({ choices: () => CONFIG.DND5E.actorSizes })),
@@ -87,7 +87,7 @@ export default class CoverObstacleRegionBehaviorType extends foundry.data.region
 
   /**
    * Check whether a token is exempt from this obstacle via the size/type filters.
-   * @param {TokenDocument} token The attacker or target token document.
+   * @param {TokenDocument} token The target token document.
    * @returns {boolean} True if the token's size or type is ignored.
    */
   #isIgnoredToken(token) {
@@ -97,16 +97,4 @@ export default class CoverObstacleRegionBehaviorType extends foundry.data.region
     if ( this.types.size && this.types.has(actor.system?.details?.type?.value) ) return true;
     return false;
   }
-}
-
-/* -------------------------------------------- */
-
-/**
- * Register the obstacle Region Behavior type used to block Cover Lines.
- * @returns {void}
- */
-export function initCoverObstacleRegionBehavior() {
-  CONFIG.RegionBehavior.dataModels[COVER_OBSTACLE_TYPE] = CoverObstacleRegionBehaviorType;
-  CONFIG.RegionBehavior.typeLabels[COVER_OBSTACLE_TYPE] = "SIMPLE_COVER_5E.RegionBehavior.CoverObstacle.label";
-  CONFIG.RegionBehavior.typeHints[COVER_OBSTACLE_TYPE] = "SIMPLE_COVER_5E.RegionBehavior.CoverObstacle.hint";
 }

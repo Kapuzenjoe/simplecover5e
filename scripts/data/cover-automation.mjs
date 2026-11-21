@@ -1,36 +1,16 @@
 import { applyDialogCoverOverride } from "../applications/roll-configuration-dialog.mjs";
-import { onPreCreateToken } from "../canvas/token-shape.mjs";
 import { COVER_TARGETS_PATH, MODULE_ID, COVER, SETTING_KEYS } from "../config.mjs";
 import { isMidiAutomation } from "../integrations/midi-qol.mjs";
+import { isDefeatedToken } from "../utils.mjs";
 
-import { getCover, getCoverForTargets } from "./api.mjs";
+import { getCover, getCoverForTargets } from "../api.mjs";
 
 /**
- * @import { CoverLevel } from "../_types.mjs";
+ * @import { CoverLevel, Position } from "../_types.mjs";
  */
-import { clearSystemCoverEffects, setCoverStatusViaGM } from "./status.mjs";
-import { isDefeatedToken } from "./token.mjs";
+import { clearSystemCoverEffects, setCoverStatusViaGM } from "./cover-status.mjs";
 
 const EXCLUDED_UNITS = new Set(["self", "touch", "special"]);
-
-/**
- * Register cover automation hooks for the native dnd5e workflow.
- * @returns {void}
- */
-export function initCoverHooks() {
-  ignoreCoverProperties();
-  Hooks.on("combatTurnChange", clearCoverOnCombatChange);
-  Hooks.on("deleteCombat", clearCoverOnCombatChange);
-  Hooks.on("moveToken", clearCoverOnMovement);
-  Hooks.on("preCreateToken", onPreCreateToken);
-  Hooks.on("dnd5e.preRollAttack", onPreRollAttack);
-  Hooks.on("dnd5e.preRollSavingThrow", onPreRollSavingThrow);
-  Hooks.on("dnd5e.postSavingThrowRollConfiguration", onPostSavingThrowRollConfiguration);
-  Hooks.on("dnd5e.buildAttackRollConfig", onBuildAttackRollConfig);
-  Hooks.on("dnd5e.buildSavingThrowRollConfig", onBuildSavingThrowRollConfig);
-}
-
-/* -------------------------------------------- */
 
 /**
  * Adjust the displayed AC for a specific target in the pending dnd5e roll message.
@@ -40,7 +20,7 @@ export function initCoverHooks() {
  * @returns {void}
  */
 function adjustMessageTargetAC(message, targetUuid, newAC) {
-  const targets = message?.data?.system?.targets ?? message?.data?.flags?.dnd5e?.targets;
+  const targets = message?.data?.system?.targets;
   if ( !Array.isArray(targets) ) return;
 
   for ( const t of targets ) {
@@ -58,7 +38,7 @@ function adjustMessageTargetAC(message, targetUuid, newAC) {
  * @param {Combat} combat The combat encounter whose turn changed or that is being deleted.
  * @returns {Promise<void>} Resolves after any cover cleanup has finished.
  */
-async function clearCoverOnCombatChange(combat) {
+export async function clearCoverOnCombatChange(combat) {
   if ( !rollAutomationEnabled(combat) ) return;
   if ( !game.users.activeGM?.isSelf ) return;
   if ( !game.settings.get(MODULE_ID, SETTING_KEYS.RMV_ON_COMBAT) ) return;
@@ -73,7 +53,7 @@ async function clearCoverOnCombatChange(combat) {
  * @param {TokenDocument} token The token document that moved.
  * @returns {Promise<void>} Resolves after any cover cleanup has finished.
  */
-async function clearCoverOnMovement(token) {
+export async function clearCoverOnMovement(token) {
   const active = game.combats?.active;
   if ( !active ) return;
   if ( !rollAutomationEnabled(active) ) return;
@@ -100,33 +80,26 @@ function getSpeakerToken(speaker) {
 /* -------------------------------------------- */
 
 /**
- * Register the `ignoreCover` item property on DnD5e items.
- * @returns {void}
- */
-function ignoreCoverProperties() {
-  CONFIG.DND5E.itemProperties.ignoreCover = {
-    label: _loc("SIMPLE_COVER_5E.ItemProperties.IgnoreCover.Label")
-  };
-  CONFIG.DND5E.validProperties.weapon.add("ignoreCover");
-  CONFIG.DND5E.validProperties.spell.add("ignoreCover");
-  CONFIG.DND5E.validProperties.feat.add("ignoreCover");
-}
-
-/* -------------------------------------------- */
-
-/**
- * Update attack roll configuration when the cover selection changes in the roll dialog.
+ * Update attack roll configuration when the cover selection or the attack mode changes in the roll dialog.
  * @param {RollConfigurationDialog} app The roll configuration dialog.
  * @param {BasicRollConfiguration} config The roll configuration data being updated.
  * @param {FormDataExtended} [formData] Form data entered into the rolling prompt.
  * @param {number} index The index of the roll being prepared.
  * @returns {void}
  */
-function onBuildAttackRollConfig(app, config, formData, index) {
+export function onBuildAttackRollConfig(app, config, formData, index) {
   if ( !rollAutomationEnabled() ) return;
 
+  const attackMode = formData?.get("attackMode");
+  if ( (attackMode != null) && (attackMode !== app.config.attackMode) ) {
+    app.config.attackMode = attackMode;
+    foundry.utils.setProperty(app.message, COVER_TARGETS_PATH, []);
+    onPreRollAttack(app.config, app, app.message);
+    return;
+  }
+
   const changes = applyDialogCoverOverride(app, formData);
-  const targets = app.message?.data?.system?.targets ?? app.message?.data?.flags?.dnd5e?.targets ?? [];
+  const targets = app.message?.data?.system?.targets ?? [];
 
   for ( const change of changes ) {
     setAttackCoverBonus({
@@ -150,7 +123,7 @@ function onBuildAttackRollConfig(app, config, formData, index) {
  * @param {number} index The index of the roll being prepared.
  * @returns {void}
  */
-function onBuildSavingThrowRollConfig(app, config, formData, index) {
+export function onBuildSavingThrowRollConfig(app, config, formData, index) {
   if ( !rollAutomationEnabled() ) return;
 
   for ( const change of applyDialogCoverOverride(app, formData) ) {
@@ -168,7 +141,7 @@ function onBuildSavingThrowRollConfig(app, config, formData, index) {
  * @param {BasicRollMessageConfiguration} message The pending roll message configuration.
  * @returns {false|void} Returns false to prevent the saving throw roll.
  */
-function onPostSavingThrowRollConfiguration(rolls, config, dialog, message) {
+export function onPostSavingThrowRollConfiguration(rolls, config, dialog, message) {
   const isTotalCoverSave =
     (config?.ability === "dex")
     && rolls?.some?.(roll => roll?.options?.[MODULE_ID]?.totalCover === true);
@@ -188,7 +161,7 @@ function onPostSavingThrowRollConfiguration(rolls, config, dialog, message) {
  * @param {BasicRollMessageConfiguration} message The pending roll message configuration.
  * @returns {void}
  */
-function onPreRollAttack(config, dialog, message) {
+export function onPreRollAttack(config, dialog, message) {
   if ( !rollAutomationEnabled() ) return;
 
   const actor = config.subject?.actor;
@@ -201,10 +174,9 @@ function onPreRollAttack(config, dialog, message) {
     .filter(t => t?.document && !isDefeatedToken(t));
   if ( !targets.length ) return;
 
-  const losCheck = !!game.settings.get(MODULE_ID, SETTING_KEYS.LOS_CHECK);
   const resultArray = getCoverForTargets({
     activity,
-    losCheck,
+    attackMode: config.attackMode,
     targets,
     attacker: attackerToken,
     includeEmbeddedCover: true,
@@ -239,7 +211,7 @@ function onPreRollAttack(config, dialog, message) {
  * @param {BasicRollMessageConfiguration} message The pending roll message configuration.
  * @returns {void}
  */
-function onPreRollSavingThrow(config, dialog, message) {
+export function onPreRollSavingThrow(config, dialog, message) {
   if ( !rollAutomationEnabled() ) return;
 
   const actor = config.subject;
@@ -262,7 +234,7 @@ function onPreRollSavingThrow(config, dialog, message) {
     ?? targetToken.scene
     ?? targetToken?.document?.parent
     ?? canvas?.scene;
-  if ( !source || !activity || !sourceScene ) return;
+  if ( !activity || !sourceScene ) return;
 
   const templateType = activity.target?.template?.type ?? "";
   if ( (templateType === "wall") || (templateType === "ring") ) return;
@@ -277,10 +249,12 @@ function onPreRollSavingThrow(config, dialog, message) {
   forceNoCover ||= (activity.target?.affects?.type ?? "") === "space";
 
   if ( !forceNoCover && templateType && !EXCLUDED_UNITS.has(rangeUnits) ) {
-    const origin = resolveAoEOrigin(activity, targetToken);
+    const origin = resolveAoEOrigin(activity, targetToken, source);
     if ( !origin ) forceNoCover = true;
     else attacker = origin;
   }
+
+  if ( !forceNoCover && !attacker ) return;
 
   if ( forceNoCover ) {
     void setCoverStatusViaGM(actor.uuid, "none");
@@ -289,11 +263,9 @@ function onPreRollSavingThrow(config, dialog, message) {
     return;
   }
 
-  const losCheck = !!game.settings.get(MODULE_ID, SETTING_KEYS.LOS_CHECK);
   const result = getCover({
     activity,
     attacker,
-    losCheck,
     includeEmbeddedCover: true,
     scene: sourceScene,
     target: targetToken
@@ -314,9 +286,10 @@ function onPreRollSavingThrow(config, dialog, message) {
  * Resolve the AoE origin position from a placed template region for a saving throw.
  * @param {Activity5e} activity The activity triggering the saving throw.
  * @param {Token5e} targetToken The token making the saving throw.
- * @returns {{ x: number, y: number, elevation: number, level: string|null }|null} The AoE origin
+ * @param {Token5e|null} source The token of the caster.
+ * @returns {Position|null} The AoE origin, carrying the disposition of the caster if there is one.
  */
-function resolveAoEOrigin(activity, targetToken) {
+function resolveAoEOrigin(activity, targetToken, source) {
   const itemUuid = activity.item?.uuid;
   if ( !itemUuid ) return null;
 
@@ -332,6 +305,7 @@ function resolveAoEOrigin(activity, targetToken) {
   const elevation = Number.isFinite(bottom) ? bottom : (targetDoc.elevation ?? 0);
 
   return {
+    disposition: source?.document?.disposition,
     elevation,
     level: targetDoc.level ?? null,
     x: containing.center.x,
@@ -383,9 +357,12 @@ function rollAutomationEnabled(combat=game.combats?.active) {
  */
 function setAttackCoverBonus({ desiredBonus, targetActor, singleTarget = true, config, message }) {
   if ( desiredBonus !== null ) {
-    const baseAC = targetActor?.system?.attributes?.ac?.value;
-    const oldCoverAC = targetActor?.system?.attributes?.ac?.cover || 0;
-    const newAC = baseAC + desiredBonus - oldCoverAC;
+    const ac = targetActor?.system?.attributes?.ac;
+    if ( !ac ) return;
+
+    const newAC = Number.isFinite(ac.override)
+      ? ac.override
+      : Math.max(ac.min, ac.base + ac.shield + ac.bonus + desiredBonus);
 
     adjustMessageTargetAC(message, targetActor.uuid, newAC);
     if ( singleTarget ) config.target = Math.max(0, newAC);

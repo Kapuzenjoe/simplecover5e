@@ -1,7 +1,6 @@
 import { COVER_TARGETS_PATH, MODULE_ID, COVER } from "../config.mjs";
-import { setCoverStatusViaGM } from "../cover/status.mjs";
+import { setCoverStatusViaGM } from "../data/cover-status.mjs";
 import { getHiddenNpcName } from "../integrations/hide-npc-names.mjs";
-import { isLegacyDnd5e } from "../utils.mjs";
 
 /**
  * @import { CoverLevel } from "../_types.mjs";
@@ -52,16 +51,6 @@ export function applyDialogCoverOverride(app, formData) {
 /* -------------------------------------------- */
 
 /**
- * Register hooks used by cover notes in the roll configuration dialog.
- * @returns {void}
- */
-export function initRollDialogHooks() {
-  Hooks.on("renderRollConfigurationDialog", onRenderRollConfigurationDialog);
-}
-
-/* -------------------------------------------- */
-
-/**
  * Resolve the localized cover hint text.
  * @param {"attack"|"save"} type The roll type.
  * @param {CoverLevel} cover The cover level.
@@ -100,11 +89,14 @@ function getTargetName(target, systemTargets) {
  * @param {HTMLElement} html The rendered dialog element.
  * @returns {Promise<void>} Resolves after the dialog has been updated.
  */
-async function onRenderRollConfigurationDialog(dialog, html) {
+export async function onRenderRollConfigurationDialog(dialog, html) {
   const notes = await prepareNotes(dialog);
-  if ( !notes ) return;
-
-  html.querySelector(DIALOG_NOTES_SELECTOR)?.remove();
+  const existingNotes = html.querySelector(DIALOG_NOTES_SELECTOR);
+  existingNotes?.remove();
+  if ( !notes ) {
+    if ( existingNotes ) dialog.setPosition();
+    return;
+  }
 
   const configuration = html.querySelector(ROLL_CONFIGURATION_SELECTOR);
   if ( !configuration ) return;
@@ -156,12 +148,10 @@ async function prepareNotes(dialog) {
     });
   }));
 
-  const type = isLegacyDnd5e()
-    ? dialog.message?.data?.flags?.dnd5e?.roll?.type
-    : dialog.message?.data?.type;
+  const type = dialog.message?.data?.type;
   const targets = foundry.utils.getProperty(dialog.message, COVER_TARGETS_PATH) ?? [];
   if ( ((type === "attack") || (type === "save")) && targets.length ) {
-    const systemTargets = dialog.message?.data?.system?.targets ?? dialog.message?.data?.flags?.dnd5e?.targets ?? [];
+    const systemTargets = dialog.message?.data?.system?.targets ?? [];
     const targetNotes = await Promise.all(targets.map((target, index) => {
       const cover = target.newCover ?? target.originalCover ?? "none";
       const statusId = COVER.IDS[cover];

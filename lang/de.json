@@ -7,7 +7,7 @@
     },
     "Settings": {
       "CoverScope": {
-        "Name": "Deckungslöschbereich",
+        "Name": "Geltungsbereich der Deckungsentfernung",
         "Hint": "Legt fest, welche Figuren beim Entfernen von Deckung betroffen sind.",
         "Options": {
           "All": "Alle Figuren in der Szene",
@@ -27,10 +27,6 @@
         "Name": "Deckung bei Bewegung entfernen",
         "Hint": "Entfernt Deckungseffekte, wenn sich eine Figur bewegt, im konfigurierten Geltungsbereich."
       },
-      "losCheck": {
-        "Name": "Sichtlinie durch Wände",
-        "Hint": "Prüft die Sichtlinie zusätzlich gegen sichtblockierende Wände. Erkennt Ziele, die vollständig durch Wände blockiert sind."
-      },
       "coverHints": {
         "Name": "Deckungshinweise in Würfen",
         "Hint": "Zeigt Deckungshinweise in Angriffs- und Rettungswurf-Dialogen. Nicht verfügbar, wenn Midi-QOL die Deckung verwaltet.",
@@ -41,12 +37,20 @@
         }
       },
       "coverHintsGmMessage": {
-        "Name": "Deckungsänderung-Anzeigen",
+        "Name": "Anzeigen für Deckungsänderungen",
         "Hint": "Fügt ein Warnsymbol bei Angriffszielen und Rettungswurfergebnissen hinzu, wenn Deckung im Würfeldialog geändert wird. Nur für den SL sichtbar."
       },
-      "CreaturesHalfOnly": {
-        "Name": "Halbe Deckung (Kreaturen)",
-        "Hint": "Kreaturen gewähren höchstens halbe Deckung. Durch Kreaturen blockierte Linien ergeben niemals Dreivierteldeckung. Wände folgen den normalen DMG-Regeln."
+      "CreatureCover": {
+        "Name": "Deckung durch Kreaturen",
+        "Hint": "Die Stufe der Deckungslinie, die eine Kreatur gewährt."
+      },
+      "WallCoverType": {
+        "Name": "Wandtyp für Deckung",
+        "Hint": "Legt die Wandbeschränkung fest, die Deckungslinien blockiert.",
+        "Options": {
+          "Sight": "Sicht",
+          "Move": "Bewegung"
+        }
       },
       "IgnoreFriendly": {
         "Name": "Deckung durch Verbündete ignorieren",
@@ -54,7 +58,7 @@
       },
       "IgnoreAOECover": {
         "Name": "Deckung ignorieren: AoE-Schablonen",
-        "Hint": "Wann Deckungsprüfungen für Wirkungsbereich-Schablonen übersprungen werden. Entfernungs-AoE überspringt Deckungsprüfungen für Schablonen mit Entfernungsursprung (nicht Selbst/Berührung/Spezial). Alle AoE ignoriert Deckung, sobald eine Schablone definiert ist.",
+        "Hint": "Überspringt Deckungsprüfungen für Wirkungsbereich-Schablonen.",
         "Options": {
           "None": "Deaktiviert",
           "Range": "AoE auf Entfernung",
@@ -69,6 +73,10 @@
           "CoverOnly": "Nur Deckungssymbole",
           "CoverAndDistance": "Deckungssymbole und Entfernung"
         }
+      },
+      "TargetLabels": {
+        "Name": "Dauerhafte Ziel-Labels",
+        "Hint": "Zeigt das Label dauerhaft an deinen anvisierten Figuren."
       },
       "HoverLabelPosition": {
         "Name": "Position des Hover-Labels",
@@ -89,7 +97,7 @@
       },
       "GridlessDistanceMode": {
         "Name": "Gitterloser Entfernungsmodus",
-        "Hint": "Entfernungsmessmodus für gitterlose Szenen. Zwischen Figuren misst zwischen Figurgrenzen. Zum Zielbereich entspricht Diagonal-Ergebnissen auf Quadrat-/Hexrastern mit der Einstellung \"Exakt (√2)\".",
+        "Hint": "Entfernungsmessmodus für gitterlose Szenen.",
         "Options": {
           "EdgeEdge": "Entfernung zwischen Figuren",
           "EdgeToCenter": "Entfernung zum Zielbereich"
@@ -125,23 +133,23 @@
       },
       "LibraryMode": {
         "Name": "[VORSICHT] Library Mode",
-        "Hint": "Library Mode deaktiviert die Deckungsautomatisierung von Simple Cover 5e. Nur aktivieren, wenn Library Mode ausdrücklich benötigt wird oder ein anderes Modul die Automatisierung übernimmt (z. B. Midi-QOL). Einige Module aktivieren Library Mode automatisch. Dokumentation: https://github.com/Kapuzenjoe/simplecover5e/wiki/API-(Library-Mode)."
+        "Hint": "Deaktiviert die Deckungsautomatisierung von Simple Cover 5e, z. B. wenn Midi-QOL sie übernimmt."
       },
       "insetAttacker": {
         "Name": "Angreifer-Einzug (px)",
-        "Hint": "Verschiebt die Messpunkte des Angreifers von der ursprünglichen Ecke in Richtung Figurmitte (Standard: 1; max. 30% der aktuellen Rastergröße)."
+        "Hint": "Verschiebt die Messpunkte des Angreifers von der ursprünglichen Ecke in Richtung Figurmitte (max. 30% der aktuellen Rastergröße)."
       },
       "insetTarget": {
         "Name": "Ziel-Einzug (px)",
-        "Hint": "Verschiebt die Messpunkte des Ziels von der ursprünglichen Ecke in Richtung Figurmitte (Standard: 3; max. 30% der aktuellen Rastergröße)."
+        "Hint": "Verschiebt die Messpunkte des Ziels von der ursprünglichen Ecke in Richtung Figurmitte (max. 30% der aktuellen Rastergröße)."
       },
       "insetOccluder": {
         "Name": "Blocker-Einzug (px)",
-        "Hint": "Verkleinert die Begrenzungsbox blockierender Kreaturen (Standard: 6; max. 30% der aktuellen Rastergröße)."
+        "Hint": "Verkleinert die Begrenzungsbox blockierender Kreaturen (max. 30% der aktuellen Rastergröße)."
       },
       "FilteredTargetPoints": {
         "Name": "Gefilterte Zielpunkte",
-        "Hint": "Steuert, wie durch Clipping entfernte Ziel-Testpunkte die Deckungsbewertung beeinflussen. Standard: \"Als blockiert behandeln\". \"Dynamischer Schwellenwert\" behält das aktuelle Verhalten für halbe Deckung bei, gewährt aber Dreivierteldeckung, wenn mindestens drei Viertel der verbleibenden Linien blockiert sind, statt immer die vollständige Zielform zu verwenden.",
+        "Hint": "Steuert, wie durch Clipping entfernte Ziel-Testpunkte die Deckungsbewertung beeinflussen.",
         "Options": {
           "Blocked": "Als blockiert behandeln",
           "Clear": "Als frei behandeln",
@@ -263,6 +271,16 @@
         }
       }
     },
+    "Rules": {
+      "Group": "Simple Cover 5e",
+      "LegacyRules": "Veraltete Deckungs-Flags werden verwendet bei: {names}. Ersetze sie durch Änderungen vom Typ Eigene Deckung erhöhen oder Deckung des Ziels verringern.",
+      "increaseOwnCover": {
+        "Label": "Eigene Deckung erhöhen"
+      },
+      "reduceTargetCover": {
+        "Label": "Deckung des Ziels verringern"
+      }
+    },
     "RegionBehavior": {
       "CoverObstacle": {
         "label": "Deckungshindernis",
@@ -286,10 +304,11 @@
           },
           "cover": {
             "label": "Deckung",
-            "hint": "Die Stufe der Deckungslinie, die dieses Hindernis gewährt, wenn es blockiert.",
+            "hint": "Die höchste Stufe der Deckungslinie, die dieses Hindernis gewährt.",
             "Options": {
               "half": "Halbe Deckung",
-              "threeQuarters": "Dreivierteldeckung"
+              "threeQuarters": "Dreivierteldeckung",
+              "total": "Vollständige Deckung"
             }
           }
         }

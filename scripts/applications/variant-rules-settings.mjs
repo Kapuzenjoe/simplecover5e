@@ -23,8 +23,8 @@ export default class SimpleCoverVariantRulesSettingsConfig extends SimpleCoverBa
   static FIELDSETS = [
     {
       keys: [
-        SETTING_KEYS.LOS_CHECK,
-        SETTING_KEYS.CREATURES_HALF_ONLY,
+        SETTING_KEYS.WALL_COVER_TYPE,
+        SETTING_KEYS.CREATURE_COVER,
         SETTING_KEYS.CREATURES_PRONE,
         SETTING_KEYS.IGNORE_FRIENDLY
       ],
