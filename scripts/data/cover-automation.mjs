@@ -6,7 +6,7 @@ import { isDefeatedToken } from "../utils.mjs";
 import { getCover, getCoverForTargets } from "../api.mjs";
 
 /**
- * @import { CoverLevel } from "../_types.mjs";
+ * @import { CoverLevel, Position } from "../_types.mjs";
  */
 import { clearSystemCoverEffects, setCoverStatusViaGM } from "./cover-status.mjs";
 
@@ -234,7 +234,7 @@ export function onPreRollSavingThrow(config, dialog, message) {
     ?? targetToken.scene
     ?? targetToken?.document?.parent
     ?? canvas?.scene;
-  if ( !source || !activity || !sourceScene ) return;
+  if ( !activity || !sourceScene ) return;
 
   const templateType = activity.target?.template?.type ?? "";
   if ( (templateType === "wall") || (templateType === "ring") ) return;
@@ -249,10 +249,12 @@ export function onPreRollSavingThrow(config, dialog, message) {
   forceNoCover ||= (activity.target?.affects?.type ?? "") === "space";
 
   if ( !forceNoCover && templateType && !EXCLUDED_UNITS.has(rangeUnits) ) {
-    const origin = resolveAoEOrigin(activity, targetToken);
+    const origin = resolveAoEOrigin(activity, targetToken, source);
     if ( !origin ) forceNoCover = true;
     else attacker = origin;
   }
+
+  if ( !forceNoCover && !attacker ) return;
 
   if ( forceNoCover ) {
     void setCoverStatusViaGM(actor.uuid, "none");
@@ -284,9 +286,10 @@ export function onPreRollSavingThrow(config, dialog, message) {
  * Resolve the AoE origin position from a placed template region for a saving throw.
  * @param {Activity5e} activity The activity triggering the saving throw.
  * @param {Token5e} targetToken The token making the saving throw.
- * @returns {{ x: number, y: number, elevation: number, level: string|null }|null} The AoE origin
+ * @param {Token5e|null} source The token of the caster.
+ * @returns {Position|null} The AoE origin, carrying the disposition of the caster if there is one.
  */
-function resolveAoEOrigin(activity, targetToken) {
+function resolveAoEOrigin(activity, targetToken, source) {
   const itemUuid = activity.item?.uuid;
   if ( !itemUuid ) return null;
 
@@ -302,6 +305,7 @@ function resolveAoEOrigin(activity, targetToken) {
   const elevation = Number.isFinite(bottom) ? bottom : (targetDoc.elevation ?? 0);
 
   return {
+    disposition: source?.document?.disposition,
     elevation,
     level: targetDoc.level ?? null,
     x: containing.center.x,
@@ -353,9 +357,12 @@ function rollAutomationEnabled(combat=game.combats?.active) {
  */
 function setAttackCoverBonus({ desiredBonus, targetActor, singleTarget = true, config, message }) {
   if ( desiredBonus !== null ) {
-    const baseAC = targetActor?.system?.attributes?.ac?.value;
-    const oldCoverAC = targetActor?.system?.attributes?.ac?.cover || 0;
-    const newAC = baseAC + desiredBonus - oldCoverAC;
+    const ac = targetActor?.system?.attributes?.ac;
+    if ( !ac ) return;
+
+    const newAC = Number.isFinite(ac.override)
+      ? ac.override
+      : Math.max(ac.min, ac.base + ac.shield + ac.bonus + desiredBonus);
 
     adjustMessageTargetAC(message, targetActor.uuid, newAC);
     if ( singleTarget ) config.target = Math.max(0, newAC);

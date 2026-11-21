@@ -59,7 +59,6 @@ export function getCover({
   const attackerDoc = attacker.document ?? attacker;
   const targetDoc = target.document ?? target;
   if ( !attackerDoc || !targetDoc ) return null;
-  const attackerId = attacker.id ?? attackerDoc.id;
 
   scene ??= attackerDoc.parent ?? canvas?.scene;
   if ( !scene ) return null;
@@ -69,7 +68,6 @@ export function getCover({
 
   const { result, los } = evaluateTargetCover(attackerDoc, targetDoc, scene, {
     activity,
-    attackerId,
     attackMode,
     includeEmbeddedCover,
     debug: debugOn
@@ -113,7 +111,6 @@ export function getCoverForTargets({
 
   const attackerDoc = attacker.document ?? attacker;
   if ( !attackerDoc ) return [];
-  const attackerId = attacker.id ?? attackerDoc.id;
 
   scene ??= attackerDoc.parent ?? canvas?.scene;
   if ( !scene ) return [];
@@ -132,7 +129,6 @@ export function getCoverForTargets({
 
     const { result, los } = evaluateTargetCover(attackerDoc, targetDoc, scene, {
       activity,
-      attackerId,
       attackMode,
       includeEmbeddedCover,
       debug: debugOn
@@ -238,7 +234,6 @@ export function setDialogNote(dialogConfig, note={}) {
  * @param {object} [options={}] Cover workflow options.
  * @param {boolean} [options.debug=false] Whether debug geometry should be collected.
  * @param {Activity5e|null} [options.activity=null] The activity being evaluated for cover rules.
- * @param {string} [options.attackerId] The ID of the token at the attacker position.
  * @param {string} [options.attackMode=""] The attack mode of the roll, used for the activity's ignore-cover rules.
  * @param {boolean} [options.includeEmbeddedCover=false] Whether embedded cover effects should be considered.
  * @returns {{ result: CoverEvaluationResult, los: LosResult }} The final cover result and LOS data.
@@ -246,11 +241,10 @@ export function setDialogNote(dialogConfig, note={}) {
 function evaluateTargetCover(attackerDoc, targetDoc, scene, {
   debug = false,
   activity = null,
-  attackerId,
   attackMode = "",
   includeEmbeddedCover = false
 }={}) {
-  const evaluation = new CoverEvaluation(attackerDoc, targetDoc, scene, { attackerId, debug });
+  const evaluation = new CoverEvaluation(attackerDoc, targetDoc, scene, { debug });
   const result = evaluation.evaluateCover();
   const los = evaluation.los ?? { hasLOS: true, targetLosPoints: [] };
 

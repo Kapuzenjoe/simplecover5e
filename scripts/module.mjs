@@ -3,7 +3,9 @@ import { onRenderChatMessage } from "./applications/chat-message.mjs";
 import CoverObstacleRegionBehaviorConfig from "./applications/region-behavior-config.mjs";
 import { onRenderRollConfigurationDialog } from "./applications/roll-configuration-dialog.mjs";
 import { clearCoverDebug } from "./canvas/debug.mjs";
-import { onHoverToken, onPreDeleteToken } from "./canvas/hover.mjs";
+import {
+  onCanvasTearDown, onControlToken, onDeleteToken, onHoverToken, onMoveToken, onRefreshToken, onTargetToken
+} from "./canvas/hover.mjs";
 import { onPreCreateToken } from "./canvas/token-shape.mjs";
 import { COVER_OBSTACLE_TYPE, MODULE_ID } from "./config.mjs";
 import {
@@ -56,7 +58,12 @@ Hooks.once("init", () => {
   Hooks.on("renderRollConfigurationDialog", onRenderRollConfigurationDialog);
   Hooks.on("dnd5e.renderChatMessage", onRenderChatMessage);
   Hooks.on("hoverToken", onHoverToken);
-  Hooks.on("preDeleteToken", onPreDeleteToken);
+  Hooks.on("targetToken", onTargetToken);
+  Hooks.on("controlToken", onControlToken);
+  Hooks.on("refreshToken", onRefreshToken);
+  Hooks.on("moveToken", onMoveToken);
+  Hooks.on("canvasTearDown", onCanvasTearDown);
+  Hooks.on("deleteToken", onDeleteToken);
   initApi();
 });
 

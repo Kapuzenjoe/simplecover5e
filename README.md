@@ -44,7 +44,7 @@ Everything else is optional, see [Settings](#settings).
   corner of the target.
 - **Grids.** On gridless scenes tokens count as squares or circles, and large tokens are sampled at several
   points to approximate a multi-space footprint.
-- **Walls.** Walls that block sight block Cover Lines. Walls that block movement can count alternate (see
+- **Walls.** Walls that block movement block Cover Lines. Walls that block sight can count instead (see
   [Settings](#settings)).
 - **Creatures.** Other creatures block lines as 3D bodies with their real token shape. Hidden and defeated
   creatures, ethereal ones, and creatures with 0 max HP are ignored.
@@ -54,7 +54,7 @@ Everything else is optional, see [Settings](#settings).
   and at least three quarters for Three-Quarters Cover.
 - **Cover Obstacle Regions.** Add the Cover Obstacle behavior to a Region and it blocks Cover Lines like a
   creature would, for terrain that is neither a wall nor a token. The GM sets the highest cover it grants,
-  Half Cover or Three-Quarters Cover.
+  Half Cover, Three-Quarters Cover, or Total Cover.
 - **Obstacle filters.** Target tokens of chosen sizes or creature types ignore the obstacle.
 - **Inside a Region.** When attacker and target both stand inside, Interior Block Distance decides. 0 always
   blocks, a larger value blocks once the two are farther apart, and Infinite never blocks.
@@ -98,8 +98,8 @@ under [Cover Rules](https://github.com/Kapuzenjoe/simplecover5e/wiki/Cover-Rules
 - **Active Effect rules.** Reduce Target's Cover and Increase Own Cover change cover for attacks, saving
   throws, or both. They take 1 to 3 steps and can be limited by cover level, roll data, or a condition on the
   effect. The older actor flags still work, are deprecated, and will be removed in 3.0.
-- **Optional rules.** Creatures can be limited to Half Cover and friendly tokens can be ignored as blockers
-  (see [Settings](#settings)).
+- **Optional rules.** The cover level that creatures grant can be chosen, and friendly tokens can be ignored
+  as blockers (see [Settings](#settings)).
 
 ---
 
@@ -146,10 +146,12 @@ Automation covers rolls, conditions, and clean-up. Library Mode turns all of it 
 
 - **Hover label.** Select one token and hover another to see the hovered token's cover icon and the distance
   between the two, in the style of the core ruler label. The distance includes elevation.
+  Persistent Target Labels keeps the label on your targeted tokens.
 - **Debug overlay.** Show Cover Debug Lines draws the evaluated Cover Lines, green when clear, yellow for Half
-  Cover and orange for Three-Quarters Cover. It also outlines the token shapes used for attacker, target, and
-  blocking creatures and marks the line-of-sight sample points. Lines also show an icon for the wall, Region, or
-  creature that blocks them and the estimated share of the target's height that is blocked.
+  Cover, orange for Three-Quarters Cover, and red for Total Cover. It also outlines the token shapes used for
+  attacker, target, and blocking creatures and marks the line-of-sight sample points. Lines also show an icon
+  for the wall, Region, or creature that blocks them and the estimated share of the target's height that is
+  blocked.
 
 <table>
   <tr>

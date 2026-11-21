@@ -4,7 +4,7 @@
 
 /**
  * A Foundry-Core elevated point, plus the active Levels identifier, if any.
- * @typedef {ElevatedPoint & { level?: string|null }} Position
+ * @typedef {ElevatedPoint & { disposition?: number, level?: string|null }} Position
  */
 
 /**
@@ -170,11 +170,11 @@
 
 /**
  * @typedef CoverObstacleRegionBehaviorSystemData
- * @property {"half"|"threeQuarters"} cover        The cover level this obstacle grants when it blocks a Cover Line.
- * @property {Set<string>} sizes                   Actor sizes exempt from this obstacle, if any.
- * @property {Set<string>} types                   Creature types exempt from this obstacle, if any.
- * @property {boolean} interiorNeverBlocks         Never block Cover Lines between two tokens both inside the Region.
- * @property {number} interiorBlockDistance        Distance beyond which two tokens inside the Region are
+ * @property {"half"|"threeQuarters"|"total"} cover The cover level this obstacle grants when it blocks a Cover Line.
+ * @property {Set<string>} sizes                    Actor sizes exempt from this obstacle, if any.
+ * @property {Set<string>} types                    Creature types exempt from this obstacle, if any.
+ * @property {boolean} interiorNeverBlocks          Never block Cover Lines between two tokens both inside the Region.
+ * @property {number} interiorBlockDistance         Distance beyond which two tokens inside the Region are
  *   blocked (0 = always).
  */
 

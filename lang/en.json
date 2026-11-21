@@ -74,6 +74,10 @@
           "CoverAndDistance": "Cover icons and distance"
         }
       },
+      "TargetLabels": {
+        "Name": "Persistent Target Labels",
+        "Hint": "Keeps the label visible on your targeted tokens."
+      },
       "HoverLabelPosition": {
         "Name": "Hover Label Position",
         "Hint": "Anchor position of the hover label relative to the target token.",

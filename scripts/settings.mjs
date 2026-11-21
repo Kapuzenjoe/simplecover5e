@@ -226,6 +226,15 @@ const SETTINGS = [
   },
   {
     config: true,
+    hint: "SIMPLE_COVER_5E.Settings.TargetLabels.Hint",
+    key: SETTING_KEYS.TARGET_LABELS,
+    name: "SIMPLE_COVER_5E.Settings.TargetLabels.Name",
+    requiresReload: false,
+    scope: "user",
+    type: new foundry.data.fields.BooleanField({ initial: false })
+  },
+  {
+    config: true,
     hint: "SIMPLE_COVER_5E.Settings.HoverLabelPosition.Hint",
     key: SETTING_KEYS.HOVER_LABEL_POSITION,
     name: "SIMPLE_COVER_5E.Settings.HoverLabelPosition.Name",

@@ -74,6 +74,10 @@
           "CoverAndDistance": "Deckungssymbole und Entfernung"
         }
       },
+      "TargetLabels": {
+        "Name": "Dauerhafte Ziel-Labels",
+        "Hint": "Zeigt das Label dauerhaft an deinen anvisierten Figuren."
+      },
       "HoverLabelPosition": {
         "Name": "Position des Hover-Labels",
         "Hint": "Ankerposition des Hover-Labels relativ zur Zielfigur.",

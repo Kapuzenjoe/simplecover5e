@@ -18,6 +18,7 @@
 - Added the **Cover from Creatures** setting to choose the cover level that creatures grant, including Total Cover. It replaces **Limit Cover from Creatures to Half Cover**.
 - Added the **Wall Type for Cover** setting to choose whether walls that block movement or sight block Cover Lines.
 - Added Total Cover as a cover level for the Cover Obstacle Region Behavior.
+- Added the **Persistent Target Labels** setting to keep the hover label on your targeted tokens.
 - Changed the cover flags and item property to be deprecated, they will be removed in version 3.0.
 - Changed the minimum required dnd5e version to 6.0.0.
 - Changed walls to block Cover Lines by movement instead of sight. **Wall Type for Cover** switches this back.
@@ -27,7 +28,11 @@
 - Changed the Wall Height integration to basic support, since the module is outdated for Foundry v14; Cover Obstacle Regions cover blocking objects.
 - Fixed Sharpshooter not ignoring Half and Three-Quarters Cover for melee weapons thrown as a ranged attack.
 - Fixed cover not being recalculated when the attack mode is changed in the roll dialog.
-- Fixed the caster blocking Cover Lines for Midi-QOL saving throws against an emanation.
+- Fixed creatures at the origin of an area effect blocking Cover Lines for Midi-QOL saving throws.
+- Fixed saving throws against area effects ignoring cover when the caster has no token on the scene.
+- Fixed attack rolls against targets with a flat AC or a minimum AC, such as Barkskin, using the wrong armor class with cover.
+- Fixed Ignore Cover from Friendly Tokens not working for saving throws against area effects.
+
 ## 2.2.4
 
 - Added the missing German translation for the Cover Obstacle Region Behavior.

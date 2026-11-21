@@ -67,8 +67,8 @@ These settings enable or disable optional cover rules. This page lists what can 
 - **Wall Type for Cover**
   Sets which walls block Cover Lines and make a target unreachable. Options are **Movement** (default) and **Sight**.
 
-- **Limit Cover from Creatures to Half Cover**
-  Prevents creatures from granting more than Half Cover on their own.
+- **Cover from Creatures**
+  Sets the cover level that creatures grant. Options are **Half Cover**, **Three-Quarters Cover** (default), and **Total Cover**.
 
 - **Ignore Cover from Friendly Tokens**
   Ignores friendly creature blockers during cover evaluation.
@@ -124,11 +124,11 @@ All values are **integer pixels only**. Attacker Inset and Target Inset **cannot
 
 Controls how target test points removed by token clipping affect cover evaluation.
 
-- **Treat as Blocked** (default)
+- **Treat as Blocked**
   Removed target points count as blocked.
 - **Treat as Clear**
   Removed target points count as clear.
-- **Dynamic Threshold**
+- **Dynamic Threshold** (default)
   Keeps the current Half Cover behavior, but grants Three-Quarters Cover when at least three-quarters of the remaining lines are blocked instead of always using the full target shape.
 
 ## Creature Heights (3D Cover)
@@ -152,13 +152,17 @@ Controls whether and how cover information and distance are shown when hovering 
 - **Cover icons and distance** (default)
   Shows a cover icon (if any) and a distance label.
 
+### Persistent Target Labels
+
+When enabled, the label stays on every token you target while exactly one token is selected, so it does not need hovering. It follows the targets when you retarget, change the selection, or tokens move. Disabled by default.
+
 ### Hover Label Position
 
 Choose where the hover label is anchored relative to the hovered token:
 
-- **Above the token**
+- **Above the token** (default)
 - **Centered on the token**
-- **Below the token** (default)
+- **Below the token**
 
 ### Hover Label X/Y Offset
 
@@ -173,7 +177,7 @@ Additional pixel offsets applied to the hover label position:
 
 When enabled, Simple Cover 5e draws helper visuals on the canvas while computing cover:
 
-- Lines between the evaluated sample points (green for clear, yellow for Half Cover, orange for Three-Quarters Cover)
+- Lines between the evaluated sample points (green for clear, yellow for Half Cover, orange for Three-Quarters Cover, red for Total Cover)
 - Labels on blocked lines with an icon for the blocking element (wall, Region, or creature) and the estimated share of the target's height that is blocked, and a route icon where the target can be reached
 - Outlines of the token shapes used internally (attacker, target, and creature occluders)
 - Markers for the sample points that test whether the target can be reached
