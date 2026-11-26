@@ -121,6 +121,7 @@ export default class SimpleCoverBaseSettingsConfig extends HandlebarsApplication
 
   /**
    * Persist submitted form values to the corresponding settings.
+   * @see Foundry-Core — SettingsConfig#onSubmit()
    * @param {SubmitEvent} _event The triggering submit event.
    * @param {HTMLFormElement} form The submitted form element.
    * @param {FormDataExtended} formData The expanded form data.

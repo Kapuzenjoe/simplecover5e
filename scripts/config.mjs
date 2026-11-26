@@ -54,8 +54,8 @@ export const COVER = Object.freeze({
       })
     }),
     LABEL: Object.freeze({
-      half: "EFFECT.DND5E.StatusHalfCover",
       none: "DND5E.None",
+      half: "EFFECT.DND5E.StatusHalfCover",
       threeQuarters: "EFFECT.DND5E.StatusThreeQuartersCover",
       total: "EFFECT.DND5E.StatusTotalCover"
     }),

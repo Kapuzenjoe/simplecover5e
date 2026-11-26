@@ -526,25 +526,16 @@ export default class CoverEvaluation {
     const level = levels.get(bCorner.level?.id ?? bCorner.level);
     const wallHeightBounds = getWallHeightBounds(aCorner.elevation, bCorner.elevation, ...elevations);
     const source = {
-      blinded: { darkness: false },
-      data: { angle: 360 },
       level: levels.get(aCorner.level?.id ?? aCorner.level),
-      los: { type, edgeTypes: { source: false }, useThreshold: true },
-      object: { document: { hasStatusEffect: () => false }, elevation: aCorner.elevation },
+      object: { elevation: aCorner.elevation },
       origin: { x: aCorner.x, y: aCorner.y, elevation: aCorner.elevation, ...wallHeightBounds }
     };
     const test = {
       level,
-      los: new Map(),
       point: { x: bCorner.x, y: bCorner.y, elevation: bCorner.elevation }
     };
-    const mode = { enabled: true, range: Infinity };
-    const visible = CONFIG.Canvas.detectionModes.basicSight.testVisibility(source, mode, {
-      level,
-      object: null,
-      tests: [test]
-    });
-    return !visible;
+    const config = { type, edgeTypes: { source: false }, useThreshold: true };
+    return foundry.canvas.perception.DetectionMode._testCollision(source, test, config);
   }
 
   /* -------------------------------------------- */

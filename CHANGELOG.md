@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.3.1
+
+- Changed the cover options in the roll dialog to be ordered from None to Total Cover.
+- Fixed cover evaluation failing with an error while the Limits module is active (#46).
+
 ## 2.3.0
 
 ### Highlights

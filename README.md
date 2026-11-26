@@ -8,9 +8,10 @@
 **Simple Cover 5e** works out cover for attacks and saving throws in the dnd5e system and applies it to the
 roll.
 
-Cover is measured on the scene itself. The module traces lines from the attacker to the target, and walls,
-creatures, and Regions in the way block them. The share of blocked lines sets Half Cover or Three-Quarters
-Cover. Walls that block every line add Total Cover.
+Cover is measured on the scene itself, following the DMG 2024 (5.5 Rules). The module traces lines from the
+attacker to the target, and walls, creatures, and Regions in the way block them. The share of blocked lines
+sets Half Cover or Three-Quarters Cover. Walls that block every line add Total Cover, but only if no part of
+the target can be reached.
 
 The bonus goes straight into the roll, as a higher AC or as a bonus on Dexterity saving throws. It works on
 square, hex, and gridless scenes.
@@ -44,21 +45,25 @@ Everything else is optional, see [Settings](#settings).
   corner of the target.
 - **Grids.** On gridless scenes tokens count as squares or circles, and large tokens are sampled at several
   points to approximate a multi-space footprint.
+  A square target has 4 Cover Lines, a hex 6, and a gridless circle 8. One blocked line gives Half Cover.
+  Three-Quarters Cover needs 3 of 4 blocked lines, 4 of 6, or 6 of 8.
 - **Walls.** Walls that block movement block Cover Lines. Walls that block sight can count instead (see
   [Settings](#settings)).
 - **Creatures.** Other creatures block lines as 3D bodies with their real token shape. Hidden and defeated
   creatures, ethereal ones, and creatures with 0 max HP are ignored.
 - **Height and Elevation.** Lines run in 3D. A creature's height comes from the token's depth and the scene's
   grid distance. Prone creatures can count as smaller (see [Settings](#settings)). Each line is tested at
-  several heights of the target. A blocker has to hide at least half of the target's height for Half Cover
-  and at least three quarters for Three-Quarters Cover.
+  several heights of the target. The DMG 2024 procedure is two-dimensional, so the vertical check uses the
+  PHB 2024 definition: a blocker has to hide at least half of the target's height for Half Cover and at
+  least three quarters for Three-Quarters Cover.
 - **Cover Obstacle Regions.** Add the Cover Obstacle behavior to a Region and it blocks Cover Lines like a
   creature would, for terrain that is neither a wall nor a token. The GM sets the highest cover it grants,
   Half Cover, Three-Quarters Cover, or Total Cover.
 - **Obstacle filters.** Target tokens of chosen sizes or creature types ignore the obstacle.
 - **Inside a Region.** When attacker and target both stand inside, Interior Block Distance decides. 0 always
   blocks, a larger value blocks once the two are farther apart, and Infinite never blocks.
-- **Walls.** Total Cover from walls requires that no part of the target can be reached.
+- **Walls.** The reach check for Total Cover starts at the attacker's vision origin, like Foundry's own
+  line of sight.
 
 The screenshots show the debug overlay (see [Hover & Debug](#hover--debug)).
 
